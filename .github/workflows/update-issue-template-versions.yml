@@ -32,6 +32,8 @@ permissions:
 
 jobs:
   update:
+    # Fork (blackappleD): releases are built locally and uploaded with gh; never run upstream's release automation here.
+    if: github.repository == 'XeldarAlz/FFXIV-AutoTreasureMaps'
     runs-on: ubuntu-latest
 
     steps:

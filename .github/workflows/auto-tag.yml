@@ -31,7 +31,8 @@ permissions:
 jobs:
   tag:
     runs-on: ubuntu-latest
-    if: "!contains(toJson(github.event.commits.*.message), '[skip auto-tag]')"
+    # Fork (blackappleD): releases are built locally and uploaded with gh; never run upstream's release automation here.
+    if: "github.repository == 'XeldarAlz/FFXIV-AutoTreasureMaps' && !contains(toJson(github.event.commits.*.message), '[skip auto-tag]')"
 
     steps:
       - name: Checkout

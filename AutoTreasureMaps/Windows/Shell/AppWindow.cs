@@ -55,7 +55,7 @@ public sealed class AppWindow : Window, IDisposable
     private IDisposable? chrome;
     private IDisposable? bodyFont;
 
-    public AppWindow(Plugin plugin) : base("Auto Treasure Maps###AutoTreasureMapsMain", BaseFlags)
+    public AppWindow(Plugin plugin) : base("TreasureHelper###AutoTreasureMapsMain", BaseFlags)
     {
         this.plugin = plugin;
         Size = DefaultSize;

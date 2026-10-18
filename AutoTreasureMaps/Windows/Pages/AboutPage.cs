@@ -11,10 +11,13 @@ namespace AutoTreasureMaps.Windows.Pages;
 
 internal sealed partial class AboutPage
 {
-    private const string Name = "Auto Treasure Maps";
-    private const string Author = "XeldarAlz";
-    private const string RepoUrl = "https://github.com/XeldarAlz/FFXIV-AutoTreasureMaps";
-    private const string DiscordUrl = "https://discord.gg/hppkAvdBEE";
+    private const string Name = "TreasureHelper";
+    private const string Author = "blackappleD";
+    private const string RepoUrl = "https://github.com/blackappleD/FFXIV-AutoTreasureMaps";
+
+    // Credit required by the upstream NOTICE (AGPL section 7(b)); keep this wording verbatim.
+    private const string UpstreamCredit = "Based on Auto Treasure Maps by XeldarAlz";
+    private const string UpstreamUrl = "https://github.com/XeldarAlz/FFXIV-AutoTreasureMaps";
     private const string PatreonUrl = "https://www.patreon.com/XeldarAlz";
     private const string BuyMeACoffeeUrl = "https://buymeacoffee.com/xeldaralz";
 
@@ -266,7 +269,20 @@ internal sealed partial class AboutPage
         TextDraw.Icon(FontAwesomeIcon.Code, new Vector2(x, origin.Y + (labelSize.Y - iconSize.Y) * 0.5f),
             Vector4.Lerp(Styling.AccentBlue, Styling.Lighten(Styling.AccentBlueSoft, 0.3f), twinkle));
         TextDraw.At(label, new Vector2(x + iconSize.X + gap, origin.Y), Styling.TextDim);
-        ImGui.Dummy(new Vector2(columnWidth, labelSize.Y));
+
+        var lineGap = TextDraw.LineHeight() + FooterGap * scale;
+        var creditY = origin.Y + labelSize.Y + FooterGap * scale;
+        var creditSize = TextDraw.Measure(UpstreamCredit);
+        TextDraw.At(UpstreamCredit, new Vector2(origin.X + (columnWidth - creditSize.X) * 0.5f, creditY), Styling.TextDim);
+        var urlSize = TextDraw.Measure(UpstreamUrl);
+        var urlPos = new Vector2(origin.X + (columnWidth - urlSize.X) * 0.5f, creditY + lineGap);
+        ImGui.SetCursorScreenPos(urlPos);
+        var hit = Hit.Area("##atm_about_upstream", urlSize);
+        OpenOrCopy(hit, UpstreamUrl);
+        TextDraw.At(UpstreamUrl, urlPos, hit.Hovered ? Styling.AccentRoseSoft : Styling.AccentBlueSoft);
+
+        ImGui.SetCursorScreenPos(origin);
+        ImGui.Dummy(new Vector2(columnWidth, labelSize.Y + FooterGap * scale + lineGap + urlSize.Y));
     }
 
     private static void SectionHeader(FontAwesomeIcon icon, string label, Vector4 accent, float width)

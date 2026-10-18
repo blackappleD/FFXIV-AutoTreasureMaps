@@ -1,0 +1,19 @@
+{
+    "Author": "XeldarAlz, blackappleD",
+    "Name": "TreasureHelper",
+    "InternalName": "TreasureHelper",
+    "Punchline": "自动挖宝图，解放双手。",
+    "Description": "自动处理背包里的陈旧地图：逐张解读、前往挖宝点、挖出宝箱、击退守卫并开箱，然后继续下一张。背包里没图时，可以用采矿工或园艺工采集每日地图，并在价格上限和金币预算内从市场板购买。基于 XeldarAlz 的 Auto Treasure Maps（https://github.com/XeldarAlz/FFXIV-AutoTreasureMaps）修改的国服维护版，问题请反馈到 blackappleD/FFXIV-AutoTreasureMaps。",
+    "ApplicableVersion": "any",
+    "RepoUrl": "https://github.com/blackappleD/FFXIV-AutoTreasureMaps",
+    "IconUrl": "https://raw.githubusercontent.com/blackappleD/FFXIV-AutoTreasureMaps/master/AutoTreasureMaps/Images/Icon.png",
+    "Tags": [
+        "Treasure Hunt",
+        "Timeworn Maps",
+        "Treasure Coffer",
+        "Gil",
+        "Market Board",
+        "Gathering",
+        "Automation"
+    ]
+}

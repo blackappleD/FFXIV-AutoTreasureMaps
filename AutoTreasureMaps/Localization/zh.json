@@ -306,7 +306,7 @@
   "settings.general.behavior": "行为",
   "settings.general.autoPause": "副本中自动暂停",
   "settings.general.autoPauseHelp": "在副本、讨伐战、团队副本或其他实例化内容中时暂停运行，回到外面后继续。你的运行进度和本次统计会保留。",
-  "plugin.commandHelp": "打开或关闭 Auto Treasure Maps 窗口。/atm config | stats | deps | log | changelog | about | start（执行藏宝图直到满足停止条件：解读、前往、挖掘、战斗并拾取）| stop（停止运行）| pause（暂停或继续运行）| spot（显示所持藏宝图的挖掘地点）| flag（在地图上标记挖掘地点）| goto spot（前往挖掘地点）| goto <territory> <x> <y> <z>（前往指定地点，调试用）| goto stop（停止该移动）| dig（执行所持藏宝图：前往、挖掘、击败守卫并拾取宝箱）| tiers（在控制台列出所有藏宝图种类）| decipher [藏宝图]（解读背包中的下一张陈旧的地图，或指定的那张）| buy [藏宝图]（在市场布告板上以不高于限价的价格购买下一张藏宝图，或指定的那张）| target（输出当前目标的BaseId）。",
+  "plugin.commandHelp": "打开或关闭 TreasureHelper 窗口。/atm config | stats | deps | log | changelog | about | start（执行藏宝图直到满足停止条件：解读、前往、挖掘、战斗并拾取）| stop（停止运行）| pause（暂停或继续运行）| spot（显示所持藏宝图的挖掘地点）| flag（在地图上标记挖掘地点）| goto spot（前往挖掘地点）| goto <territory> <x> <y> <z>（前往指定地点，调试用）| goto stop（停止该移动）| dig（执行所持藏宝图：前往、挖掘、击败守卫并拾取宝箱）| tiers（在控制台列出所有藏宝图种类）| decipher [藏宝图]（解读背包中的下一张陈旧的地图，或指定的那张）| buy [藏宝图]（在市场布告板上以不高于限价的价格购买下一张藏宝图，或指定的那张）| target（输出当前目标的BaseId）。",
   "plugin.commandHelpAlias": "/atm 的别名。",
   "progress.phase.upkeep": "整备中",
   "safety.add": "添加",

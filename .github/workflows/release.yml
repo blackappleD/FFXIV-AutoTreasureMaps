@@ -19,6 +19,8 @@ permissions:
 
 jobs:
   release:
+    # Fork (blackappleD): releases are built locally and uploaded with gh; never run upstream's release automation here.
+    if: github.repository == 'XeldarAlz/FFXIV-AutoTreasureMaps'
     runs-on: windows-latest
     # Job-level so the hub-ping step's `if` can see it; `secrets` can't be used
     # directly in an `if:` condition, but `env` mapped from a secret can.

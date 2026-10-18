@@ -6,6 +6,17 @@
     <IsPackable>false</IsPackable>
   </PropertyGroup>
 
+  <!--
+    Fork identity (blackappleD). Dalamud requires the packaged <InternalName>.dll
+    and <InternalName>.json to match InternalName, so only the assembly is
+    renamed; the project path and `namespace AutoTreasureMaps` stay as upstream to
+    keep merges from XeldarAlz/FFXIV-AutoTreasureMaps conflict-free.
+  -->
+  <PropertyGroup>
+    <AssemblyName>TreasureHelper</AssemblyName>
+    <RootNamespace>AutoTreasureMaps</RootNamespace>
+  </PropertyGroup>
+
   <PropertyGroup Condition="'$([System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform($([System.Runtime.InteropServices.OSPlatform]::Linux)))'">
     <DalamudLibPath>$(DALAMUD_HOME)/</DalamudLibPath>
   </PropertyGroup>

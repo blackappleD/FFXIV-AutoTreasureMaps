@@ -12,7 +12,7 @@ namespace AutoTreasureMaps.Core.Ipc;
 // Pathfind movement lets the combat plugin close to range and dodge once the fight is on.
 internal static class TreasureCombatPreset
 {
-    public const string Name = "Auto Treasure Maps";
+    public const string Name = "TreasureHelper";
 
     public const int Revision = 1;
 

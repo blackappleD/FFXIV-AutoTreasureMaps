@@ -306,7 +306,7 @@
   "settings.general.behavior": "動作",
   "settings.general.autoPause": "コンテンツ中は自動で一時停止",
   "settings.general.autoPauseHelp": "コンテンツ、討滅戦、レイド、その他のインスタンスコンテンツ中は実行を一時停止し、外に戻ったら再開します。実行の状態とセッション統計は保持されます。",
-  "plugin.commandHelp": "Auto Treasure Maps のウィンドウを開閉します。/atm config | stats | deps | log | changelog | about | start（停止条件まで地図を実行：解読、移動、発掘、戦闘、取得）| stop（周回を停止）| pause（周回の一時停止／再開）| spot（所持している地図の発掘地点を表示）| flag（発掘地点にマップのフラグを立てる）| goto spot（発掘地点へ移動）| goto <territory> <x> <y> <z>（指定地点へ移動、デバッグ用）| goto stop（その移動を中止）| dig（所持している地図を実行：移動、発掘、番人の撃破、宝箱の取得）| tiers（すべての地図の種類をコンソールに一覧表示）| decipher [地図]（所持品の次の古ぼけた地図、または指定した地図を解読）| buy [地図]（次の地図、または指定した地図を上限価格以下でマーケットボードから購入）| target（現在のターゲットのBaseIdを出力）。",
+  "plugin.commandHelp": "TreasureHelper のウィンドウを開閉します。/atm config | stats | deps | log | changelog | about | start（停止条件まで地図を実行：解読、移動、発掘、戦闘、取得）| stop（周回を停止）| pause（周回の一時停止／再開）| spot（所持している地図の発掘地点を表示）| flag（発掘地点にマップのフラグを立てる）| goto spot（発掘地点へ移動）| goto <territory> <x> <y> <z>（指定地点へ移動、デバッグ用）| goto stop（その移動を中止）| dig（所持している地図を実行：移動、発掘、番人の撃破、宝箱の取得）| tiers（すべての地図の種類をコンソールに一覧表示）| decipher [地図]（所持品の次の古ぼけた地図、または指定した地図を解読）| buy [地図]（次の地図、または指定した地図を上限価格以下でマーケットボードから購入）| target（現在のターゲットのBaseIdを出力）。",
   "plugin.commandHelpAlias": "/atm の別名です。",
   "progress.phase.upkeep": "整備中",
   "safety.add": "追加",

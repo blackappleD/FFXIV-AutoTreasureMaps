@@ -22,7 +22,6 @@ internal sealed partial class AboutPage
 
     private static readonly CommunityLink[] communityLinks =
     [
-        new("##atm_about_discord", FontAwesomeIcon.Comments, L.About.DiscordTitle, L.About.DiscordBody, DiscordUrl, Styling.AccentDiscord),
         new("##atm_about_github", FontAwesomeIcon.CodeBranch, L.About.GitHubTitle, L.About.GitHubBody, RepoUrl, Styling.AccentNebula),
     ];
 
@@ -33,7 +32,7 @@ internal sealed partial class AboutPage
 
         var origin = new Vector2(columnX, ImGui.GetCursorScreenPos().Y);
         var gap = TileGap * scale;
-        var stacked = columnWidth < TileStackBelow * scale;
+        var stacked = communityLinks.Length == 1 || columnWidth < TileStackBelow * scale;
         var tileSize = new Vector2(stacked ? columnWidth : (columnWidth - gap) * 0.5f, TileHeight * scale);
         for (var index = 0; index < communityLinks.Length; index++)
         {

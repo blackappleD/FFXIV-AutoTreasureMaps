@@ -1,13 +1,13 @@
 [
   {
-    "Author": "XeldarAlz",
-    "Name": "Auto Treasure Maps",
-    "InternalName": "AutoTreasureMaps",
-    "AssemblyVersion": "1.0.0.0",
-    "TestingAssemblyVersion": "1.0.0.0",
-    "Description": "Works through your timeworn maps for you: deciphers each map in your bags, travels to the dig spot, digs up the coffer, fights off its guards and opens it, then moves on to the next map. When your bags run dry it can gather the daily timeworn map as a Miner or Botanist and buy more on the market board under your price caps and gil budget.",
-    "Punchline": "Treasure maps, dug up for you.",
-    "RepoUrl": "https://github.com/XeldarAlz/FFXIV-AutoTreasureMaps",
+    "Author": "XeldarAlz, blackappleD",
+    "Name": "TreasureHelper",
+    "InternalName": "TreasureHelper",
+    "AssemblyVersion": "1.0.0.2001",
+    "TestingAssemblyVersion": "1.0.0.2001",
+    "Description": "自动处理背包里的陈旧地图：逐张解读、前往挖宝点、挖出宝箱、击退守卫并开箱，然后继续下一张。背包里没图时，可以采集每日地图，并在价格上限和金币预算内从市场板购买。基于 XeldarAlz 的 Auto Treasure Maps 修改的国服维护版。",
+    "Punchline": "自动挖宝图，解放双手。",
+    "RepoUrl": "https://github.com/blackappleD/FFXIV-AutoTreasureMaps",
     "ApplicableVersion": "any",
     "Tags": [
       "Treasure Hunt",
@@ -22,13 +22,11 @@
       "utility"
     ],
     "DalamudApiLevel": 15,
-    "IconUrl": "https://raw.githubusercontent.com/XeldarAlz/FFXIV-AutoTreasureMaps/master/AutoTreasureMaps/Images/Icon.png",
-    "DownloadLinkInstall": "https://github.com/XeldarAlz/FFXIV-AutoTreasureMaps/releases/latest/download/latest.zip",
-    "DownloadLinkUpdate": "https://github.com/XeldarAlz/FFXIV-AutoTreasureMaps/releases/latest/download/latest.zip",
-    "DownloadLinkTesting": "https://github.com/XeldarAlz/FFXIV-AutoTreasureMaps/releases/latest/download/latest.zip",
+    "IconUrl": "https://raw.githubusercontent.com/blackappleD/FFXIV-AutoTreasureMaps/master/AutoTreasureMaps/Images/Icon.png",
+    "DownloadLinkInstall": "https://github.com/blackappleD/FFXIV-AutoTreasureMaps/releases/download/v1.0.0.2001/TreasureHelper.zip",
+    "DownloadLinkUpdate": "https://github.com/blackappleD/FFXIV-AutoTreasureMaps/releases/download/v1.0.0.2001/TreasureHelper.zip",
+    "DownloadLinkTesting": "https://github.com/blackappleD/FFXIV-AutoTreasureMaps/releases/download/v1.0.0.2001/TreasureHelper.zip",
     "IsTestingExclusive": false,
-    "AcceptsFeedback": true,
-    "DownloadCount": 0,
-    "LastUpdate": "1791869946"
+    "AcceptsFeedback": true
   }
 ]

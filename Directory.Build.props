@@ -15,12 +15,16 @@
   -->
 
   <PropertyGroup Label="Identity">
-    <Version>1.0.0.0</Version>
-    <Authors>XeldarAlz</Authors>
+    <!--
+      Fork versioning: upstream's first three segments, then a four-digit fork
+      revision starting at 2001 (upstream 1.0.0.0 -> 1.0.0.2001).
+    -->
+    <Version>1.0.0.2001</Version>
+    <Authors>XeldarAlz, blackappleD</Authors>
     <Copyright>Copyright (c) XeldarAlz</Copyright>
-    <PackageProjectUrl>https://github.com/XeldarAlz/FFXIV-AutoTreasureMaps</PackageProjectUrl>
+    <PackageProjectUrl>https://github.com/blackappleD/FFXIV-AutoTreasureMaps</PackageProjectUrl>
     <PackageLicenseExpression>AGPL-3.0-or-later</PackageLicenseExpression>
-    <RepositoryUrl>https://github.com/XeldarAlz/FFXIV-AutoTreasureMaps</RepositoryUrl>
+    <RepositoryUrl>https://github.com/blackappleD/FFXIV-AutoTreasureMaps</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
   </PropertyGroup>
 

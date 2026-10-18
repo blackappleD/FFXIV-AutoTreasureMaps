@@ -10,7 +10,7 @@ namespace AutoTreasureMaps.Windows.Shell;
 
 internal static class HeaderBar
 {
-    private const string Title = "Auto Treasure Maps";
+    private const string Title = "TreasureHelper";
     private const float PadX = 16f;
     private const float IconBox = 26f;
     private const float ButtonSize = 30f;
