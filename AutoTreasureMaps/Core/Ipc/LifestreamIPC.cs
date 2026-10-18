@@ -33,7 +33,9 @@ internal sealed class LifestreamIPC
 
     public bool IsBusy() => IpcGate.Invoke(isBusy.HasFunction, isBusy.InvokeFunc, false, IsBusyFailed);
 
-    public bool CanVisit(string worldName) => IpcGate.Invoke(canVisitSameDc.HasFunction, () => canVisitSameDc.InvokeFunc(worldName), false, CanVisitFailed);
+    // A Lifestream without this check is not asked; the visit itself then says whether the world could be reached.
+    public bool CanVisit(string worldName)
+        => !canVisitSameDc.HasFunction || IpcGate.Invoke(true, () => canVisitSameDc.InvokeFunc(worldName), true, CanVisitFailed);
 
     // No secondary teleport: the run travels on to the market board itself.
     public void ChangeWorld(string worldName)

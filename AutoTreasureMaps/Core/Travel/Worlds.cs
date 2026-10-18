@@ -22,16 +22,4 @@ internal static class Worlds
     // The data centre's name as the game spells it, which is also the name Universalis files the CN worlds under.
     public static string DataCenterOf(uint worldId)
         => Svc.Data.GetExcelSheet<World>().GetRowOrDefault(worldId)?.DataCenter.ValueNullable?.Name.ExtractText() ?? string.Empty;
-
-    // A world in the character's current data centre that is open to visitors.
-    public static bool Visitable(uint worldId)
-    {
-        var sheet = Svc.Data.GetExcelSheet<World>();
-        if (sheet.GetRowOrDefault(worldId) is not { IsPublic: true } world || sheet.GetRowOrDefault(Current) is not { } here)
-        {
-            return false;
-        }
-
-        return world.DataCenter.RowId == here.DataCenter.RowId;
-    }
 }

@@ -50,11 +50,33 @@ internal sealed partial class MarketBuyTask
             }
 
             var cap = MarketRules.CapOf(configuration, tier.Rank);
-            var cheapest = Cheapest(listings, cap, spendable, worldId => worldId != here && !excludedWorlds.Contains(worldId) && Worlds.Visitable(worldId));
+            // Universalis answers for the data centre asked, so every world it lists is one Lifestream can visit; the CN
+            // World sheet marks no world public, so the sheet is not asked. A world Lifestream refuses is left out.
+            var refused = new HashSet<uint>();
+            var allowed = new HashSet<uint>();
+            bool Elsewhere(uint worldId)
+            {
+                if (worldId == here || excludedWorlds.Contains(worldId) || refused.Contains(worldId))
+                {
+                    return false;
+                }
+
+                if (allowed.Contains(worldId) || LifestreamIPC.Instance.CanVisit(Worlds.NameOf(worldId)))
+                {
+                    allowed.Add(worldId);
+                    return true;
+                }
+
+                refused.Add(worldId);
+                return false;
+            }
+
+            var cheapest = Cheapest(listings, cap, spendable, Elsewhere);
             var cheapestHere = Cheapest(listings, cap, spendable, worldId => worldId == here);
             if (cheapest is null && cheapestHere is null)
             {
-                Diag($"Market: Universalis shows no {tier.Name} under {cap} gil in {dataCenter}.");
+                var lowest = listings.Count == 0 ? "none" : $"{listings.Min(listing => listing.UnitPrice)} gil";
+                Diag($"Market: Universalis shows no {tier.Name} under {cap} gil that can be bought in {dataCenter} ({listings.Count} listing(s), lowest {lowest}, {refused.Count} world(s) Lifestream would not visit).");
                 continue;
             }
 
