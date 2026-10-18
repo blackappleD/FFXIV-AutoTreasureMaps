@@ -35,6 +35,17 @@ public sealed class AutoReturnToInn : AutoCommon
         await HoldCombatMovementAndSettle("inn");
         try
         {
+            // A visitor cannot take an inn room, and a market run may have left the character on another world.
+            if (Worlds.AwayFromHome && !await ChangeWorld(Worlds.Home, "inn-home"))
+            {
+                if (!CancelToken.IsCancellationRequested)
+                {
+                    Warn($"Return to inn: could not travel back to {Worlds.NameOf(Worlds.Home)}; staying where the run ended.");
+                }
+
+                return;
+            }
+
             var arrived = await TravelTo(inn.CityTerritoryId, inn.InnkeeperPosition, InnkeeperArrivalMeters);
             if (CancelToken.IsCancellationRequested)
             {

@@ -19,6 +19,11 @@ internal static partial class L
         public static readonly LocString BoardAetheryteDetail = new("market.board.aetheryte.detail", "The board is a short walk from the city aetheryte.");
         public static readonly LocString BoardAethernetDetail = new("market.board.aethernet.detail", "The board is reached with an aethernet ride inside the city.");
         public static readonly LocString BoardDistrictDetail = new("market.board.district.detail", "The board stands in another district of the city, reached through the aethernet.");
+        public static readonly LocString CrossWorld = new("market.crossWorld", "Buy on the cheapest world");
+        public static readonly LocString CrossWorldHelp = new("market.crossWorldHelp", "Before each purchase, compare the map's price across your data centre on Universalis and travel with Lifestream to the world that sells it cheapest. The board there is read again, and the map is dug on that world. Without Lifestream, maps are bought where you stand.");
+        public static readonly LocString CrossWorldSavings = new("market.crossWorldSavings", "Least saving for a trip");
+        public static readonly LocString CrossWorldSavingsHelp = new("market.crossWorldSavingsHelp", "Travel only when the other world sells the map at least this much cheaper than your current world.");
+        public static readonly LocString CrossWorldNoLifestream = new("market.crossWorldNoLifestream", "Lifestream is not loaded, so maps are bought on the world you stand on.");
         public static readonly LocString Caps = new("market.caps", "Price caps");
         public static readonly LocString CapsNote = new("market.capsNote", "The most a run pays for one map of each tier, before the market tax. A tier without a cap is never bought, and neither is a tier switched off below. Only tradable tiers are listed.");
         public static readonly LocString CapHelp = new("market.capHelp", "The highest price per map accepted for this tier, before the market tax. 0 leaves the tier unbought.");
@@ -51,6 +56,7 @@ internal static partial class L
         public static readonly LocString ChatStarted = new("market.chat.started", "Heading to the market board.");
         public static readonly LocString ChatBought = new("market.chat.bought", "Bought {0} for {1} gil.");
         public static readonly LocString ChatNoneUnderCap = new("market.chat.noneUnderCap", "No {0} is listed at or under {1} gil.");
+        public static readonly LocString ChatCheapestWorld = new("market.chat.cheapestWorld", "{0} is cheapest on {1} at {2} gil; travelling there to buy it.");
         public static readonly LocString ChatOverBudget = new("market.chat.overBudget", "{0} is listed under its cap, but not within the budget and the gil to keep.");
         public static readonly LocString ChatUniqueHeld = new("market.chat.uniqueHeld", "The game says you already have {0}, so this run skips that tier.");
         public static readonly LocString ChatStoppedGil = new("market.chat.stoppedGil", "Not enough gil for the map, so buying stops for this run.");

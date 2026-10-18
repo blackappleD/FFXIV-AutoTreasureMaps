@@ -1,3 +1,4 @@
+using AutoTreasureMaps.Core.External;
 using AutoTreasureMaps.Core.Localization;
 using AutoTreasureMaps.Core.Market;
 using AutoTreasureMaps.Core.Travel;
@@ -72,6 +73,26 @@ internal static class MarketSettings
             SettingsControls.RowComboWidth,
             () => DrawBoardCombo(configuration, selected));
         SettingsRow.Caption(boardDetails[selected]);
+
+        SettingsRow.Draw(Loc.T(L.Market.CrossWorld),
+            Loc.T(L.Market.CrossWorldHelp),
+            SettingsControls.ToggleWidth,
+            () => SettingsControls.DrawToggle(configuration, () => configuration.MarketCrossWorld, value => configuration.MarketCrossWorld = value, "##atm_market_world"),
+            SettingsRow.ToggleHeight);
+        if (!configuration.MarketCrossWorld)
+        {
+            return;
+        }
+
+        if (!ExternalPlugins.IsInstalled(ExternalPlugin.Lifestream))
+        {
+            SettingsRow.Note(Loc.T(L.Market.CrossWorldNoLifestream));
+        }
+
+        SettingsRow.Draw(Loc.T(L.Market.CrossWorldSavings),
+            Loc.T(L.Market.CrossWorldSavingsHelp),
+            Stepper.DefaultWidth,
+            () => DrawGil(configuration, "##atm_market_world_savings", configuration.MarketCrossWorldMinSavings, value => configuration.MarketCrossWorldMinSavings = value));
     }
 
     private static void DrawGil(Configuration configuration, string id, int current, Action<int> setter)

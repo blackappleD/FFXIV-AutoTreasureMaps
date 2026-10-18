@@ -6,6 +6,7 @@ public enum ExternalPlugin
 {
     Vnavmesh,
     BossMod,
+    Lifestream,
 }
 
 public sealed record ExternalPluginInfo(
@@ -19,7 +20,7 @@ public sealed record ExternalPluginInfo(
 
 public static class ExternalPlugins
 {
-    private static readonly ExternalPlugin[] all = [ExternalPlugin.Vnavmesh, ExternalPlugin.BossMod];
+    private static readonly ExternalPlugin[] all = [ExternalPlugin.Vnavmesh, ExternalPlugin.BossMod, ExternalPlugin.Lifestream];
 
     public static readonly IReadOnlyDictionary<ExternalPlugin, ExternalPluginInfo> Catalog
         = new Dictionary<ExternalPlugin, ExternalPluginInfo>
@@ -37,6 +38,12 @@ public static class ExternalPlugins
             Purpose: "Auto-rotation, targeting, and dodging while fighting coffer guards.",
             Required: true,
             Aliases: ["BossModReborn"]),
+        [ExternalPlugin.Lifestream] = new(
+            InternalName: "Lifestream",
+            DisplayName: "Lifestream",
+            RepoUrl: "https://github.com/NightmareXIV/MyDalamudPlugins/raw/main/pluginmaster.json",
+            Purpose: "World visits, to buy maps on the cheapest world of the data centre.",
+            Required: false),
     };
 
     public static IReadOnlyList<ExternalPlugin> All => all;

@@ -16,4 +16,10 @@ public sealed partial class Configuration
     public int MarketKeepGil { get; set; } = 100_000;
 
     public MarketBoardChoice MarketBoard { get; set; } = MarketBoardChoice.Automatic;
+
+    // Buys on the world of the data centre Universalis lists cheapest, through Lifestream, and digs there.
+    public bool MarketCrossWorld { get; set; } = true;
+
+    // Gil a trip to another world must save on the map, against the cheapest listing on the current one.
+    public int MarketCrossWorldMinSavings { get; set; } = 5_000;
 }

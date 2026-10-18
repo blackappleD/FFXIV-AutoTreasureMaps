@@ -198,6 +198,7 @@ internal static partial class L
             "Install adds the plugin's source repository to Dalamud and queues an install. If one-click install fails (URL drift, network), right-click a plugin name to copy its repo URL and add it manually via /xlsettings -> Experimental -> Custom Plugin Repositories.");
         public static readonly LocString PurposeVnavmesh = new("plugins.purpose.vnavmesh", "Pathfinding, flying, and movement to each dig spot.");
         public static readonly LocString PurposeBossMod = new("plugins.purpose.bossMod", "Auto-rotation, targeting, and dodging while fighting coffer guards.");
+        public static readonly LocString PurposeLifestream = new("plugins.purpose.lifestream", "World visits, to buy maps on the cheapest world of the data centre.");
     }
 
     internal static class Log

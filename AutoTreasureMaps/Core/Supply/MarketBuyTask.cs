@@ -13,7 +13,7 @@ namespace AutoTreasureMaps.Core.Supply;
 // One visit to the market board: open it, then for each tier in the order the Maps settings choose, read the listings
 // and buy the cheapest one under the cap. One map is bought per visit. Session is the run's, or null for a purchase
 // outside a run; onlyRank names the one tier to buy, or is MarketRules.AnyTier.
-internal sealed class MarketBuyTask(TreasureSession? session, byte onlyRank) : MapSupplyTask
+internal sealed partial class MarketBuyTask(TreasureSession? session, byte onlyRank) : MapSupplyTask
 {
     private const string Scope = "market";
     private const float BoardArrivalMeters = 6f;
@@ -99,7 +99,7 @@ internal sealed class MarketBuyTask(TreasureSession? session, byte onlyRank) : M
         using var stopRegistration = CancelToken.Register(CloseBoardNow);
         try
         {
-            var answer = await Visit(plugin.Configuration, tiers);
+            var answer = await VisitCheapestWorld(plugin.Configuration, tiers);
             if (!CancelToken.IsCancellationRequested)
             {
                 await CloseBoard();
@@ -116,6 +116,29 @@ internal sealed class MarketBuyTask(TreasureSession? session, byte onlyRank) : M
         {
             SettleCutOff();
             hooks = null;
+        }
+    }
+
+    // A world Universalis named whose board turns out to hold nothing under the cap is left for the next cheapest.
+    private async Task<MapSupplyAnswer> VisitCheapestWorld(Configuration configuration, List<TreasureTier> tiers)
+    {
+        for (var hop = 0; ; hop++)
+        {
+            var travelledTo = await MoveToCheapestWorld(configuration, tiers);
+            if (CancelToken.IsCancellationRequested)
+            {
+                return MapSupplyAnswer.Cancelled;
+            }
+
+            var answer = await Visit(configuration, tiers);
+            if (answer.Outcome != MapSupplyOutcome.Empty || travelledTo == 0 || hop >= MaxWorldHops)
+            {
+                return answer;
+            }
+
+            Diag($"Market: {Worlds.NameOf(travelledTo)} had nothing to buy after all; trying the next cheapest world.");
+            excludedWorlds.Add(travelledTo);
+            await CloseBoard();
         }
     }
 
