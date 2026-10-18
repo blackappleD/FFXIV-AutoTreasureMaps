@@ -18,6 +18,9 @@ public enum LurePolicy : byte
 
 public sealed partial class Configuration
 {
+    // Walk into the portal a coffer leaves behind, and clear the dungeon behind it, solo only.
+    public bool DungeonEnterPortal { get; set; } = true;
+
     public GatePolicy DungeonGatePolicy { get; set; } = GatePolicy.Random;
 
     // Keyed by the dungeon profile's key; a dungeon not in it, or set to Default, follows DungeonGatePolicy.

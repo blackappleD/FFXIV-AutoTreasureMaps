@@ -33,6 +33,12 @@ internal sealed class AutoMapRun(TreasureSession session, TreasureProgress progr
                 return;
             }
 
+            if ((result.PortalSeen || result.Refusal == MapRefusal.PortalDug) && result.Outcome != MapOutcome.Cancelled
+                && await EnterPortalAndClear(session, progress) == PortalStep.Stop)
+            {
+                return;
+            }
+
             if (MapOutcomes.Final(result.Outcome))
             {
                 session.Finish(result.Outcome == MapOutcome.Refused ? RunEnd.Refused : RunEnd.SingleMap, result.Refusal);

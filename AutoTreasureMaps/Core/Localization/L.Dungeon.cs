@@ -14,6 +14,9 @@ internal static partial class L
         public static readonly LocString ChatStuck = new("dungeon.chat.stuck", "The dungeon shows nothing the plugin knows how to act on, so the rest is up to you.");
         public static readonly LocString ChatLure = new("dungeon.chat.lure", "The Gambler's Lure is up. Make your choice; the run goes on once its window closes.");
         public static readonly LocString ChatBonusRound = new("dungeon.chat.bonusRound", "A bonus round began. Pick up the glowing sacks yourself; the run goes on once it ends.");
+        public static readonly LocString ChatEnteringPortal = new("dungeon.chat.enteringPortal", "A portal appeared. Entering it to clear the treasure dungeon.");
+        public static readonly LocString ChatPortalInParty = new("dungeon.chat.portalInParty", "A portal appeared, but you are in a party, so the dungeon is left to you.");
+        public static readonly LocString ChatUnknownDungeon = new("dungeon.chat.unknownDungeon", "This treasure dungeon is not one the plugin can clear yet, so it is up to you. The run carries on once you are back outside.");
 
         public static readonly LocString ChatRecordStarted = new("dungeon.chat.recordStarted", "Recording the dungeon to {0}. Clear it by hand, then /atm dungeon record stop.");
         public static readonly LocString ChatRecording = new("dungeon.chat.recording", "Already recording to {0}.");
@@ -29,6 +32,9 @@ internal static partial class L
 
         public static readonly LocString Cat = new("dungeon.cat", "Dungeons");
         public static readonly LocString CatSub = new("dungeon.catSub", "Gates and the Gambler's Lure inside treasure dungeons");
+        public static readonly LocString GroupPortal = new("dungeon.group.portal", "Portal");
+        public static readonly LocString EnterPortal = new("dungeon.enterPortal", "Enter the portal");
+        public static readonly LocString EnterPortalHelp = new("dungeon.enterPortalHelp", "When a coffer leaves a portal behind, or a dig turns one up, walk into it and clear the treasure dungeon, then carry on with the next map. Solo only; in a party the portal is left to you.");
         public static readonly LocString GroupGates = new("dungeon.group.gates", "Gates");
         public static readonly LocString GatePolicy = new("dungeon.gatePolicy", "Gate to try");
         public static readonly LocString GatePolicyHelp = new("dungeon.gatePolicyHelp", "Which gate the run opens in a dungeon that makes you choose one. It applies to every gate dungeon unless one is set on its own below.");

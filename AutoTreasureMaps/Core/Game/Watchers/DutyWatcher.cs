@@ -10,6 +10,10 @@ namespace AutoTreasureMaps.Core.Game.Watchers;
 internal sealed class DutyWatcher : IDisposable
 {
     private const int ResumeSettleMs = 5_000;
+    // The walk into a portal and the zone change that follows, during which the duty flag is already up.
+    private const int DungeonEntryHoldMs = 60_000;
+
+    private static long dungeonEntryHeldUntilMs;
 
     private long leftContentAtMs;
     private HuntDuty loggedHuntDuty;
@@ -71,7 +75,7 @@ internal sealed class DutyWatcher : IDisposable
     {
         var progress = controller.Progress;
         var inMapZone = progress.HasMap && Svc.ClientState.TerritoryType == progress.Spot.TerritoryId;
-        var reason = DungeonRegistry.IsDungeon(Svc.ClientState.TerritoryType)
+        var reason = DungeonRegistry.IsDungeon(Svc.ClientState.TerritoryType) || Environment.TickCount64 < dungeonEntryHeldUntilMs
             ? HuntDuty.Dungeon
             : inMapZone && controller.Phase is TreasurePhase.Digging or TreasurePhase.Opening or TreasurePhase.Fighting or TreasurePhase.Looting
                 ? HuntDuty.MapStep
@@ -89,6 +93,9 @@ internal sealed class DutyWatcher : IDisposable
         loggedHuntDuty = reason;
         return reason != HuntDuty.None;
     }
+
+    // The run is about to walk into a portal: the duty that starts on the way in is its own work, not content to wait out.
+    internal static void HoldForDungeonEntry() => dungeonEntryHeldUntilMs = Environment.TickCount64 + DungeonEntryHoldMs;
 
     internal static bool InContent()
         => Svc.Condition[ConditionFlag.BoundByDuty]

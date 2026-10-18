@@ -32,8 +32,20 @@ internal static class DungeonSettings
 
     public static void Draw(Configuration configuration)
     {
+        DrawPortal(configuration);
         DrawGates(configuration);
         DrawLure(configuration);
+    }
+
+    private static void DrawPortal(Configuration configuration)
+    {
+        using var group = SettingsGroup.Begin(Loc.T(L.Dungeon.GroupPortal));
+
+        SettingsRow.Draw(Loc.T(L.Dungeon.EnterPortal),
+            Loc.T(L.Dungeon.EnterPortalHelp),
+            SettingsControls.ToggleWidth,
+            () => SettingsControls.DrawToggle(configuration, () => configuration.DungeonEnterPortal, value => configuration.DungeonEnterPortal = value, "##atm_dungeon_portal"),
+            SettingsRow.ToggleHeight);
     }
 
     private static void DrawGates(Configuration configuration)

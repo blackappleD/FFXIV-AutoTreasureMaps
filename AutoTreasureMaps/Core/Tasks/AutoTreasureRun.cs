@@ -1,3 +1,4 @@
+using AutoTreasureMaps.Core.Dungeon;
 using AutoTreasureMaps.Core.Game.Player;
 using AutoTreasureMaps.Core.Game.Watchers;
 using AutoTreasureMaps.Core.Localization;
@@ -68,6 +69,17 @@ internal sealed class AutoTreasureRun(TreasureSession session, TreasureProgress 
                 return;
             }
 
+            // A resume after a pause or a fault inside a dungeon picks the dungeon up before anything else.
+            if (DungeonRegistry.IsDungeon(Svc.ClientState.TerritoryType))
+            {
+                if (await ClearDungeonHere(session, progress) == PortalStep.Stop)
+                {
+                    return;
+                }
+
+                continue;
+            }
+
             if (RunLimits.Reached(session, plugin.Configuration) is { } limit)
             {
                 Finish(limit);
@@ -107,9 +119,24 @@ internal sealed class AutoTreasureRun(TreasureSession session, TreasureProgress 
             return LoopStep.Stop;
         }
 
-        if (result.Outcome == MapOutcome.Refused)
+        if (result.Outcome == MapOutcome.Refused && result.Refusal != MapRefusal.PortalDug)
         {
             return await HandleRefusal(result);
+        }
+
+        // A coffer that left a portal, or a dig that turned one up straight away (a thief's map), leads into a dungeon.
+        if (result.PortalSeen || result.Refusal == MapRefusal.PortalDug)
+        {
+            var portal = await EnterPortalAndClear(session, progress);
+            if (portal == PortalStep.Stop)
+            {
+                return LoopStep.Stop;
+            }
+
+            if (portal == PortalStep.Skipped && result.Refusal == MapRefusal.PortalDug)
+            {
+                return await HandleRefusal(result);
+            }
         }
 
         partyWaitStartedAtMs = 0;

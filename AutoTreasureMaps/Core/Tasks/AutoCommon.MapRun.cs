@@ -224,8 +224,12 @@ public abstract partial class AutoCommon
 
         map.PortalSeen = true;
         var found = portal is null ? "no portal object nearby" : $"portal object {portal.BaseId} at {FormatPosition(portal.Position)}";
-        Diag($"Map: a portal appeared (message {(announced ? "seen" : "not seen")}, {found}); it is left alone.");
-        Svc.Chat.Print($"{AtmConstants.LogPrefix} {Loc.T(L.MapRun.ChatPortal)}");
+        var entering = Plugin.Instance.Configuration.DungeonEnterPortal && Svc.Party.Length == 0;
+        Diag($"Map: a portal appeared (message {(announced ? "seen" : "not seen")}, {found}); {(entering ? "it is entered once the coffer is looted" : "it is left alone")}.");
+        if (!entering)
+        {
+            Svc.Chat.Print($"{AtmConstants.LogPrefix} {Loc.T(L.MapRun.ChatPortal)}");
+        }
     }
 
     private static MapResult Conclude(MapInProgress? map, in TreasureTier tier, MapOutcome outcome, MapRefusal refusal = MapRefusal.None)
