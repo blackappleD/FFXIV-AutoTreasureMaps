@@ -1,4 +1,5 @@
 using AutoTreasureMaps.Core.Game.Player;
+using AutoTreasureMaps.Core.Game.Watchers;
 using AutoTreasureMaps.Core.Localization;
 using AutoTreasureMaps.Core.Supply;
 using AutoTreasureMaps.Core.Treasure;
@@ -18,6 +19,8 @@ internal sealed class AutoTreasureRun(TreasureSession session, TreasureProgress 
     private const int PartyRetryShortestMs = 10_000;
     private const int PartyRetryLongestMs = 20_000;
     private const int HeldMapWaitMs = 3_000;
+    // The hunt's own time limit is about five minutes, so its duty is over by then however the coffer went.
+    private const int HuntDutyWaitMs = 330_000;
 
     private enum LoopStep : byte { Continue, Stop }
 
@@ -164,6 +167,12 @@ internal sealed class AutoTreasureRun(TreasureSession session, TreasureProgress 
 
     private async Task<LoopStep> SupplyMap(Plugin plugin)
     {
+        await WaitOutHuntDuty();
+        if (CancelToken.IsCancellationRequested)
+        {
+            return LoopStep.Stop;
+        }
+
         var steps = MapSupplyChain.Steps;
         LocString emptyReason = default;
         var hasReason = false;
@@ -237,6 +246,24 @@ internal sealed class AutoTreasureRun(TreasureSession session, TreasureProgress 
         }
 
         return LoopStep.Stop;
+    }
+
+    // The game keeps the character bound by the hunt's duty for a while after its coffer is looted, and until the hunt ends
+    // if the coffer never opened; nothing can be deciphered or bought meanwhile, so the supply chain would read an empty
+    // bag as the end of the run.
+    private async Task WaitOutHuntDuty()
+    {
+        if (!DutyWatcher.InContent())
+        {
+            return;
+        }
+
+        Status = "Waiting for the treasure hunt to wind down";
+        Diag("Run: still bound by the treasure hunt's duty; waiting for it to end before the next one.");
+        if (!await WaitUntilTimed(() => !DutyWatcher.InContent(), HuntDutyWaitMs, "hunt duty over"))
+        {
+            Warn("Run: the treasure hunt's duty did not end; going on anyway.");
+        }
     }
 
     // Upkeep is for the maps still to come, so it is skipped once the run is about to end.

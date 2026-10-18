@@ -198,7 +198,7 @@ public abstract partial class AutoCommon
                     return Conclude(map, map.Tier, MapOutcome.Cancelled);
             }
 
-            var unlock = await UnlockCoffer(map);
+            var unlock = await UnlockCoffer(map, GuardsClearedAt(map));
             switch (unlock)
             {
                 case UnlockStep.Unlocked:
@@ -222,7 +222,12 @@ public abstract partial class AutoCommon
         return Conclude(map, map.Tier, MapOutcome.Unreachable);
     }
 
-    private async Task<UnlockStep> UnlockCoffer(MapInProgress map)
+    // Some clients answer the first interaction, the one that springs the trap, with the unlock message as well, so only
+    // an unlock that came once the guards were cleared means the coffer will open.
+    private static long GuardsClearedAt(MapInProgress map)
+        => Messages.TryGetLatest(TreasureLogMessages.GuardsDefeated, map.CofferOpenedAtMs, out var cleared) ? cleared.AtMs : TreasureMessageWatcher.Now;
+
+    private async Task<UnlockStep> UnlockCoffer(MapInProgress map, long clearedAtMs)
     {
         const string scope = "map-unlock";
         EnterStep(TreasurePhase.Looting);
@@ -233,7 +238,7 @@ public abstract partial class AutoCommon
                 return UnlockStep.Cancelled;
             }
 
-            if (Messages.ArrivedSince(TreasureLogMessages.CofferUnlocked, map.CofferOpenedAtMs))
+            if (Messages.ArrivedSince(TreasureLogMessages.CofferUnlocked, clearedAtMs))
             {
                 return UnlockStep.Unlocked;
             }
@@ -273,9 +278,12 @@ public abstract partial class AutoCommon
             // The coffer's loot can land in the same frame as its unlock message, so other chests are noted before the lock opens.
             chestsBeforeUnlockCount = LootRolls.PendingChests(chestsBeforeUnlock);
             var since = TreasureMessageWatcher.Now;
-            await InteractWithObject(target, () => Messages.TryGetLatest(UnlockReplies, since, out _) || NpcInteraction.SelectYesnoOpen(), scope);
+            var bagsAtInteract = BagSnapshot.Fingerprint();
+            // The coffer may open without a word: it fades, its loot waits on a roll, or the gil and items land in the bags.
+            bool OpenedQuietly() => TreasureCoffers.Gone(map.CofferId) || LootRolls.Pending(chest => chest == map.CofferEntityId) > 0 || BagSnapshot.Fingerprint() != bagsAtInteract;
+            await InteractWithObject(target, () => Messages.TryGetLatest(UnlockReplies, since, out _) || NpcInteraction.SelectYesnoOpen() || OpenedQuietly(), scope);
             AnswerUnlockPrompt(scope);
-            await WaitUntilTimed(() => Messages.TryGetLatest(UnlockReplies, since, out _), UnlockAnswerTimeoutMs, "coffer lock answer", MessagePollFrames);
+            await WaitUntilTimed(() => Messages.TryGetLatest(UnlockReplies, since, out _) || OpenedQuietly(), UnlockAnswerTimeoutMs, "coffer lock answer", MessagePollFrames);
             if (Messages.TryGetLatest(UnlockReplies, since, out var reply))
             {
                 Diag($"{scope}: the coffer answered {TreasureLogMessages.NameOf(reply.Id)} ({TreasureCoffers.Describe(map.CofferId)}).");
@@ -288,6 +296,12 @@ public abstract partial class AutoCommon
                     case TreasureLogMessages.HuntTimeExpired:
                         return UnlockStep.TimedOut;
                 }
+            }
+
+            if (OpenedQuietly())
+            {
+                Diag($"{scope}: the coffer opened without an unlock message ({TreasureCoffers.Describe(map.CofferId)}).");
+                return UnlockStep.Unlocked;
             }
 
             await DelayMs(CofferRetryDelayMs);
