@@ -343,8 +343,8 @@ public abstract partial class AutoCommon
         Diag($"{scope}: after the interaction the coffer is {(Svc.Objects.SearchById(cofferId) is { IsTargetable: true } ? "still targetable" : "gone or untargetable")}{lure}; {DescribeField(context)}.");
     }
 
-    // Fights until nothing hostile is left near and the character has been out of combat for a moment. The preset only
-    // takes attackers, so an enemy that has not engaged yet is targeted by hand.
+    // Fights until nothing hostile is left near and the character has been out of combat for a moment. The preset retargets
+    // on its own; an enemy that has not engaged yet is still targeted by hand, so a quiet one is pulled too.
     private async Task FightDungeonField(DungeonContext context)
     {
         const string scope = "dungeon-fight";

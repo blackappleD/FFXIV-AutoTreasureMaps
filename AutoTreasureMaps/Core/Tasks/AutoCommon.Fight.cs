@@ -21,8 +21,8 @@ public abstract partial class AutoCommon
 
     // Fights back with the preset until the character is out of combat or capMs runs out. Every step that needs the
     // character free of combat runs this first: a mob that has aggroed keeps attacking a character that stands still, so
-    // waiting never ends it. The preset's targeting only switches while the character has no target, and only to a mob on
-    // the enemy list, so a target that is dead or holds no enmity is dropped to let it take an attacker.
+    // waiting never ends it. A target that is dead or holds no enmity is dropped, so the preset's own targeting can take an
+    // attacker.
     private protected async Task FightOffAttackers(string scope, int capMs = AggroClearMs)
     {
         if (!Svc.Condition[ConditionFlag.InCombat] || IsKnockedOut())

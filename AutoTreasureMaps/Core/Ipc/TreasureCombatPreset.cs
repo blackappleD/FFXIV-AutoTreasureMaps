@@ -1,89 +1,31 @@
-using System.Buffers;
-using System.Text;
-using System.Text.Json;
+using System.IO;
+using System.Reflection;
 
 namespace AutoTreasureMaps.Core.Ipc;
 
-// AutoTarget stays Aggressive with every category off and Retarget NoTarget. The combat plugin ranks a mob that is not
-// fighting the party below zero and Aggressive only picks from zero up, so it only ever takes an attacker, and only while
-// the character has no target: the current target keeps focus, and whatever is still attacking takes over once it is dead.
-// Every rotation uses the player's target but picks its own area attacks: every mob that spawns at a coffer is hostile,
-// so an area attack only ends a wave sooner. FATE targeting stays off.
-// Pathfind movement lets the combat plugin close to range and dodge once the fight is on.
+// The combat plugin preset the run fights with, kept as TreasureCombatPreset.json next to this file: AutoDuty's own
+// preset, renamed. Every job rotation picks its targets and its area attacks itself (Targeting Auto, AOE AOE), and
+// AutoTarget retargets to any hostile nearby, so a wave falls to area attacks instead of one mob at a time. The role
+// modules keep the character alive (second wind, mitigation, heals, stuns), and Pathfind movement closes to range and
+// dodges once the fight is on.
 internal static class TreasureCombatPreset
 {
     public const string Name = "TreasureHelper";
 
-    public const int Revision = 1;
+    // Bumped whenever the JSON changes, so the preset in the combat plugin is rewritten once.
+    public const int Revision = 2;
 
-    private const string AutoTargetModule = "BossMod.Autorotation.MiscAI.AutoTarget";
-    private const string NormalMovementModule = "BossMod.Autorotation.MiscAI.NormalMovement";
-    private const string WarriorModule = "BossMod.Autorotation.VeynWAR";
-    private const string RotationModulePrefix = "BossMod.Autorotation.xan.";
-
-    private static readonly string[] rotationJobs =
-    [
-        "AST", "BLM", "BRD", "BST", "DNC", "DRG", "DRK", "GNB", "MCH", "MNK", "NIN",
-        "PCT", "PLD", "RDM", "RPR", "SAM", "SCH", "SGE", "SMN", "VPR", "WHM",
-    ];
-
-    private static readonly string[] roleModules = ["Caster", "HealerAI", "MeleeAI", "RangedAI", "TankAI"];
-
-    private static readonly PresetTrack[] autoTargetTracks =
-    [
-        new("General", "Aggressive"),
-        new("Retarget", "NoTarget"),
-        new("FATE", "Disabled"),
-    ];
-
-    private static readonly PresetTrack[] movementTracks = [new("Destination", "Pathfind")];
-    private static readonly PresetTrack[] rotationTracks = [new("Targeting", "Manual")];
+    private const string ResourceName = "AutoTreasureMaps.Core.Ipc.TreasureCombatPreset.json";
 
     private static string? serialized;
 
-    public static string GetSerialized() => serialized ??= Serialize();
+    public static string GetSerialized() => serialized ??= Read();
 
-    private static string Serialize()
+    private static string Read()
     {
-        var buffer = new ArrayBufferWriter<byte>();
-        using (var writer = new Utf8JsonWriter(buffer))
-        {
-            writer.WriteStartObject();
-            writer.WriteString("Name", Name);
-            writer.WriteStartObject("Modules");
-            WriteModule(writer, AutoTargetModule, autoTargetTracks);
-            WriteModule(writer, NormalMovementModule, movementTracks);
-            WriteModule(writer, WarriorModule, []);
-            for (var jobIndex = 0; jobIndex < rotationJobs.Length; jobIndex++)
-            {
-                WriteModule(writer, RotationModulePrefix + rotationJobs[jobIndex], rotationTracks);
-            }
-
-            for (var roleIndex = 0; roleIndex < roleModules.Length; roleIndex++)
-            {
-                WriteModule(writer, RotationModulePrefix + roleModules[roleIndex], []);
-            }
-
-            writer.WriteEndObject();
-            writer.WriteEndObject();
-        }
-
-        return Encoding.UTF8.GetString(buffer.WrittenSpan);
+        using var stream = Assembly.GetExecutingAssembly().GetManifestResourceStream(ResourceName)
+            ?? throw new InvalidOperationException($"the bundled combat preset '{ResourceName}' is missing from the assembly");
+        using var reader = new StreamReader(stream);
+        return reader.ReadToEnd();
     }
-
-    private static void WriteModule(Utf8JsonWriter writer, string module, ReadOnlySpan<PresetTrack> tracks)
-    {
-        writer.WriteStartArray(module);
-        for (var trackIndex = 0; trackIndex < tracks.Length; trackIndex++)
-        {
-            writer.WriteStartObject();
-            writer.WriteString("Track", tracks[trackIndex].Track);
-            writer.WriteString("Option", tracks[trackIndex].Option);
-            writer.WriteEndObject();
-        }
-
-        writer.WriteEndArray();
-    }
-
-    private readonly record struct PresetTrack(string Track, string Option);
 }

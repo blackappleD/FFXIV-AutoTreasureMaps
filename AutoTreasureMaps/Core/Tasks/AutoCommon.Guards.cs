@@ -155,8 +155,8 @@ public abstract partial class AutoCommon
             && Svc.Objects.LocalPlayer is { MaxHp: > 0 } player
             && player.CurrentHp <= player.MaxHp * EngageAtOnceAtHealth);
 
-    // The preset only takes attackers, so a guard that has not engaged yet is targeted by hand; a target that is dead,
-    // or neither an attacker nor a guard of ours, is dropped so the preset can take the next attacker.
+    // The preset retargets on its own, but a guard that has not engaged yet is targeted by hand as well, so a wave that
+    // holds back is still pulled; a target that is dead, or neither an attacker nor a guard of ours, is dropped.
     private ulong PickGuard(in GuardSurvey survey, bool inCombat, ulong lastPicked, string scope)
     {
         if (Svc.Targets.Target is { } target && (target.IsDead || (!EnmityList.Contains(target.EntityId) && !TreasureGuards.IsOurs(target))))
