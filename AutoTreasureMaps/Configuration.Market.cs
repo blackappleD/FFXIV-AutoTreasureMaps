@@ -22,4 +22,7 @@ public sealed partial class Configuration
 
     // Gil a trip to another world must save on the map, against the cheapest listing on the current one.
     public int MarketCrossWorldMinSavings { get; set; } = 5_000;
+
+    // After a purchase, decipher the map at the board and buy a second one into the bags, so the next map needs no trip.
+    public bool MarketBuyAhead { get; set; } = true;
 }

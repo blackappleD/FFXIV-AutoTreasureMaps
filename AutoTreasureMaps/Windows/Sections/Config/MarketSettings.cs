@@ -74,6 +74,12 @@ internal static class MarketSettings
             () => DrawBoardCombo(configuration, selected));
         SettingsRow.Caption(boardDetails[selected]);
 
+        SettingsRow.Draw(Loc.T(L.Market.BuyAhead),
+            Loc.T(L.Market.BuyAheadHelp),
+            SettingsControls.ToggleWidth,
+            () => SettingsControls.DrawToggle(configuration, () => configuration.MarketBuyAhead, value => configuration.MarketBuyAhead = value, "##atm_market_ahead"),
+            SettingsRow.ToggleHeight);
+
         SettingsRow.Draw(Loc.T(L.Market.CrossWorld),
             Loc.T(L.Market.CrossWorldHelp),
             SettingsControls.ToggleWidth,

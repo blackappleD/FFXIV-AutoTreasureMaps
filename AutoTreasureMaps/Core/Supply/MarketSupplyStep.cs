@@ -9,9 +9,9 @@ namespace AutoTreasureMaps.Core.Supply;
 // back and the bag step deciphers it.
 internal sealed class MarketSupplyStep : IMapSupplyStep
 {
-    // A teleport and the walk to the board, three spaced listing requests per tier and three purchase tries, each with
-    // its answer wait.
-    public const int TaskTimeoutMs = 300_000;
+    // A world visit, a teleport and the walk to the board, three spaced listing requests per tier and three purchase
+    // tries, each with its answer wait, then a decipher and a second purchase for the map bought ahead.
+    public const int TaskTimeoutMs = 600_000;
 
     public string Name => "market";
 

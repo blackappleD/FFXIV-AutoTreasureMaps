@@ -100,6 +100,11 @@ internal sealed partial class MarketBuyTask(TreasureSession? session, byte onlyR
         try
         {
             var answer = await VisitCheapestWorld(plugin.Configuration, tiers);
+            if (answer.Outcome == MapSupplyOutcome.Supplied)
+            {
+                await BuyAhead(plugin);
+            }
+
             if (!CancelToken.IsCancellationRequested)
             {
                 await CloseBoard();
@@ -232,6 +237,7 @@ internal sealed partial class MarketBuyTask(TreasureSession? session, byte onlyR
             switch (attempt)
             {
                 case Attempt.Bought:
+                    boughtTier = tier;
                     return (TierStep.Done, MapSupplyAnswer.Supplied);
                 case Attempt.OwnRetainer:
                     refusedRetainers.Add(pick.RetainerId);
