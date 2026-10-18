@@ -118,6 +118,8 @@ internal sealed partial class TreasureController
                 MapsUnreachable = ending.MapsUnreachable,
                 MapsFaulted = ending.MapsFaulted,
                 PortalsSeen = ending.PortalsSeen,
+                DungeonsRun = ending.DungeonsRun,
+                DungeonsCleared = ending.DungeonsCleared,
                 Gil = ending.Gil,
                 ItemsGained = ending.ItemsGained,
                 MapsBought = ending.MapsBought,

@@ -24,6 +24,8 @@ internal sealed class RunRecord
     public int MapsUnreachable { get; set; }
     public int MapsFaulted { get; set; }
     public int PortalsSeen { get; set; }
+    public int DungeonsRun { get; set; }
+    public int DungeonsCleared { get; set; }
     public int Gil { get; set; }
     public int ItemsGained { get; set; }
     public int MapsGathered { get; set; }

@@ -1,3 +1,4 @@
+using AutoTreasureMaps.Core.Dungeon;
 using AutoTreasureMaps.Core.Tasks;
 using AutoTreasureMaps.Core.Treasure;
 using Dalamud.Game.ClientState.Conditions;
@@ -13,7 +14,7 @@ internal sealed class DutyWatcher : IDisposable
     private long leftContentAtMs;
     private HuntDuty loggedHuntDuty;
 
-    private enum HuntDuty : byte { None, MapStep, Director }
+    private enum HuntDuty : byte { None, MapStep, Director, Dungeon }
 
     public DutyWatcher()
     {
@@ -64,20 +65,25 @@ internal sealed class DutyWatcher : IDisposable
 
     // The game may count a dug-up coffer's hunt as a duty. That is the run's own work, not content to wait out, so the
     // pause is skipped while the map run is at the coffer in the map's zone or the hunt's director runs; a duty that
-    // takes the character to another zone still pauses. Which of the two held it is logged once per stretch, so a test
-    // run shows whether the flag is set at all.
+    // takes the character to another zone still pauses. A treasure dungeon the run knows is its own work too. Which of
+    // them held it is logged once per stretch, so a test run shows whether the flag is set at all.
     private bool HuntHoldsTheDuty(TreasureController controller)
     {
         var progress = controller.Progress;
         var inMapZone = progress.HasMap && Svc.ClientState.TerritoryType == progress.Spot.TerritoryId;
-        var reason = inMapZone && controller.Phase is TreasurePhase.Digging or TreasurePhase.Opening or TreasurePhase.Fighting or TreasurePhase.Looting
-            ? HuntDuty.MapStep
-            : TreasureHuntDirector.IsActive() ? HuntDuty.Director : HuntDuty.None;
+        var reason = DungeonRegistry.IsDungeon(Svc.ClientState.TerritoryType)
+            ? HuntDuty.Dungeon
+            : inMapZone && controller.Phase is TreasurePhase.Digging or TreasurePhase.Opening or TreasurePhase.Fighting or TreasurePhase.Looting
+                ? HuntDuty.MapStep
+                : TreasureHuntDirector.IsActive() ? HuntDuty.Director : HuntDuty.None;
         if (reason != HuntDuty.None && reason != loggedHuntDuty)
         {
-            RunLog.Info(reason == HuntDuty.MapStep
-                ? $"Duty: bound by duty during the map run's {controller.Phase} step; not pausing."
-                : "Duty: bound by duty while the treasure hunt director runs; not pausing.");
+            RunLog.Info(reason switch
+            {
+                HuntDuty.MapStep => $"Duty: bound by duty during the map run's {controller.Phase} step; not pausing.",
+                HuntDuty.Dungeon => "Duty: bound by duty in a treasure dungeon the run clears; not pausing.",
+                _ => "Duty: bound by duty while the treasure hunt director runs; not pausing.",
+            });
         }
 
         loggedHuntDuty = reason;

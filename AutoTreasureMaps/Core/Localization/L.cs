@@ -151,6 +151,7 @@ internal static partial class L
         public static readonly LocString EndStillKnockedOut = new("run.end.stillKnockedOut", "Could not get up");
         public static readonly LocString EndFaulted = new("run.end.faulted", "Error");
         public static readonly LocString EndSingleMap = new("run.end.singleMap", "One map");
+        public static readonly LocString EndDungeon = new("run.end.dungeon", "Treasure dungeon");
     }
 
     internal static class History

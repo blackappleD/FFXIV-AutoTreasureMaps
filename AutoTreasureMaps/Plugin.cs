@@ -1,5 +1,6 @@
 using AutoTreasureMaps.Core;
 using AutoTreasureMaps.Core.Debug;
+using AutoTreasureMaps.Core.Dungeon;
 using AutoTreasureMaps.Core.Gather;
 using AutoTreasureMaps.Core.Game.Watchers;
 using AutoTreasureMaps.Core.Localization;
@@ -32,6 +33,7 @@ public sealed class Plugin : IDalamudPlugin
     private const string DigSubcommand = "dig";
     private const string BuySubcommand = "buy";
     private const string GatherSubcommand = "gather";
+    private const string DungeonSubcommand = "dungeon";
     private const string NavmeshIpcProviderMarker = "Navmesh.IPCProvider";
 
     [PluginService]
@@ -123,6 +125,7 @@ public sealed class Plugin : IDalamudPlugin
         CommandManager.RemoveHandler(AtmConstants.PrimaryCommand);
         CommandManager.RemoveHandler(AtmConstants.AliasCommand);
 
+        DungeonRecorder.Instance.Dispose();
         dutyWatcher.Dispose();
         gmAlertWatcher.Dispose();
         partyInviteWatcher.Dispose();
@@ -211,6 +214,10 @@ public sealed class Plugin : IDalamudPlugin
         {
             AutoMapRun.Start(this);
         }
+        else if (CommandWords.StartsWith(trimmed, DungeonSubcommand))
+        {
+            DungeonCommand.Handle(CommandWords.After(trimmed, DungeonSubcommand), this);
+        }
         else if (CommandWords.StartsWith(trimmed, GatherSubcommand))
         {
             GatherMapTask.HandleCommand(CommandWords.After(trimmed, GatherSubcommand), this);
@@ -258,7 +265,7 @@ public sealed class Plugin : IDalamudPlugin
         GatherGearsetReturn.Tick();
     }
 
-    private static string CommandHelp() => string.Concat(Loc.T(L.Plugin.CommandHelp), " ", Loc.T(L.Gather.CommandHelp));
+    private static string CommandHelp() => string.Join(" ", Loc.T(L.Plugin.CommandHelp), Loc.T(L.Gather.CommandHelp), Loc.T(L.Dungeon.CommandHelp));
 
     private void HandleGoto(string arguments)
     {

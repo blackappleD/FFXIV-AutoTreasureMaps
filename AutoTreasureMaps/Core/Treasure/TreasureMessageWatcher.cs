@@ -8,7 +8,8 @@ namespace AutoTreasureMaps.Core.Treasure;
 // from its own hook while the window and the tasks read it.
 internal sealed class TreasureMessageWatcher : IDisposable
 {
-    private const int Capacity = 32;
+    // A treasure dungeon sends a burst of its own messages per round, so the ring holds a whole round's worth.
+    private const int Capacity = 128;
     private const string NotAnInteger = "-";
 
     private readonly object gate = new();
@@ -63,7 +64,7 @@ internal sealed class TreasureMessageWatcher : IDisposable
     private void OnLogMessage(ILogMessage logMessage)
     {
         var logMessageId = logMessage.LogMessageId;
-        var name = TreasureLogMessages.NameOf(logMessageId);
+        var name = TreasureLogMessages.NameOf(logMessageId) ?? Dungeon.DungeonLogMessages.NameOf(logMessageId);
         if (name is null)
         {
             return;

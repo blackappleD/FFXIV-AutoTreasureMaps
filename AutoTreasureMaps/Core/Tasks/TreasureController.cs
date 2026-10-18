@@ -85,6 +85,23 @@ internal sealed partial class TreasureController
         BeginRun(new TreasureSession(), owningSession => new AutoMapRun(owningSession, progress), "the held map");
     }
 
+    // The treasure dungeon the character stands in, under the same pause, stop and fault handling as any run.
+    public void StartDungeon()
+    {
+        if (Running)
+        {
+            Diag("Dungeon run ignored: a run is already going.");
+            return;
+        }
+
+        if (!RequiredPluginsReady() || !AutoDungeonRun.CanStart())
+        {
+            return;
+        }
+
+        BeginRun(new TreasureSession(), owningSession => new AutoDungeonRun(owningSession, progress), "the treasure dungeon");
+    }
+
     public void Stop()
     {
         var ending = session;
