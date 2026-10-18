@@ -1,3 +1,4 @@
+using AutoTreasureMaps.Core.Localization;
 using AutoTreasureMaps.Core.Travel;
 using ECommons.DalamudServices;
 using Lumina.Excel.Sheets;
@@ -67,7 +68,7 @@ internal sealed class TreasureCatalog
 
             var (spotCount, expansion) = SurveySpots(row.RowId);
             built.Add(new TreasureTier(
-                item.Name.ExtractText(),
+                GameGlyphs.Cover(item.Name.ExtractText()),
                 row.ItemName.RowId,
                 row.KeyItemName.RowId,
                 row.InstanceMap.RowId,

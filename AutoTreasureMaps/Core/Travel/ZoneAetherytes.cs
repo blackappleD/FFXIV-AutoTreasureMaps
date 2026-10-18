@@ -1,3 +1,4 @@
+using AutoTreasureMaps.Core.Localization;
 using ECommons.DalamudServices;
 using Lumina.Excel.Sheets;
 using System.Numerics;
@@ -358,7 +359,7 @@ internal static class ZoneAetherytes
     {
         var placeName = row.IsAetheryte ? row.PlaceName : row.AethernetName;
         var name = placeName.ValueNullable?.Name.ExtractText();
-        return string.IsNullOrWhiteSpace(name) ? $"aetheryte #{row.RowId}" : name;
+        return string.IsNullOrWhiteSpace(name) ? $"aetheryte #{row.RowId}" : GameGlyphs.Cover(name);
     }
 
     private static bool TryResolvePosition(Aetheryte row, out Vector3 position)

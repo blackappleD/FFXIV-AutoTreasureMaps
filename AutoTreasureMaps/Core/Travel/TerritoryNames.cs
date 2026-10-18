@@ -1,3 +1,4 @@
+using AutoTreasureMaps.Core.Localization;
 using ECommons.DalamudServices;
 using Lumina.Excel.Sheets;
 
@@ -16,7 +17,7 @@ internal static class TerritoryNames
 
         var name = Svc.Data.GetExcelSheet<TerritoryType>().GetRowOrDefault(territoryId)?.PlaceName.ValueNullable?.Name.ExtractText();
         var resolved = string.IsNullOrWhiteSpace(name) ? $"territory {territoryId}" : name;
-        names[territoryId] = resolved;
+        names[territoryId] = GameGlyphs.Cover(resolved);
         return resolved;
     }
 }

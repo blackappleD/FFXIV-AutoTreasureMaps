@@ -54,6 +54,7 @@ internal static class Fonts
     private static ushort[] mergeRanges = [0];
     private static int cjkFace = NotoCjkJapaneseFace;
     private static float unitPx = UiBuilder.DefaultFontSizePx;
+    private static int bakedGameGlyphs = -1;
 
     private static IFontHandle? body;
     private static IFontHandle? title;
@@ -78,6 +79,7 @@ internal static class Fonts
         iconLarge = IconHandle(IconLargeScale);
         iconDisplay = IconHandle(IconDisplayScale);
         uiBuilder.DefaultFontChanged += Rebuild;
+        uiBuilder.Draw += RebuildForGameGlyphs;
 
         if (atlas.AutoRebuildMode == FontAtlasAutoRebuildMode.Disable)
         {
@@ -92,6 +94,7 @@ internal static class Fonts
         if (builder is not null)
         {
             builder.DefaultFontChanged -= Rebuild;
+            builder.Draw -= RebuildForGameGlyphs;
         }
 
         body?.Dispose();
@@ -187,6 +190,15 @@ internal static class Fonts
     private static IFontHandle IconHandle(float scale)
         => atlas!.NewDelegateFontHandle(e => e.OnPreBuild(tk => tk.AddFontAwesomeIconFont(new SafeFontConfig { SizePx = unitPx * scale })));
 
+    // A name first drawn this frame shows the fallback mark until the rebuild it queues lands a few frames later.
+    private static void RebuildForGameGlyphs()
+    {
+        if (GameGlyphs.Version != bakedGameGlyphs)
+        {
+            Rebuild();
+        }
+    }
+
     private static void Rebuild()
     {
         RefreshRanges();
@@ -210,6 +222,8 @@ internal static class Fonts
         GlyphRanges.MarkRanges(merge, SymbolBlocks);
         GlyphRanges.MarkRanges(extra, Loc.Current.ExtraGlyphRanges);
         GlyphRanges.MarkRanges(extra, Loc.CatalogGlyphRanges);
+        bakedGameGlyphs = GameGlyphs.Version;
+        GameGlyphs.MarkInto(extra);
         MarkNativeNames(extra);
 
         for (var codepoint = GlyphRanges.FirstNonAsciiCodepoint; codepoint < GlyphRanges.CodepointCount; codepoint++)

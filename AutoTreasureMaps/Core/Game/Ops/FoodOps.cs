@@ -1,3 +1,4 @@
+using AutoTreasureMaps.Core.Localization;
 using ECommons.DalamudServices;
 using ECommons.Throttlers;
 using FFXIVClientStructs.FFXIV.Client.Game;
@@ -177,7 +178,7 @@ internal static unsafe class FoodOps
             entries.Add(new ConsumableEntry
             {
                 ItemId = item.RowId,
-                Name = name,
+                Name = GameGlyphs.Cover(name),
                 StatusId = statusId,
                 CanBeHq = item.CanBeHq,
             });

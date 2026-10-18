@@ -151,7 +151,7 @@ internal static class ConsumableSettings
             ImGui.SameLine();
             using (ImRaii.PushColor(ImGuiCol.Text, Styling.TextStrong))
             {
-                ImGui.TextUnformatted(entry.Name);
+                ImGui.TextUnformatted(GameGlyphs.Cover(entry.Name));
             }
 
             ImGui.SameLine(0f, gap);

@@ -1,3 +1,4 @@
+using AutoTreasureMaps.Core.Localization;
 using ECommons.DalamudServices;
 using Lumina.Excel.Sheets;
 using System.Globalization;
@@ -16,6 +17,6 @@ internal static class NotableLoot
     public static string Name(uint itemId)
     {
         var name = Svc.Data.GetExcelSheet<Item>().GetRowOrDefault(itemId)?.Name.ExtractText();
-        return string.IsNullOrEmpty(name) ? itemId.ToString(CultureInfo.InvariantCulture) : name;
+        return string.IsNullOrEmpty(name) ? itemId.ToString(CultureInfo.InvariantCulture) : GameGlyphs.Cover(name);
     }
 }

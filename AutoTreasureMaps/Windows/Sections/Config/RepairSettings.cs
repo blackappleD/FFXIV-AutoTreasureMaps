@@ -145,7 +145,7 @@ internal static class RepairSettings
 
         labelledNpc = npc;
         labelLanguage = Loc.Current;
-        npcLabel = Loc.T(L.Safety.NpcSet, npc.Name, TerritoryNames.Of(npc.TerritoryId));
+        npcLabel = Loc.T(L.Safety.NpcSet, GameGlyphs.Cover(npc.Name), TerritoryNames.Of(npc.TerritoryId));
         return npcLabel;
     }
 }

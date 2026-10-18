@@ -199,7 +199,7 @@ internal sealed class HistoryPage
         var midY = origin.Y + size.Y * 0.5f;
         var textX = DrawRunIcon(origin.X + padX, midY);
         var when = RelativeTime(record.EndedAtUtc);
-        var job = string.IsNullOrEmpty(record.JobAbbreviation) ? NoValue : record.JobAbbreviation;
+        var job = string.IsNullOrEmpty(record.JobAbbreviation) ? NoValue : GameGlyphs.Cover(record.JobAbbreviation);
         var detail = Loc.T(L.History.RowDetail, job, Formatting.Elapsed(record.Duration));
 
         var whenSize = TextDraw.Measure(when);

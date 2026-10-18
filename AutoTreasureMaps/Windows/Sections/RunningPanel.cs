@@ -321,7 +321,7 @@ internal static class RunningPanel
         }
 
         cachedTerritoryId = territoryId;
-        cachedZoneName = Svc.Data.GetExcelSheet<TerritoryType>().GetRowOrDefault(territoryId)?.PlaceName.ValueNullable?.Name.ExtractText() ?? string.Empty;
+        cachedZoneName = GameGlyphs.Cover(Svc.Data.GetExcelSheet<TerritoryType>().GetRowOrDefault(territoryId)?.PlaceName.ValueNullable?.Name.ExtractText() ?? string.Empty);
         if (cachedZoneName.Length == 0)
         {
             cachedZoneName = Loc.T(L.Run.SomewhereElse);
