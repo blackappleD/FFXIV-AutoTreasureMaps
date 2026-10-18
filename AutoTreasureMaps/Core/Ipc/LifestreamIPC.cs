@@ -37,9 +37,16 @@ internal sealed class LifestreamIPC
     public bool CanVisit(string worldName)
         => !canVisitSameDc.HasFunction || IpcGate.Invoke(true, () => canVisitSameDc.InvokeFunc(worldName), true, CanVisitFailed);
 
-    // No secondary teleport: the run travels on to the market board itself.
-    public void ChangeWorld(string worldName)
-        => IpcGate.Run(travel.HasAction, () => travel.InvokeAction(worldName, false, null, true, null, false, false), TravelFailed);
+    // Lifestream's gateways are the three city aetherytes, numbered by their aetheryte ids: Gridania 2, Limsa 8, Ul'dah 9.
+    public static bool IsGateway(uint aetheryteId) => aetheryteId is 2 or 8 or 9;
+
+    // gatewayAetheryteId names the city aetheryte to visit from, or 0 for Lifestream's own default. No secondary teleport:
+    // the run travels on to the market board itself.
+    public void ChangeWorld(string worldName, uint gatewayAetheryteId)
+    {
+        int? gateway = IsGateway(gatewayAetheryteId) ? (int)gatewayAetheryteId : null;
+        IpcGate.Run(travel.HasAction, () => travel.InvokeAction(worldName, false, null, true, gateway, false, false), TravelFailed);
+    }
 
     public void Abort() => IpcGate.Run(abort.HasAction, abort.InvokeAction, AbortFailed);
 }

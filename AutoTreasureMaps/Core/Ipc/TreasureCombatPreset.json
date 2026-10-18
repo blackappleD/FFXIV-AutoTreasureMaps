@@ -3,12 +3,16 @@
   "Modules": {
     "BossMod.Autorotation.MiscAI.AutoTarget": [
       {
-        "Track": "Retarget",
-        "Option": "Always"
+        "Track": "General",
+        "Option": "Aggressive"
       },
       {
-        "Track": "Everything",
-        "Option": "Enabled"
+        "Track": "Retarget",
+        "Option": "NoTarget"
+      },
+      {
+        "Track": "FATE",
+        "Option": "Disabled"
       }
     ],
     "BossMod.Autorotation.xan.BLU": [

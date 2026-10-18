@@ -13,8 +13,9 @@ public abstract partial class AutoCommon
     private const int WorldChangeTimeoutMs = 180_000;
     private const int WorldChangeNavmeshWaitMs = 30_000;
 
-    // Visits another world in the character's data centre through Lifestream. True once the character stands on it.
-    internal async Task<bool> ChangeWorld(uint worldId, string scope)
+    // Visits another world in the character's data centre through Lifestream, from the city aetheryte gatewayAetheryteId
+    // when it is one Lifestream can visit from (0 leaves the choice to Lifestream). True once the character stands on it.
+    internal async Task<bool> ChangeWorld(uint worldId, string scope, uint gatewayAetheryteId = 0)
     {
         if (Worlds.Current == worldId)
         {
@@ -36,8 +37,8 @@ public abstract partial class AutoCommon
         }
 
         Status = $"Travelling to {name}";
-        Diag($"{scope}: asking Lifestream to visit {name} ({worldId}) from {Worlds.NameOf(Worlds.Current)}.");
-        lifestream.ChangeWorld(name);
+        Diag($"{scope}: asking Lifestream to visit {name} ({worldId}) from {Worlds.NameOf(Worlds.Current)}, gateway aetheryte {(LifestreamIPC.IsGateway(gatewayAetheryteId) ? gatewayAetheryteId.ToString() : "Lifestream default")}.");
+        lifestream.ChangeWorld(name, gatewayAetheryteId);
         var arrived = await WaitUntilTimed(
             () => Worlds.Current == worldId && !lifestream.IsBusy() && !Svc.Condition[ConditionFlag.BetweenAreas] && !Svc.Condition[ConditionFlag.BetweenAreas51] && NpcInteraction.PlayerReady(),
             WorldChangeTimeoutMs,

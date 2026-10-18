@@ -90,7 +90,9 @@ internal sealed partial class MarketBuyTask
             Diag($"Market: Universalis lists {tier.Name} at {best.UnitPrice} gil on {name}, {Describe(cheapestHere)} on {Worlds.NameOf(here)}.");
             Svc.Chat.Print($"{AtmConstants.LogPrefix} {Loc.T(L.Market.ChatCheapestWorld, tier.Name, name, best.UnitPrice.ToString("N0", Loc.Culture))}");
             CloseBoardNow();
-            return await ChangeWorld(best.WorldId, "market-world") ? best.WorldId : 0;
+            // Visiting from the board's own city aetheryte lands the character next to the board it is about to use.
+            var gateway = MarketBoards.Resolve(configuration.MarketBoard).AetheryteId;
+            return await ChangeWorld(best.WorldId, "market-world", gateway) ? best.WorldId : 0;
         }
 
         return 0;
