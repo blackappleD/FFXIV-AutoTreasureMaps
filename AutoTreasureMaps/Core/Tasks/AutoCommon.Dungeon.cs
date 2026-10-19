@@ -170,7 +170,11 @@ public abstract partial class AutoCommon
                     await handler.AnswerLure(context);
                     break;
                 case DungeonStep.Bonus:
-                    if (profile.HasSacks)
+                    if (CombatPluginCollectsSacks(profile))
+                    {
+                        await LeaveBonusRoundToCombatPlugin(context);
+                    }
+                    else if (profile.HasSacks)
                     {
                         await CollectBonusSacks(context);
                     }
@@ -337,6 +341,55 @@ public abstract partial class AutoCommon
         && Environment.TickCount64 - started.AtMs < BonusRoundCapMs
         && !Messages.ArrivedSince(DungeonLogMessages.BonusRoundEnded, started.AtMs)
         && !Messages.ArrivedSince(DungeonLogMessages.BonusRoundCoffer, started.AtMs);
+
+    // The combat plugin's own module for the sacks starts on one of them, so asking by their data ids tells whether the
+    // loaded edition covers the round.
+    private static bool CombatPluginCollectsSacks(DungeonProfile profile)
+    {
+        foreach (var baseId in profile.GoldSackBaseIds.Concat(profile.SilverSackBaseIds))
+        {
+            if (BossModIPC.Instance.HasModuleFor(baseId))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    // The combat plugin's module walks the character from sack to sack and keeps it out of the charges in between, so
+    // the run only keeps the preset up and its movement free until the round ends.
+    private async Task LeaveBonusRoundToCombatPlugin(DungeonContext context)
+    {
+        const string scope = "dungeon-sacks";
+        var dungeon = context.Dungeon;
+        if (!dungeon.BonusNoticeShown)
+        {
+            dungeon.BonusNoticeShown = true;
+            Diag("Dungeon: a bonus round began; the combat plugin's module picks up its sacks.");
+        }
+
+        EnterStep(TreasurePhase.Fighting);
+        Status = "Bonus round: the combat plugin picks up the sacks";
+        EnsureCombatPreset();
+        ReleaseCombatMovement(scope);
+        var deadline = Environment.TickCount64 + BonusRoundCapMs;
+        try
+        {
+            while (!CancelToken.IsCancellationRequested && Environment.TickCount64 < deadline && context.InDungeon && !context.Zoning && !IsKnockedOut() && BonusRoundOn(dungeon))
+            {
+                await KeepPresetFighting(scope);
+                await NextFrame(DungeonTickFrames);
+            }
+        }
+        finally
+        {
+            BossModIPC.Instance.ClearActive();
+            HoldCombatMovement(scope);
+        }
+
+        Diag($"{scope}: the bonus round is over; {DescribeField(context)}.");
+    }
 
     // The bonus round scatters sacks over the room for ninety seconds, each picked up by walking onto it. The run walks
     // from sack to sack until the round ends; one the character stood on without picking it up is asked once by
