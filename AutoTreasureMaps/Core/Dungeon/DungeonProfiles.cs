@@ -4,7 +4,7 @@ namespace AutoTreasureMaps.Core.Dungeon;
 
 // Ids from the game's TerritoryType, ContentFinderCondition and EObjName sheets. Every gate dungeon has its own run of
 // eight or twelve "treasure vault gate" event objects (two per gate wall) and a few "treasure coffer" objects next to
-// them, and Dawntrail's are the run that starts at 2013860. Neither profile has been checked in game yet.
+// them, and Dawntrail's are the run that starts at 2013860. Both profiles have been checked in game.
 internal static class DungeonProfiles
 {
     // G17, Timeworn Br'aaxskin Map (and the Presumably Special Timeworn Map): five chambers, two gates to each of the
@@ -40,7 +40,7 @@ internal static class DungeonProfiles
         MandragoraNameIds: [13242, 13243, 13244, 13245, 13246],
         GoldSackBaseIds: [],
         SilverSackBaseIds: [],
-        Verified: false);
+        Verified: true);
 
     // G18, Timeworn Gargantuaskin Map: one room, five draws of the hypnoslot machine, each paying out a gold, silver or
     // bronze coffer once its enemies fall.
@@ -62,5 +62,5 @@ internal static class DungeonProfiles
         // The bonus round's gold and silver sacks; it asks for a hundred glowing sacks in ninety seconds.
         GoldSackBaseIds: [2014791],
         SilverSackBaseIds: [2014792],
-        Verified: false);
+        Verified: true);
 }
