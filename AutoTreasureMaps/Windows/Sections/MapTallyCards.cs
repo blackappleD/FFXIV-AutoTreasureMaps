@@ -163,21 +163,27 @@ internal sealed class MapTallyCards
             }
         }
 
+        // The map's and its dungeon's lists run to dozens of items, so only the ones gained are shown.
         var listed = RareLoot.For(mapItemId);
-        var items = new ItemLine[listed.Length];
+        var items = new List<ItemLine>();
         for (var index = 0; index < listed.Length; index++)
         {
             var itemId = listed[index];
             var count = tally.Items.GetValueOrDefault(itemId);
+            if (count <= 0)
+            {
+                continue;
+            }
+
             var price = LootPrices.Of(itemId);
-            var value = count > 0 && price > 0 ? ((long)price * count).ToString("N0", Loc.Culture) : string.Empty;
-            items[index] = new ItemLine(Loc.T(L.Run.TooltipItem, NotableLoot.Name(itemId), count), value, count > 0);
+            var value = price > 0 ? ((long)price * count).ToString("N0", Loc.Culture) : string.Empty;
+            items.Add(new ItemLine(Loc.T(L.Run.TooltipItem, NotableLoot.Name(itemId), count), value, true));
         }
 
         var worth = LootPrices.ValueOf(tally.Items);
         var priced = worth > 0;
         var worthText = listed.Length == 0 ? string.Empty : Loc.T(L.Stats.Worth, priced ? worth.ToString("N0", Loc.Culture) : "-");
-        return new Card(NotableLoot.Name(mapItemId), worthText, priced, string.Join(TextDraw.Separator, parts), items);
+        return new Card(NotableLoot.Name(mapItemId), worthText, priced, string.Join(TextDraw.Separator, parts), items.ToArray());
     }
 
     private sealed record Card(string Name, string Worth, bool Priced, string Summary, ItemLine[] Items);

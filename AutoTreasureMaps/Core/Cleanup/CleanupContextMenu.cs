@@ -1,4 +1,5 @@
 using AutoTreasureMaps.Core.Localization;
+using AutoTreasureMaps.Core.Stats;
 using AutoTreasureMaps.Core.Treasure;
 using Dalamud.Game.Gui.ContextMenu;
 using ECommons.DalamudServices;
@@ -6,7 +7,7 @@ using ECommons.DalamudServices;
 namespace AutoTreasureMaps.Core.Cleanup;
 
 // An entry in the inventory's right-click menu that puts the item on the loot cleanup whitelist, or takes it off. Shown
-// only while auto-discard is on, and never for an item the cleanup keeps anyway.
+// only while auto-discard is on, and never for a map, rare loot (picked in the settings) or an item the game keeps.
 internal sealed class CleanupContextMenu : IDisposable
 {
     private const char MenuPrefix = 'A';
@@ -31,7 +32,7 @@ internal sealed class CleanupContextMenu : IDisposable
         }
 
         var itemId = item.BaseItemId;
-        if (itemId == 0 || LootCleanup.IsAlwaysKept(itemId))
+        if (itemId == 0 || LootCleanup.IsAlwaysKept(itemId) || RareLoot.IsRare(itemId))
         {
             return;
         }

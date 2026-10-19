@@ -12,7 +12,7 @@ namespace AutoTreasureMaps.Core.Cleanup;
 internal readonly record struct PendingLoot(uint ItemId, int Quantity);
 
 // The loot coffers and treasure dungeons gave that is not kept, and the pass that discards it from the four bags. Kept
-// means whitelisted, a timeworn map, or any map's rare loot. Only loot that landed in the bags is listed, so gil,
+// means whitelisted, a timeworn map, or rare loot the player did not pick to discard. Only loot that landed in the bags is listed, so gil,
 // crystals and currency never are. The game discards whole slots, so an item is listed only when the bags held none of it
 // before the coffer opened (or it is listed already): every copy in the bags is then loot, and nothing the player got
 // another way is ever discarded. A pass discards one slot at a time, a human-like moment apart, and empties the list once
@@ -171,15 +171,39 @@ internal static unsafe class LootCleanup
     private static bool OverLimit(int quantity, int limit) => limit > 0 && quantity > limit;
 
     public static bool IsKept(uint itemId)
-        => IsAlwaysKept(itemId) || OnWhitelist(itemId);
+        => IsAlwaysKept(itemId) || KeepsRare(itemId) || OnWhitelist(itemId);
 
-    // Kept whatever the whitelist says: a map, any map's rare loot, or an item the game refuses to discard.
+    // Kept whatever the whitelist says: a map, or an item the game refuses to discard.
     public static bool IsAlwaysKept(uint itemId)
-        => RareLoot.IsRare(itemId)
-        || Plugin.Instance.Catalog.TryGetByTimewornItem(itemId, out _)
+        => Plugin.Instance.Catalog.TryGetByTimewornItem(itemId, out _)
         || Svc.Data.GetExcelSheet<Item>().GetRowOrDefault(itemId) is not { IsIndisposable: false };
 
     public static bool OnWhitelist(uint itemId) => Plugin.Instance.Configuration.AutoDiscardKeep.Contains(itemId);
+
+    // Rare loot is kept unless the player picked it to be discarded.
+    public static bool KeepsRare(uint itemId)
+        => RareLoot.IsRare(itemId) && !Plugin.Instance.Configuration.AutoDiscardRare.Contains(itemId);
+
+    public static void SetRareKept(uint itemId, bool keep)
+    {
+        var configuration = Plugin.Instance.Configuration;
+        if (!keep)
+        {
+            if (!configuration.AutoDiscardRare.Contains(itemId))
+            {
+                configuration.AutoDiscardRare.Add(itemId);
+                configuration.SaveDebounced();
+            }
+
+            return;
+        }
+
+        if (configuration.AutoDiscardRare.Remove(itemId))
+        {
+            configuration.SaveDebounced();
+            Unlist(itemId);
+        }
+    }
 
     public static void AddToWhitelist(uint itemId)
     {
@@ -191,6 +215,12 @@ internal static unsafe class LootCleanup
 
         configuration.AutoDiscardKeep.Add(itemId);
         configuration.SaveDebounced();
+        Unlist(itemId);
+    }
+
+    // An item kept from now on leaves the list and the preview.
+    private static void Unlist(uint itemId)
+    {
         var at = IndexOf(itemId);
         if (at >= 0)
         {
