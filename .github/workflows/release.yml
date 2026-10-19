@@ -2,8 +2,11 @@ name: Release TreasureHelper
 
 # Fork (blackappleD): a v*.*.*.* tag builds the plugin against the CN Dalamud
 # (ottercorp) and publishes TreasureHelper.zip on a GitHub Release marked
-# latest. repo.json links to releases/latest/download/TreasureHelper.zip, so a
-# release only needs the version bumped in Directory.Build.props and repo.json.
+# latest. repo.json links to that release by its tag (releases/download/vX/), not to
+# releases/latest: a client holding a cached repo.json would otherwise download a
+# newer zip than the version it expects, Dalamud refuses the install after it has
+# already unloaded the plugin, and the game can crash. A release bumps the version
+# and the three links in repo.json together.
 #
 # The tag can be pushed by hand (git push origin vX, which triggers this
 # directly) or created by auto-tag.yml after a version bump reaches master,
