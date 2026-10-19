@@ -39,6 +39,7 @@ internal static class CleanupSettings
     private static LanguageInfo? rareLanguage;
     private static string[] sourceTitles = [];
     private static string[][] sourceItemNames = [];
+    private static uint[][] sourceItemIcons = [];
 
     public static void Draw(Configuration configuration)
     {
@@ -270,7 +271,7 @@ internal static class CleanupSettings
                 continue;
             }
 
-            var picked = DrawRareChips(index, items, sourceItemNames[index]);
+            var picked = DrawRareChips(index, items, sourceItemNames[index], sourceItemIcons[index]);
             if (picked != 0)
             {
                 toggled = picked;
@@ -312,8 +313,9 @@ internal static class CleanupSettings
         return hit.Clicked;
     }
 
-    // Chips laid out left to right, wrapping at the card's inner edge. Returns the item clicked, or 0.
-    private static uint DrawRareChips(int sourceIndex, uint[] items, string[] names)
+    // Chips laid out left to right, wrapping at the card's inner edge, each led by the item's icon and showing the game's
+    // item tooltip while hovered. Returns the item clicked, or 0.
+    private static uint DrawRareChips(int sourceIndex, uint[] items, string[] names, uint[] icons)
     {
         var scale = ImGuiHelpers.GlobalScale;
         var indent = RareIndent * scale;
@@ -329,7 +331,7 @@ internal static class CleanupSettings
             var x = left;
             for (var index = 0; index < items.Length; index++)
             {
-                var width = FilterChip.Width(names[index], null);
+                var width = FilterChip.Width(names[index], null, iconId: icons[index], height: height);
                 if (index > 0 && x + gap + width <= right)
                 {
                     ImGui.SameLine();
@@ -340,9 +342,14 @@ internal static class CleanupSettings
                     x = left + width;
                 }
 
-                if (FilterChip.Draw($"{RareListId}_{sourceIndex}_{index}", names[index], null, Styling.AccentMint, LootCleanup.KeepsRare(items[index]), height))
+                if (FilterChip.Draw($"{RareListId}_{sourceIndex}_{index}", names[index], null, Styling.AccentMint, LootCleanup.KeepsRare(items[index]), height, iconId: icons[index]))
                 {
                     clicked = items[index];
+                }
+
+                if (ImGui.IsItemHovered())
+                {
+                    ItemTooltip.Hover(items[index]);
                 }
             }
         }
@@ -364,17 +371,21 @@ internal static class CleanupSettings
         var sources = RareLoot.Sources;
         sourceTitles = new string[sources.Length];
         sourceItemNames = new string[sources.Length][];
+        sourceItemIcons = new uint[sources.Length][];
         for (var index = 0; index < sources.Length; index++)
         {
             var source = sources[index];
             sourceTitles[index] = source.IsDungeon ? DutyName(source.ContentFinderConditionId) : NotableLoot.Name(source.MapItemId);
             var names = new string[source.Items.Length];
+            var icons = new uint[source.Items.Length];
             for (var item = 0; item < names.Length; item++)
             {
                 names[item] = NotableLoot.Name(source.Items[item]);
+                icons[item] = ItemIcon.IdOf(source.Items[item]);
             }
 
             sourceItemNames[index] = names;
+            sourceItemIcons[index] = icons;
         }
     }
 

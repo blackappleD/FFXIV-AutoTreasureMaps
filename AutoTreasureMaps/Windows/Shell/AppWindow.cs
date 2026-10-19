@@ -69,7 +69,7 @@ public sealed class AppWindow : Window, IDisposable
 
     public bool Compact => compact;
 
-    public void Dispose() { }
+    public void Dispose() => ItemTooltip.Hide();
 
     public void Show(Page target)
     {
@@ -98,6 +98,11 @@ public sealed class AppWindow : Window, IDisposable
     }
 
     public override void OnOpen() => pageShownTick = Environment.TickCount64;
+
+    public override void OnClose() => ItemTooltip.Hide();
+
+    // Before Draw, so an item hovered last frame keeps its game tooltip; when collapsed nothing is hovered and it goes.
+    public override void Update() => ItemTooltip.Update();
 
     public override void PreDraw()
     {
