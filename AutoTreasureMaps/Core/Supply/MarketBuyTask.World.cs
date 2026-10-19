@@ -72,7 +72,8 @@ internal sealed partial class MarketBuyTask
             }
 
             var cheapest = Cheapest(listings, cap, spendable, Elsewhere);
-            var cheapestHere = Cheapest(listings, cap, spendable, worldId => worldId == here);
+            // A world left because its board kept asking to wait does not hold the run there.
+            var cheapestHere = Cheapest(listings, cap, spendable, worldId => worldId == here && !excludedWorlds.Contains(here));
             if (cheapest is null && cheapestHere is null)
             {
                 var lowest = listings.Count == 0 ? "none" : $"{listings.Min(listing => listing.UnitPrice)} gil";

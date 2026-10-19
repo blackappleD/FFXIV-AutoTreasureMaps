@@ -1,4 +1,5 @@
 using AutoTreasureMaps.Core.Game.Ops;
+using AutoTreasureMaps.Core.Ipc;
 using AutoTreasureMaps.Core.Localization;
 using AutoTreasureMaps.Core.Market;
 using AutoTreasureMaps.Core.Tasks;
@@ -28,7 +29,11 @@ internal sealed partial class MarketBuyTask(TreasureSession? session, byte onlyR
     private const int PurchaseAnswerTimeoutMs = 10_000;
     private const int PurchaseLandTimeoutMs = 5_000;
     private const int UnansweredSettleMs = 3_000;
-    private const int PurchaseThrottleBackoffMs = 5_000;
+    // The board's "please wait" is waited out and the same step tried again; only a long run of them ends the visit.
+    private const int ThrottleRetryMs = 2_000;
+    private const int ThrottleRetries = 30;
+    // With cross-world buying on, a board that keeps asking to wait is left for another world after this many.
+    private const int ThrottlesBeforeWorldChange = 5;
     // A player reads the list for a moment before picking a row.
     private const int ReadPauseMinMs = 1_000;
     private const int ReadPauseMaxMs = 3_000;
@@ -42,12 +47,16 @@ internal sealed partial class MarketBuyTask(TreasureSession? session, byte onlyR
     private SentPurchase? sent;
     private int boardReopens;
     private int purchases;
+    private int throttles;
+    private bool leaveOnThrottle;
+    private bool throttledOut;
     private LocString rereadReason = L.Market.FailThrottled;
 
     private enum ListingsRead : byte
     {
         Read,
         Retry,
+        Throttled,
         BoardLost,
         Interfered,
     }
@@ -135,7 +144,20 @@ internal sealed partial class MarketBuyTask(TreasureSession? session, byte onlyR
                 return MapSupplyAnswer.Cancelled;
             }
 
+            leaveOnThrottle = hop < MaxWorldHops && configuration.MarketCrossWorld && LifestreamIPC.Instance.IsAvailable;
             var answer = await Visit(configuration, tiers);
+            leaveOnThrottle = false;
+            if (throttledOut)
+            {
+                throttledOut = false;
+                var here = Worlds.Current;
+                Diag($"Market: the board on {Worlds.NameOf(here)} asked to wait {ThrottlesBeforeWorldChange} times; trying another world.");
+                Svc.Chat.Print($"{AtmConstants.LogPrefix} {Loc.T(L.Market.ChatThrottledWorld, Worlds.NameOf(here))}");
+                excludedWorlds.Add(here);
+                await CloseBoard();
+                continue;
+            }
+
             if (answer.Outcome != MapSupplyOutcome.Empty || travelledTo == 0 || hop >= MaxWorldHops)
             {
                 return answer;
@@ -172,6 +194,7 @@ internal sealed partial class MarketBuyTask(TreasureSession? session, byte onlyR
     {
         passedOver.Clear();
         purchases = 0;
+        throttles = 0;
         for (var request = 1; request <= RequestAttempts; request++)
         {
             // Listings read once the tier's purchase tries are spent could not be bought from, so they are not asked for.
@@ -195,6 +218,15 @@ internal sealed partial class MarketBuyTask(TreasureSession? session, byte onlyR
             switch (read)
             {
                 case ListingsRead.Retry:
+                    continue;
+                case ListingsRead.Throttled:
+                    if (!await WaitOutThrottle())
+                    {
+                        return GaveUpWaiting();
+                    }
+
+                    // A refusal to wait does not use up one of the request tries.
+                    request--;
                     continue;
                 case ListingsRead.BoardLost:
                     return Fail(L.Market.FailBoard);
@@ -229,7 +261,7 @@ internal sealed partial class MarketBuyTask(TreasureSession? session, byte onlyR
             }
 
             var attempt = await Buy(configuration, tier, pick);
-            if (attempt is not (Attempt.Stale or Attempt.Cancelled))
+            if (attempt is not (Attempt.Stale or Attempt.Cancelled or Attempt.Throttled))
             {
                 purchases++;
             }
@@ -258,9 +290,12 @@ internal sealed partial class MarketBuyTask(TreasureSession? session, byte onlyR
                 case Attempt.Cancelled:
                     return (TierStep.Done, MapSupplyAnswer.Cancelled);
                 case Attempt.Throttled:
-                    rereadReason = L.Market.FailThrottled;
-                    await DelayMs(PurchaseThrottleBackoffMs);
-                    return (TierStep.Reread, default);
+                    if (!await WaitOutThrottle())
+                    {
+                        return (TierStep.Done, GaveUpWaiting());
+                    }
+
+                    continue;
                 case Attempt.Stale:
                     rereadReason = L.Market.FailListingsChanged;
                     return (TierStep.Reread, default);
@@ -313,8 +348,7 @@ internal sealed partial class MarketBuyTask(TreasureSession? session, byte onlyR
         {
             var limit = answer.Error == MarketReplies.RequestRateLimited ? ", the rate limit" : string.Empty;
             Diag($"Market: the listing request for {tier.Name} was refused with status 0x{answer.Error:X8}{limit}.");
-            rereadReason = L.Market.FailThrottled;
-            return (ListingsRead.Retry, 0);
+            return (ListingsRead.Throttled, 0);
         }
 
         if (answer.Count == 0)
@@ -342,6 +376,34 @@ internal sealed partial class MarketBuyTask(TreasureSession? session, byte onlyR
         Diag($"Market: {answer.Count} listing(s) of {tier.Name} in, {count} usable.");
         return (ListingsRead.Read, count);
     }
+
+    // False once the tier has been told to wait too many times, or the run was stopped during the wait.
+    private async Task<bool> WaitOutThrottle()
+    {
+        throttles++;
+        if (leaveOnThrottle && throttles >= ThrottlesBeforeWorldChange)
+        {
+            throttledOut = true;
+            return false;
+        }
+
+        if (throttles > ThrottleRetries)
+        {
+            Warn($"Market: the board asked to wait {ThrottleRetries} times for this tier; giving up on the visit.");
+            return false;
+        }
+
+        Diag($"Market: the board asked to wait ({throttles}/{ThrottleRetries}); trying again in {ThrottleRetryMs} ms.");
+        Status = "Waiting for the market board";
+        await DelayMs(ThrottleRetryMs);
+        return !CancelToken.IsCancellationRequested;
+    }
+
+    // A visit left for another world ends quietly; the world loop says so in the chat.
+    private MapSupplyAnswer GaveUpWaiting()
+        => CancelToken.IsCancellationRequested ? MapSupplyAnswer.Cancelled
+            : throttledOut ? MapSupplyAnswer.Failed(L.Market.FailThrottled)
+            : Fail(L.Market.FailThrottled);
 
     // The lowest unit price wins, then the lower tax. Maps are unique, so a row of more than one cannot be bought.
     private bool TryPickCheapest(int count, int cap, long spendable, out MarketListing pick, out bool overBudget)

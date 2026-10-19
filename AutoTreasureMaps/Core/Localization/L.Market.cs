@@ -59,6 +59,7 @@ internal static partial class L
         public static readonly LocString ChatBought = new("market.chat.bought", "Bought {0} for {1} gil.");
         public static readonly LocString ChatNoneUnderCap = new("market.chat.noneUnderCap", "No {0} is listed at or under {1} gil.");
         public static readonly LocString ChatCheapestWorld = new("market.chat.cheapestWorld", "{0} is cheapest on {1} at {2} gil; travelling there to buy it.");
+        public static readonly LocString ChatThrottledWorld = new("market.chat.throttledWorld", "The market board on {0} kept asking to wait; buying on another world.");
         public static readonly LocString ChatBoughtAhead = new("market.chat.boughtAhead", "Bought a second map ahead; the next map needs no trip to the board.");
         public static readonly LocString ChatOverBudget = new("market.chat.overBudget", "{0} is listed under its cap, but not within the budget and the gil to keep.");
         public static readonly LocString ChatUniqueHeld = new("market.chat.uniqueHeld", "The game says you already have {0}, so this run skips that tier.");

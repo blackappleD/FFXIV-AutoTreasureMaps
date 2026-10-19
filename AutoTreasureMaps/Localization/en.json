@@ -702,6 +702,7 @@
   "market.chat.bought": "Bought {0} for {1} gil.",
   "market.chat.noneUnderCap": "No {0} is listed at or under {1} gil.",
   "market.chat.cheapestWorld": "{0} is cheapest on {1} at {2} gil; travelling there to buy it.",
+  "market.chat.throttledWorld": "The market board on {0} kept asking to wait; buying on another world.",
   "market.chat.boughtAhead": "Bought a second map ahead; the next map needs no trip to the board.",
   "market.chat.overBudget": "{0} is listed under its cap, but not within the budget and the gil to keep.",
   "market.chat.uniqueHeld": "The game says you already have {0}, so this run skips that tier.",

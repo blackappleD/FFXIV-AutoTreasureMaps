@@ -702,6 +702,7 @@
   "market.chat.bought": "Comprado: {0} por {1} guiles.",
   "market.chat.noneUnderCap": "No hay {0} anunciado a {1} guiles o menos.",
   "market.chat.cheapestWorld": "{0} está más barato en {1}, a {2} guiles; viajando allí para comprarlo.",
+  "market.chat.throttledWorld": "El tablón del mercado de {0} seguía pidiendo esperar; comprando en otro mundo.",
   "market.chat.boughtAhead": "Se compró un segundo mapa de reserva; el siguiente no requiere ir al tablón.",
   "market.chat.overBudget": "{0} está anunciado por debajo de su precio máximo, pero no dentro del presupuesto y los guiles a conservar.",
   "market.chat.uniqueHeld": "El juego dice que ya tienes {0}, así que esta sesión omite ese nivel.",

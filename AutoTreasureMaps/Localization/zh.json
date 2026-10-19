@@ -702,6 +702,7 @@
   "market.chat.bought": "以 {1} 金币购买了{0}。",
   "market.chat.noneUnderCap": "没有以 {1} 金币或更低价格出售的{0}。",
   "market.chat.cheapestWorld": "{0} 在 {1} 最便宜（{2} 金币），前往购买。",
+  "market.chat.throttledWorld": "{0} 的市场布告板一直要求稍候，换个服务器购买。",
   "market.chat.boughtAhead": "已多买一张备用，下一张图不用再去市场板。",
   "market.chat.overBudget": "{0}有低于限价的出售，但超出了预算或保留金币的范围。",
   "market.chat.uniqueHeld": "游戏提示你已持有{0}，本次运行跳过该种类。",

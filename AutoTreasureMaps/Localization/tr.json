@@ -702,6 +702,7 @@
   "market.chat.bought": "{0}, {1} gil karşılığında satın alındı.",
   "market.chat.noneUnderCap": "{1} gil ya da altında ilan edilmiş {0} yok.",
   "market.chat.cheapestWorld": "{0} en ucuz {1} dünyasında, {2} gil; almak için oraya gidiliyor.",
+  "market.chat.throttledWorld": "{0} pazar panosu beklemeyi istemeye devam etti; başka bir dünyada satın alınıyor.",
   "market.chat.boughtAhead": "İkinci harita önceden alındı; sonraki için panoya gitmek gerekmiyor.",
   "market.chat.overBudget": "{0} tavan fiyatının altında ilan edilmiş, ancak bütçe ve elde tutulacak gil sınırları içinde değil.",
   "market.chat.uniqueHeld": "Oyuna göre {0} zaten sizde, bu yüzden bu oturum o kademeyi atlıyor.",

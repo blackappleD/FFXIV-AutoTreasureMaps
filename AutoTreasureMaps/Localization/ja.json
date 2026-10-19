@@ -702,6 +702,7 @@
   "market.chat.bought": "{0}を{1}ギルで購入しました。",
   "market.chat.noneUnderCap": "{0}は{1}ギル以下で出品されていません。",
   "market.chat.cheapestWorld": "{0}は{1}が最安値（{2}ギル）です。移動して購入します。",
+  "market.chat.throttledWorld": "{0}のマーケットボードが待機を求め続けています。別のワールドで購入します。",
   "market.chat.boughtAhead": "2枚目の地図を先に買いました。次の地図はボードに戻らずに済みます。",
   "market.chat.overBudget": "{0}は上限価格以下で出品されていますが、予算と残しておくギルの範囲を超えています。",
   "market.chat.uniqueHeld": "ゲームによると{0}はすでに所持しているため、この周回ではその種類を飛ばします。",
