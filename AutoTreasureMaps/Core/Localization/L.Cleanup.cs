@@ -13,8 +13,11 @@ internal static partial class L
         public static readonly LocString Off = new("cleanup.off", "Auto-discard is off. Nothing is noted or discarded.");
         public static readonly LocString Whitelist = new("cleanup.whitelist", "Whitelist");
         public static readonly LocString AddItem = new("cleanup.addItem", "Add an item");
-        public static readonly LocString AddItemHelp = new("cleanup.addItemHelp", "Pick from the items in your bags. You can also right-click an item in your inventory and choose \"Add to cleanup whitelist\".");
-        public static readonly LocString NoneInBag = new("cleanup.noneInBag", "No item in your bags can be added.");
+        public static readonly LocString AddItemHelp = new("cleanup.addItemHelp", "Search any item in the game by name or item ID. You can also right-click an item in your inventory and choose \"Add to cleanup whitelist\".");
+        public static readonly LocString SearchHint = new("cleanup.searchHint", "Item name or ID");
+        public static readonly LocString NoMatch = new("cleanup.noMatch", "No item matches.");
+        public static readonly LocPlural MoreMatches = new("cleanup.moreMatches", "{0} more match; type more to narrow it down.", "{0} more matches; type more to narrow them down.");
+        public static readonly LocString ResultLabel = new("cleanup.resultLabel", "{0}  ({1})");
         public static readonly LocString KeptItems = new("cleanup.keptItems", "Kept items");
         public static readonly LocString KeptItemsHelp = new("cleanup.keptItemsHelp", "Never discarded.");
         public static readonly LocString NoKept = new("cleanup.noKept", "The whitelist is empty, so all noted loot is discarded.");

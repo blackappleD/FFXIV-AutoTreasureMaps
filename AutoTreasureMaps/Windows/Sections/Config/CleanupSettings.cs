@@ -12,16 +12,17 @@ namespace AutoTreasureMaps.Windows.Sections.Config;
 
 internal static class CleanupSettings
 {
-    private const float PickerWidth = 340f;
+    private const float SearchWidth = 340f;
     private const float AddButtonWidth = 96f;
+    private const int MaxResults = 20;
     private const string KeptListId = "##atm_cleanup_kept";
-    // Bag contents change slowly next to the frame rate, so the picker reads them about once a second.
-    private const long PickerRefreshMs = 1_000;
+    private const string ResultListId = "##atm_cleanup_results";
 
-    private static readonly List<uint> pickerItems = [];
-    private static string[] pickerLabels = [];
-    private static long pickerRefreshAtMs;
-    private static int pickerSelection;
+    private static readonly List<uint> results = [];
+    private static readonly List<string> resultNames = [];
+    private static string query = string.Empty;
+    private static bool queryFocused;
+    private static int matchCount;
 
     private static LanguageInfo? alwaysKeptLanguage;
     private static string alwaysKeptText = string.Empty;
@@ -81,37 +82,81 @@ internal static class CleanupSettings
             () => SettingsRow.Note(AlwaysKeptText()));
     }
 
-    // Only what is in the bags right now, since the whole game item list is noise here.
+    // Any item in the game, by part of its name or its id; the matches are searched again only when the text changes.
     private static void DrawAddRow()
     {
-        RefreshPicker();
-        if (pickerItems.Count == 0)
+        if (SearchField.Draw("##atm_cleanup_search", Loc.T(L.Cleanup.SearchHint), ref query, ref queryFocused, SearchWidth * ImGuiHelpers.GlobalScale, Layout.ActionPillHeight))
         {
-            SettingsRow.Note(Loc.T(L.Cleanup.NoneInBag));
+            Search();
+        }
+
+        if (query.Trim().Length == 0)
+        {
             return;
         }
 
-        pickerSelection = Math.Clamp(pickerSelection, 0, pickerItems.Count - 1);
-        SettingsControls.DrawSearchableCombo("##atm_cleanup_picker", pickerLabels, ref pickerSelection, PickerWidth);
+        if (results.Count == 0)
+        {
+            SettingsRow.Note(Loc.T(L.Cleanup.NoMatch));
+            return;
+        }
 
-        ImGui.SameLine();
         var buttonSize = new Vector2(AddButtonWidth * ImGuiHelpers.GlobalScale, ImGui.GetFrameHeight());
-        bool clicked;
-        ImGui.PushID("##atm_cleanup_add");
-        using (ImRaii.PushColor(ImGuiCol.Text, Styling.AccentMint))
+        var added = 0u;
+        for (var index = 0; index < results.Count; index++)
         {
-            clicked = ImGui.Button(Loc.T(L.Safety.Add), buttonSize);
+            var itemId = results[index];
+            ImGui.AlignTextToFramePadding();
+            using (ImRaii.PushColor(ImGuiCol.Text, Styling.TextStrong))
+            {
+                ImGui.TextUnformatted(resultNames[index]);
+            }
+
+            ImGui.SameLine(SettingsGroup.InnerRightLocalX() - buttonSize.X);
+            if (LootCleanup.IsKept(itemId))
+            {
+                ImGui.AlignTextToFramePadding();
+                using (ImRaii.PushColor(ImGuiCol.Text, Styling.TextMuted))
+                {
+                    ImGui.TextUnformatted(Loc.T(L.Safety.AlreadyAdded));
+                }
+
+                continue;
+            }
+
+            ImGui.PushID(ResultListId);
+            ImGui.PushID(index);
+            using (ImRaii.PushColor(ImGuiCol.Text, Styling.AccentMint))
+            {
+                if (ImGui.Button(Loc.T(L.Safety.Add), buttonSize))
+                {
+                    added = itemId;
+                }
+            }
+
+            ImGui.PopID();
+            ImGui.PopID();
         }
 
-        ImGui.PopID();
-
-        if (!clicked)
+        if (matchCount > results.Count)
         {
-            return;
+            SettingsRow.Note(Loc.Plural(L.Cleanup.MoreMatches, matchCount - results.Count));
         }
 
-        LootCleanup.AddToWhitelist(pickerItems[pickerSelection]);
-        pickerRefreshAtMs = 0;
+        if (added != 0)
+        {
+            LootCleanup.AddToWhitelist(added);
+        }
+    }
+
+    private static void Search()
+    {
+        matchCount = ItemSearch.Find(query, results, MaxResults);
+        resultNames.Clear();
+        for (var index = 0; index < results.Count; index++)
+        {
+            resultNames.Add(Loc.T(L.Cleanup.ResultLabel, NotableLoot.Name(results[index]), results[index]));
+        }
     }
 
     private static void DrawKeptList(Configuration configuration)
@@ -146,28 +191,6 @@ internal static class CleanupSettings
         }
 
         LootCleanup.RemoveFromWhitelist(items[removeIndex]);
-        pickerRefreshAtMs = 0;
-    }
-
-    private static void RefreshPicker()
-    {
-        var now = Environment.TickCount64;
-        if (now < pickerRefreshAtMs)
-        {
-            return;
-        }
-
-        pickerRefreshAtMs = now + PickerRefreshMs;
-        LootCleanup.FillWhitelistCandidates(pickerItems);
-        if (pickerLabels.Length != pickerItems.Count)
-        {
-            pickerLabels = new string[pickerItems.Count];
-        }
-
-        for (var index = 0; index < pickerItems.Count; index++)
-        {
-            pickerLabels[index] = NotableLoot.Name(pickerItems[index]);
-        }
     }
 
     // Formatted once per language instead of on every frame.

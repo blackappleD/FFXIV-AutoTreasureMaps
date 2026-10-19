@@ -310,37 +310,6 @@ internal static unsafe class LootCleanup
         return false;
     }
 
-    // Each item in the bags that the whitelist could take, once, in bag order.
-    public static void FillWhitelistCandidates(List<uint> destination)
-    {
-        destination.Clear();
-        var inventory = InventoryManager.Instance();
-        if (inventory is null)
-        {
-            return;
-        }
-
-        for (var bagIndex = 0; bagIndex < Bags.Length; bagIndex++)
-        {
-            var bag = inventory->GetInventoryContainer(Bags[bagIndex]);
-            if (bag is null || !bag->IsLoaded)
-            {
-                continue;
-            }
-
-            for (var slotIndex = 0; slotIndex < bag->Size; slotIndex++)
-            {
-                var item = bag->GetInventorySlot(slotIndex);
-                if (item is null || item->ItemId == 0 || destination.Contains(item->ItemId) || IsKept(item->ItemId))
-                {
-                    continue;
-                }
-
-                destination.Add(item->ItemId);
-            }
-        }
-    }
-
     private static bool InBags(uint itemId) => CountInBags(itemId) > 0;
 
     private static int CountInBags(uint itemId)
