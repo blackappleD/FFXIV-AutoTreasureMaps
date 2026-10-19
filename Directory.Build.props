@@ -19,7 +19,7 @@
       Fork versioning: upstream's first three segments, then a four-digit fork
       revision starting at 2001 (upstream 1.0.0.0 -> 1.0.0.2001).
     -->
-    <Version>1.0.0.2020</Version>
+    <Version>1.0.0.2021</Version>
     <Authors>XeldarAlz, blackappleD</Authors>
     <Copyright>Copyright (c) XeldarAlz</Copyright>
     <PackageProjectUrl>https://github.com/blackappleD/FFXIV-AutoTreasureMaps</PackageProjectUrl>
