@@ -1,3 +1,4 @@
+using Dalamud.Game.ClientState.Conditions;
 using AutoTreasureMaps.Core.Game.Ops;
 using AutoTreasureMaps.Core.Ipc;
 using AutoTreasureMaps.Core.Travel;
@@ -14,6 +15,7 @@ public abstract partial class AutoCommon
     private const int DigRecastWaitMs = 11_000;
     private const int DigAnswerTimeoutMs = 5_000;
     private const int DigRetryDelayMs = 1_500;
+    private const int DigUsableWaitMs = 3_000;
     private const int MaxUnansweredDigs = 3;
     private const float DigStepToleranceMeters = 0.3f;
     private const float DigStepLiftMeters = 3f;
@@ -112,6 +114,11 @@ public abstract partial class AutoCommon
             return new DigResult(DigAnswer.Cancelled);
         }
 
+        if (!await GroundedForDig())
+        {
+            return new DigResult(DigAnswer.Cancelled);
+        }
+
         Status = "Digging for the coffer";
         LogOffsetFrom("Dig", map.Spot.Position);
         var since = TreasureMessageWatcher.Now;
@@ -135,6 +142,30 @@ public abstract partial class AutoCommon
             TreasureLogMessages.CannotExecute => new DigResult(DigAnswer.NoAnswer),
             _ => new DigResult(DigAnswer.Refused, MapOutcomes.FromDigMessage(reply.Id)),
         };
+    }
+
+    // A dig used while the character is still coming off the mount is refused as used in the air, so the dig waits for
+    // solid ground, and then for the game to report Dig usable, before it is pressed.
+    private async Task<bool> GroundedForDig()
+    {
+        const string scope = "map-dig-ground";
+        if (Svc.Condition[ConditionFlag.Mounted] && !await SafeDismount(scope))
+        {
+            Diag($"{scope}: still mounted before the dig ({ConditionTag()})");
+        }
+
+        if (!await SettleOnGround(scope))
+        {
+            Diag($"{scope}: not settled on the ground before the dig ({ConditionTag()})");
+        }
+
+        if (DigOps.ActionStatus() is not 0 and var status
+            && !await WaitUntilTimed(() => DigOps.ActionStatus() == 0, DigUsableWaitMs, scope, MessagePollFrames))
+        {
+            Diag($"{scope}: the game still reports Dig unusable (status {status}); digging anyway");
+        }
+
+        return !CancelToken.IsCancellationRequested;
     }
 
     private async Task StepOntoSpot(Vector3 point)

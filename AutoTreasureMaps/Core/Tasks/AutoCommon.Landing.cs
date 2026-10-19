@@ -23,6 +23,11 @@ public abstract partial class AutoCommon
     private const float LandingBackOffMeters = 8f;
     private const int LandingBackOffMs = 1_500;
     private protected const float LandsOnTheSpot = 0f;
+    // An air dismount drops the character off the mount, and the mounted flag clears while it is still falling.
+    private const int GroundSettleTimeoutMs = 5_000;
+    private const int GroundSettleStableMs = 300;
+    private const float GroundSettleStableMeters = 0.05f;
+    private const int GroundSettlePollFrames = 2;
 
     private readonly Vector3[] landingSpots = new Vector3[LandingCandidateCount];
 
@@ -123,6 +128,7 @@ public abstract partial class AutoCommon
         await DismountViaOp(scope, LandingDismountWatchdogMs, StuckDetector.AirborneFreezeAbort(scope));
         if (!Svc.Condition[ConditionFlag.Mounted])
         {
+            await SettleOnGround(scope);
             return true;
         }
 
@@ -136,12 +142,47 @@ public abstract partial class AutoCommon
         await DismountViaOp(scope, GroundDismountWatchdogMs);
         if (!Svc.Condition[ConditionFlag.Mounted])
         {
+            await SettleOnGround(scope);
             return true;
         }
 
         Diag($"{scope}: still mounted after the dismount ({ConditionTag()})");
         return false;
     }
+
+    // True once the character is off the mount, out of the air and has stopped dropping, so an action used next is not
+    // refused as used mid-air. Gives up after a few seconds; the caller's own retries cover a ledge it never leaves.
+    private protected async Task<bool> SettleOnGround(string scope)
+    {
+        var stableSince = 0L;
+        var lastHeight = float.NaN;
+        return await WaitUntilTimed(() =>
+        {
+            if (Svc.Objects.LocalPlayer is not { } player || Airborne())
+            {
+                stableSince = 0;
+                return false;
+            }
+
+            var now = Environment.TickCount64;
+            var height = player.Position.Y;
+            if (float.IsNaN(lastHeight) || MathF.Abs(height - lastHeight) > GroundSettleStableMeters)
+            {
+                lastHeight = height;
+                stableSince = now;
+                return false;
+            }
+
+            return now - stableSince >= GroundSettleStableMs;
+        }, GroundSettleTimeoutMs, $"{scope}-settle", GroundSettlePollFrames);
+    }
+
+    private static bool Airborne()
+        => Svc.Condition[ConditionFlag.Mounted]
+        || Svc.Condition[ConditionFlag.InFlight]
+        || Svc.Condition[ConditionFlag.MountOrOrnamentTransition]
+        || Svc.Condition[ConditionFlag.Jumping]
+        || Svc.Condition[ConditionFlag.Jumping61];
 
     // Pressing jump in the air ends the game's own descent, which otherwise carries on after the operation is cancelled
     // and reads as player input to the pathfinder, so every path queued meanwhile would be dropped at once.
