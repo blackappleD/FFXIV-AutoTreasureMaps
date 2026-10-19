@@ -10,9 +10,10 @@ using System.Numerics;
 
 namespace AutoTreasureMaps.Windows.Sections;
 
-// The loot noted for the next cleanup, in compact columns of "name ×count", each with a button that whitelists the item
-// instead. A treasure dungeon under way adds what it has given so far. Shown only while auto-discard is on and something
-// is listed; the list empties once a cleanup has run. The text is rebuilt only when the list or the language changes.
+// The loot noted for the next cleanup, in compact columns of the item's game icon and "name ×count", each with a button
+// that whitelists the item instead. A treasure dungeon under way adds what it has given so far. Shown only while
+// auto-discard is on and something is listed; the list empties once a cleanup has run. The text is rebuilt only when the
+// list or the language changes.
 internal static class LootCleanupCard
 {
     private const float PadX = 12f;
@@ -20,12 +21,14 @@ internal static class LootCleanupCard
     private const float RowGap = 1f;
     private const float RowPad = 4f;
     private const float ButtonGap = 4f;
+    private const float IconInset = 1f;
+    private const float IconRounding = 3f;
     private const float TitleGap = 16f;
     private const float ColumnGap = 14f;
     // Three columns once each is at least this wide, two below it.
     private const float WideColumn = 180f;
 
-    private static readonly List<(uint ItemId, string Label)> rows = [];
+    private static readonly List<(uint ItemId, uint IconId, string Label)> rows = [];
     private static readonly Dictionary<uint, int> quantities = [];
     private static int builtRevision = -1;
     private static LanguageInfo? builtLanguage;
@@ -91,7 +94,8 @@ internal static class LootCleanupCard
         var size = new Vector2(ImGui.GetContentRegionAvail().X, PadY * 2f * scale + lines * rowHeight + (lines - 1) * gap);
         var origin = ImGui.GetCursorScreenPos();
         var end = origin + size;
-        Paint.Glass(ImGui.GetWindowDrawList(), origin, end, Styling.CardRounding * scale, Styling.AccentRose, 0.03f);
+        var drawList = ImGui.GetWindowDrawList();
+        Paint.Glass(drawList, origin, end, Styling.CardRounding * scale, Styling.AccentRose, 0.03f);
 
         var left = origin.X + PadX * scale;
         var right = end.X - PadX * scale;
@@ -104,7 +108,10 @@ internal static class LootCleanupCard
         {
             var x = left + index % columns * (columnWidth + columnGap);
             var y = origin.Y + PadY * scale + index / columns * (rowHeight + gap);
-            ImGui.SetCursorScreenPos(new Vector2(x, y));
+            var inset = IconInset * scale;
+            ItemIcon.Draw(drawList, rows[index].IconId, new Vector2(x + inset, y + inset), new Vector2(x + rowHeight - inset, y + rowHeight - inset), IconRounding * scale);
+            var buttonX = x + columnWidth - rowHeight;
+            ImGui.SetCursorScreenPos(new Vector2(buttonX, y));
             ImGui.PushID(index);
             if (IconButton.Draw(FontAwesomeIcon.ShieldAlt, "##atm_cleanup_keep", rowHeight, Styling.AccentMint, keepTooltip))
             {
@@ -113,7 +120,7 @@ internal static class LootCleanupCard
 
             ImGui.PopID();
             var textX = x + rowHeight + ButtonGap * scale;
-            TextDraw.At(TextDraw.Truncate(rows[index].Label, x + columnWidth - textX), new Vector2(textX, y + textOffset), Styling.TextSecondary);
+            TextDraw.At(TextDraw.Truncate(rows[index].Label, buttonX - ButtonGap * scale - textX), new Vector2(textX, y + textOffset), Styling.TextSecondary);
         }
 
         ImGui.SetCursorScreenPos(origin);
@@ -136,7 +143,7 @@ internal static class LootCleanupCard
         Merge(LootCleanup.Preview);
         foreach (var (itemId, quantity) in quantities)
         {
-            rows.Add((itemId, Loc.T(L.Cleanup.ItemLine, NotableLoot.Name(itemId), quantity)));
+            rows.Add((itemId, ItemIcon.IdOf(itemId), Loc.T(L.Cleanup.ItemLine, NotableLoot.Name(itemId), quantity)));
         }
 
         kindsCaption = Loc.Plural(L.Cleanup.PendingKinds, rows.Count);
