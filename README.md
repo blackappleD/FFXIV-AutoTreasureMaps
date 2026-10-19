@@ -18,6 +18,8 @@ TreasureHelper 是 [blackappleD](https://github.com/blackappleD) 维护的国服
 - 按上游 [TRADEMARK.md](TRADEMARK.md) 的要求使用独立身份：名称“TreasureHelper”、InternalName `TreasureHelper`
   （程序集改名，项目路径与命名空间保持不变以便合并上游）、独立图标，可与原版并存且不共享设置。
 - 内置 BossMod 战斗预设改名为“TreasureHelper”；关于页面改为指向本 fork，并保留原作者署名。
+- 坦克死刑减伤：运行中敌人对自己读条单体/脚下圆形技能时，读条一开始就放短减伤（战士戮罪、骑士圣盾阵、
+  暗黑至黑之夜、绝枪刚玉之心），冷却中则依次改用其他减伤。
 - 版本号：前三段跟随上游，第 4 段从 2001 起递增（上游 1.0.0.0 → 1.0.0.2001）。
 - 不使用上游的自动打 tag / 发布 workflow，Release 在本地构建后上传 `TreasureHelper.zip`。
 

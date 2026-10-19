@@ -55,6 +55,7 @@ public sealed class Plugin : IDalamudPlugin
     private readonly DutyWatcher dutyWatcher;
     private readonly GmAlertWatcher gmAlertWatcher;
     private readonly PartyInviteWatcher partyInviteWatcher;
+    private readonly TankbusterWatcher tankbusterWatcher;
     private readonly CleanupContextMenu cleanupContextMenu;
     private readonly AppWindow appWindow;
     private readonly CommandInfo primaryCommand;
@@ -81,6 +82,7 @@ public sealed class Plugin : IDalamudPlugin
         dutyWatcher = new DutyWatcher();
         gmAlertWatcher = new GmAlertWatcher();
         partyInviteWatcher = new PartyInviteWatcher();
+        tankbusterWatcher = new TankbusterWatcher();
         cleanupContextMenu = new CleanupContextMenu();
 
         InitializeLocalization();
@@ -132,6 +134,7 @@ public sealed class Plugin : IDalamudPlugin
         dutyWatcher.Dispose();
         gmAlertWatcher.Dispose();
         partyInviteWatcher.Dispose();
+        tankbusterWatcher.Dispose();
         cleanupContextMenu.Dispose();
         Messages.Dispose();
 
