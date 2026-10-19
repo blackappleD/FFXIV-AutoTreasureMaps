@@ -1,43 +1,47 @@
-name: Release AutoTreasureMaps
+name: Release TreasureHelper
+
+# Fork (blackappleD): a v*.*.*.* tag builds the plugin against the CN Dalamud
+# (ottercorp) and publishes TreasureHelper.zip on a GitHub Release marked
+# latest. repo.json links to releases/latest/download/TreasureHelper.zip, so a
+# release only needs the version bumped in Directory.Build.props and repo.json.
+#
+# The tag can be pushed by hand (git push origin vX, which triggers this
+# directly) or created by auto-tag.yml after a version bump reaches master,
+# which dispatches this workflow, since a tag pushed with GITHUB_TOKEN does not
+# trigger workflows. An annotated tag's message becomes the release notes;
+# auto-tag's default "Release vX" falls back to GitHub's generated notes.
 
 on:
   push:
     tags:
-      - 'v*.*.*'
-  # Manual fallback: when auto-tag pushes a tag via GITHUB_TOKEN, GitHub
-  # sometimes refuses to cascade-trigger this workflow. Dispatch on the tag
-  # ref to publish the release without having to delete and re-push the tag.
+      - 'v*.*.*.*'
   workflow_dispatch:
     inputs:
       tag:
-        description: 'Tag to release (e.g. v1.0.0.0). Defaults to the ref this is dispatched on.'
+        description: 'Tag to release (e.g. v1.0.0.2020). Defaults to the ref this is dispatched on.'
         required: false
         type: string
 
 permissions:
   contents: write
 
+concurrency:
+  group: release-${{ inputs.tag || github.ref_name }}
+  cancel-in-progress: false
+
 jobs:
   release:
-    # Fork (blackappleD): releases are built locally and uploaded with gh; never run upstream's release automation here.
-    if: github.repository == 'XeldarAlz/FFXIV-AutoTreasureMaps'
+    if: github.repository == 'blackappleD/FFXIV-AutoTreasureMaps'
     runs-on: windows-latest
-    # Job-level so the hub-ping step's `if` can see it; `secrets` can't be used
-    # directly in an `if:` condition, but `env` mapped from a secret can.
-    env:
-      HUB_REPO_PAT: ${{ secrets.HUB_REPO_PAT }}
 
     steps:
       - name: Resolve target tag
         id: tag
         shell: bash
         run: |
-          ref_name="${{ github.ref_name }}"
-          input_tag="${{ inputs.tag }}"
-          if [ -n "$input_tag" ]; then
-            target="$input_tag"
-          else
-            target="$ref_name"
+          target="${{ inputs.tag }}"
+          if [ -z "$target" ]; then
+            target="${{ github.ref_name }}"
           fi
           if [[ ! "$target" =~ ^v[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
             echo "::error::Resolved target '$target' is not a four-part v*.*.*.* tag; pass the tag input or dispatch on a tag ref."
@@ -50,203 +54,83 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v7
         with:
-          ref: ${{ steps.tag.outputs.target }}
+          ref: refs/tags/${{ steps.tag.outputs.target }}
           submodules: recursive
           fetch-depth: 0
-          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Check the tag matches the version
+        shell: bash
+        run: |
+          version="${{ steps.tag.outputs.version }}"
+          build_ver=$(grep -oP '<Version>\K[\d.]+(?=</Version>)' Directory.Build.props)
+          repo_ver=$(jq -r '.[0].AssemblyVersion' repo.json)
+          if [ "$build_ver" != "$version" ] || [ "$repo_ver" != "$version" ]; then
+            echo "::error::Tag $version does not match Directory.Build.props ($build_ver) and repo.json ($repo_ver) at that commit."
+            exit 1
+          fi
 
       - name: Set up .NET
         uses: actions/setup-dotnet@v6
         with:
           dotnet-version: '10.0.x'
 
-      - name: Download Dalamud dev build
+      # The CN client runs ottercorp's Dalamud, so the release is built against it.
+      - name: Download CN Dalamud
         shell: pwsh
         run: |
-          $dalamudUrl = "https://goatcorp.github.io/dalamud-distrib/latest.zip"
           $dalamudDir = "$env:AppData\XIVLauncher\addon\Hooks\dev"
           New-Item -ItemType Directory -Force -Path $dalamudDir | Out-Null
-          Invoke-WebRequest -Uri $dalamudUrl -OutFile dalamud.zip
-          Expand-Archive -Path dalamud.zip -DestinationPath $dalamudDir -Force
-          Remove-Item dalamud.zip
+          Invoke-WebRequest -Uri 'https://raw.githubusercontent.com/ottercorp/dalamud-distrib/main/latest.7z' -OutFile dalamud.7z
+          7z x dalamud.7z "-o$dalamudDir" -y | Out-Null
+          if ($LASTEXITCODE -ne 0) { throw "Extracting the CN Dalamud failed" }
+          Remove-Item dalamud.7z
+          if (-not (Test-Path "$dalamudDir\Dalamud.dll")) { throw "Dalamud.dll not found in $dalamudDir" }
 
       - name: Build (Release)
         run: dotnet build AutoTreasureMaps.sln --configuration Release
 
-      - name: Stage latest.zip
+      - name: Stage TreasureHelper.zip
         shell: pwsh
         run: |
-          $src = 'AutoTreasureMaps/bin/Release/AutoTreasureMaps/latest.zip'
+          $src = 'AutoTreasureMaps/bin/Release/TreasureHelper/latest.zip'
           if (-not (Test-Path $src)) { throw "SDK-built plugin zip not found at $src" }
-          Copy-Item $src 'latest.zip' -Force
+          Copy-Item $src 'TreasureHelper.zip' -Force
+          Add-Type -AssemblyName System.IO.Compression.FileSystem
+          $zip = [System.IO.Compression.ZipFile]::OpenRead((Resolve-Path 'TreasureHelper.zip'))
+          try {
+            $entry = $zip.GetEntry('TreasureHelper.json')
+            if ($null -eq $entry) { throw 'TreasureHelper.json missing from the zip' }
+            $reader = [System.IO.StreamReader]::new($entry.Open())
+            $manifest = $reader.ReadToEnd() | ConvertFrom-Json
+            $reader.Dispose()
+          } finally {
+            $zip.Dispose()
+          }
+          if ($manifest.AssemblyVersion -ne '${{ steps.tag.outputs.version }}') {
+            throw "The zip's manifest says $($manifest.AssemblyVersion), not ${{ steps.tag.outputs.version }}"
+          }
+
+      - name: Read release notes from the tag
+        id: notes
+        shell: bash
+        run: |
+          tag="${{ steps.tag.outputs.target }}"
+          body=$(git tag -l --format='%(contents)' "$tag" | sed '/-----BEGIN PGP SIGNATURE-----/,$d')
+          if [ -z "${body//[[:space:]]/}" ] || [ "$(echo "$body" | head -n1)" = "Release $tag" ]; then
+            echo "generate=true" >> "$GITHUB_OUTPUT"
+            : > notes.md
+          else
+            echo "generate=false" >> "$GITHUB_OUTPUT"
+            printf '%s\n' "$body" > notes.md
+          fi
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v3
         with:
           tag_name: ${{ steps.tag.outputs.target }}
           name: ${{ steps.tag.outputs.target }}
-          files: latest.zip
-          generate_release_notes: true
+          files: TreasureHelper.zip
+          body_path: notes.md
+          generate_release_notes: ${{ steps.notes.outputs.generate == 'true' }}
+          make_latest: true
           fail_on_unmatched_files: true
-
-      - name: Fetch total download count
-        id: count
-        shell: bash
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          total=$(gh api "repos/${{ github.repository }}/releases" --paginate \
-            --jq '[.[].assets[].download_count] | add // 0')
-          echo "total=$total" >> "$GITHUB_OUTPUT"
-          echo "Total downloads across all releases: $total"
-
-      - name: Announce the release on Discord
-        continue-on-error: true
-        shell: pwsh
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GH_REPO: ${{ github.repository }}
-          WEBHOOK_URL: ${{ secrets.RELEASE_WEBHOOK_URL }}
-          PING_ROLE_ID: ${{ vars.RELEASE_PING_ROLE_ID }}
-          TAG: ${{ steps.tag.outputs.target }}
-          DOWNLOADS: ${{ steps.count.outputs.total }}
-        run: |
-          $ErrorActionPreference = 'Stop'
-          if ([string]::IsNullOrWhiteSpace($env:WEBHOOK_URL)) {
-            Write-Host 'RELEASE_WEBHOOK_URL not set; skipping the announcement.'
-            exit 0
-          }
-
-          $plugin  = 'Auto Treasure Maps'
-          $icon    = "https://raw.githubusercontent.com/$($env:GH_REPO)/master/AutoTreasureMaps/Images/Icon.png"
-          $relList = "https://github.com/$($env:GH_REPO)/releases"
-
-          $rel = gh release view $env:TAG --json name,tagName,body,url,isPrerelease,publishedAt | ConvertFrom-Json
-
-          $title = if ([string]::IsNullOrEmpty($rel.name)) { $rel.tagName } else { $rel.name }
-
-          $version       = $rel.tagName.TrimStart('v')
-          $changelogData = Get-Content -Raw -Path 'AutoTreasureMaps/Core/Changelog/ChangelogData.cs'
-          $localization  = Get-Content -Raw -Path 'AutoTreasureMaps/Core/Localization/L.cs'
-          $highlights    = [System.Collections.Generic.List[string]]::new()
-          $entry = [regex]::Match($changelogData, 'new\("' + [regex]::Escape($version) + '",\s*"[^"]*",\s*L\.Changelog\.(\w+)\)')
-          if ($entry.Success) {
-            $block = [regex]::Match($localization, 'LocString\[\]\s+' + $entry.Groups[1].Value + '\s*=\s*\[(.*?)\];', 'Singleline')
-            foreach ($line in [regex]::Matches($block.Groups[1].Value, 'new\("[^"]*",\s*"(.*?)"\)')) {
-              $highlights.Add('• ' + [regex]::Unescape($line.Groups[1].Value))
-            }
-          }
-
-          if ($highlights.Count -gt 0) {
-            $desc = $highlights -join "`n"
-          } else {
-            Write-Host "::warning::No changelog entry for $version in ChangelogData.cs; falling back to the GitHub release notes."
-            $desc = if ($null -eq $rel.body) { '' } else { [string]$rel.body }
-          }
-          $desc = $desc.Replace("`r", '').Replace([char]0x2014, '-').Replace([char]0x2013, '-')
-          if ($desc.Length -gt 3800) { $desc = $desc.Substring(0, 3800) + "`n`n...full notes on GitHub" }
-
-          $isPre   = [bool]$rel.isPrerelease
-          $content = if ($isPre) { '🧪 **New preview build just dropped!**' } else { '🚀 **New version dropped!**' }
-          $pingRole = $env:PING_ROLE_ID
-          if (-not [string]::IsNullOrWhiteSpace($pingRole)) {
-            $content = "<@&$pingRole> $content"
-          }
-          $color   = if ($isPre) { 10197915 } else { 9132790 }
-          $channel = if ($isPre) { 'Preview' } else { 'Stable' }
-
-          $fields = @(
-            [ordered]@{ name = 'Version'; value = '`' + $rel.tagName + '`'; inline = $true }
-            [ordered]@{ name = 'Channel'; value = $channel; inline = $true }
-          )
-          if (-not [string]::IsNullOrWhiteSpace($env:DOWNLOADS)) {
-            $fields += [ordered]@{ name = 'Total installs'; value = "$($env:DOWNLOADS)"; inline = $true }
-          }
-
-          $payload = [ordered]@{
-            username   = $plugin
-            avatar_url = $icon
-            content    = $content
-            embeds     = @(
-              [ordered]@{
-                author      = [ordered]@{ name = $plugin; url = $relList; icon_url = $icon }
-                title       = $title
-                url         = $rel.url
-                description = $desc
-                color       = $color
-                fields      = $fields
-                thumbnail   = [ordered]@{ url = $icon }
-                footer      = [ordered]@{ text = $plugin; icon_url = $icon }
-                timestamp   = $rel.publishedAt
-              }
-            )
-          }
-
-          if (-not [string]::IsNullOrWhiteSpace($pingRole)) {
-            $payload['allowed_mentions'] = [ordered]@{ roles = @($pingRole) }
-          }
-
-          $json = $payload | ConvertTo-Json -Depth 10
-          $bytes = [System.Text.Encoding]::UTF8.GetBytes($json)
-          $resp  = Invoke-WebRequest -Uri $env:WEBHOOK_URL -Method Post -Body $bytes -ContentType 'application/json; charset=utf-8' -UseBasicParsing
-          Write-Host "Discord responded: $($resp.StatusCode) $($resp.StatusDescription) for $($env:TAG)"
-
-      - name: Update local repo.json
-        shell: pwsh
-        run: |
-          $v = '${{ steps.tag.outputs.version }}'
-          $path = 'repo.json'
-          $json = Get-Content -Raw -Path $path | ConvertFrom-Json
-          $json[0].AssemblyVersion = $v
-          $json[0].TestingAssemblyVersion = $v
-          $json[0].DownloadCount = [int]'${{ steps.count.outputs.total }}'
-          $json[0] | Add-Member -NotePropertyName 'LastUpdate' -NotePropertyValue ([string][int][double]::Parse((Get-Date -UFormat %s))) -Force
-          # -AsArray preserves the array wrapper; piping a single-element array through | unrolls it and loses the [ ... ] Dalamud requires.
-          ConvertTo-Json -InputObject $json -Depth 10 -AsArray | Set-Content -Path $path -Encoding utf8
-
-      - name: Commit local repo.json
-        shell: pwsh
-        run: |
-          git config user.name 'github-actions[bot]'
-          git config user.email 'github-actions[bot]@users.noreply.github.com'
-          git add repo.json
-          if (-not (git status --porcelain)) {
-            Write-Host 'No changes to commit.'
-            exit 0
-          }
-          git commit -m "Release ${{ steps.tag.outputs.target }}: bump repo.json"
-          # -X theirs auto-resolves any repo.json conflict in favour of our just-bumped values
-          # (rebase semantics: "theirs" = the commits being rebased, i.e. ours).
-          # Without it, a concurrent push that touched repo.json leaves conflict markers,
-          # push then reports "Everything up-to-date" with exit 0, and downstream steps
-          # silently consume the corrupted file.
-          for ($i = 1; $i -le 5; $i++) {
-            git fetch origin master
-            git rebase -X theirs origin/master
-            if ($LASTEXITCODE -ne 0) {
-              git rebase --abort 2>$null
-              Write-Host "Rebase failed (attempt $i); retrying..."
-              Start-Sleep -Seconds 2
-              continue
-            }
-            git push origin HEAD:master
-            if ($LASTEXITCODE -eq 0) { exit 0 }
-            Write-Host "Push rejected (attempt $i); retrying after rebase..."
-            Start-Sleep -Seconds 2
-          }
-          Write-Error 'Failed to push repo.json bump after 5 attempts.'
-          exit 1
-
-      # Ping the multi-plugin hub repo so it regenerates repo.json immediately
-      # instead of waiting for its hourly cron. The hub workflow re-reads each
-      # plugin's repo.json and refreshes DownloadCount from the GitHub API.
-      - name: Trigger hub repo regeneration
-        if: ${{ env.HUB_REPO_PAT != '' }}
-        shell: bash
-        run: |
-          curl -fsSL -X POST \
-            -H "Authorization: Bearer $HUB_REPO_PAT" \
-            -H "Accept: application/vnd.github+json" \
-            -H "X-GitHub-Api-Version: 2022-11-28" \
-            https://api.github.com/repos/XeldarAlz/DalamudPlugins/dispatches \
-            -d '{"event_type":"plugin-released","client_payload":{"plugin":"${{ github.event.repository.name }}","version":"${{ steps.tag.outputs.version }}"}}'
