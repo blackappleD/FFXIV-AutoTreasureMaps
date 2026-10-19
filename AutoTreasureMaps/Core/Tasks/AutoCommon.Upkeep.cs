@@ -112,18 +112,26 @@ public abstract partial class AutoCommon
         return false;
     }
 
-    // The discards run on the framework tick; this only starts the pass and waits it out, stopping it with the run.
-    private async Task RunScheduledCleanup()
+    private Task RunScheduledCleanup() => DiscardNotedLoot(UpkeepCleanupWaitMs, "Upkeep");
+
+    // The discards run on the framework tick; this only starts the pass and waits it out, stopping it with the run or
+    // once the time is up, when what is left stays listed for the next cleanup.
+    private protected async Task DiscardNotedLoot(int timeoutMs, string scope)
     {
+        if (!Plugin.Instance.Configuration.AutoDiscard || !LootCleanup.HasPending || CancelToken.IsCancellationRequested)
+        {
+            return;
+        }
+
         Status = "Discarding loot";
-        Diag($"Upkeep: discarding {LootCleanup.Pending.Count} kinds of noted loot");
+        Diag($"{scope}: discarding {LootCleanup.Pending.Count} kinds of noted loot");
         LootCleanup.Start();
-        if (!await WaitUntilTimed(() => !LootCleanup.Running, UpkeepCleanupWaitMs, "loot-cleanup") && LootCleanup.Running)
+        if (!await WaitUntilTimed(() => !LootCleanup.Running, timeoutMs, "loot-cleanup") && LootCleanup.Running)
         {
             LootCleanup.Stop();
             if (!CancelToken.IsCancellationRequested)
             {
-                Warn("Upkeep: the loot cleanup did not finish; the rest waits for the next map");
+                Warn($"{scope}: the loot cleanup did not finish in {timeoutMs / TimeUnits.MillisecondsPerSecond}s; the rest waits for the next cleanup");
             }
         }
     }

@@ -24,6 +24,9 @@ public abstract partial class AutoCommon
     // A dungeon the run does not know, or hands back, is the player's; the run waits this long for them to leave it.
     private const int HandedBackWaitMs = 1_800_000;
     private const int HandedBackPollMs = 1_000;
+    // The portal does not wait for ever, so the coffer's loot gets only this long before the walk in; the rest is
+    // discarded after the dungeon.
+    private const int PortalCleanupWaitMs = 30_000;
 
     private static string[]? portalPromptFragments;
 
@@ -46,6 +49,13 @@ public abstract partial class AutoCommon
             Diag("Portal: in a party; the dungeon is left to the party.");
             Svc.Chat.Print($"{AtmConstants.LogPrefix} {Loc.T(L.Dungeon.ChatPortalInParty)}");
             return PortalStep.Skipped;
+        }
+
+        // The dungeon gives a lot more loot, so the coffer's is cleared out of the bags first.
+        await DiscardNotedLoot(PortalCleanupWaitMs, "Portal");
+        if (CancelToken.IsCancellationRequested)
+        {
+            return PortalStep.Stop;
         }
 
         if (!await EnterPortal())
