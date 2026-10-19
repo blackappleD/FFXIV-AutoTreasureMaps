@@ -31,6 +31,12 @@ public sealed partial class Configuration
 
     public LurePolicy DungeonLurePolicy { get; set; } = LurePolicy.AskMe;
 
+    // The rare enemies that drop extra loot and run off if left alone are attacked before anything else.
+    public bool DungeonPreferBonusEnemies { get; set; } = false;
+
+    // The mandragora party is killed in its markers' order; it comes after the rare enemies when both are on.
+    public bool DungeonMandragorasInOrder { get; set; } = false;
+
     public GatePolicy GatePolicyFor(string dungeonKey)
         => DungeonGatePolicyOverrides.TryGetValue(dungeonKey, out var policy) && policy != GatePolicy.Default ? policy : DungeonGatePolicy;
 }

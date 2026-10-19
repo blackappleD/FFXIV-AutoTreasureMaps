@@ -16,7 +16,8 @@ internal readonly record struct PendingLoot(uint ItemId, int Quantity);
 // crystals and currency never are. The game discards whole slots, so an item is listed only when the bags held none of it
 // before the coffer opened (or it is listed already): every copy in the bags is then loot, and nothing the player got
 // another way is ever discarded. A pass discards one slot at a time, a human-like moment apart, and empties the list once
-// no listed item is left in the bags. Framework thread only.
+// no listed item is left in the bags. An item looted in a larger quantity than the cleanup limit is kept instead. Framework
+// thread only.
 internal static unsafe class LootCleanup
 {
     private const int DiscardDelayMinMs = 700;
@@ -29,6 +30,7 @@ internal static unsafe class LootCleanup
 
     private static readonly InventoryType[] Bags = [InventoryType.Inventory1, InventoryType.Inventory2, InventoryType.Inventory3, InventoryType.Inventory4];
     private static readonly List<PendingLoot> pending = [];
+    private static readonly List<PendingLoot> preview = [];
 
     private static bool running;
     private static long nextActionAtMs;
@@ -47,43 +49,126 @@ internal static unsafe class LootCleanup
 
     public static bool Running => running;
 
+    // What a treasure dungeon still under way has given so far, shown with the list but never discarded: the dungeon's
+    // loot is noted once it ends, which replaces this.
+    public static IReadOnlyList<PendingLoot> Preview => preview;
+
+    public static bool HasShown => pending.Count > 0 || preview.Count > 0;
+
     // One call per finished map or dungeon, with what it gave and the bags as they were before its coffer opened. Without
     // that snapshot nothing is listed, since the loot could not be told from what the player already had.
     public static void Note(ImmutableArray<ItemGain> gains, Dictionary<uint, int>? bagsBefore)
     {
+        DropPreview();
         if (!Plugin.Instance.Configuration.AutoDiscard || gains.IsDefaultOrEmpty || bagsBefore is null)
         {
             return;
         }
 
+        var limit = Plugin.Instance.Configuration.AutoDiscardMaxQuantity;
         var items = gains.AsSpan();
         for (var index = 0; index < items.Length; index++)
         {
             var gain = items[index];
-            if (gain.Quantity <= 0 || IsKept(gain.ItemId) || !InBags(gain.ItemId))
+            if (!Listable(gain, bagsBefore, log: true))
             {
                 continue;
             }
 
             var at = IndexOf(gain.ItemId);
-            if (at < 0 && bagsBefore.GetValueOrDefault(gain.ItemId) > 0)
+            var total = (at < 0 ? 0 : pending[at].Quantity) + gain.Quantity;
+            if (OverLimit(total, limit))
             {
-                RunLog.Debug($"Cleanup: not listing item {gain.ItemId}; the bags held {bagsBefore[gain.ItemId]} before the coffer");
+                RunLog.Debug($"Cleanup: keeping item {gain.ItemId}; {total} looted is over the limit of {limit}");
+                if (at >= 0)
+                {
+                    pending.RemoveAt(at);
+                    Revision++;
+                }
+
                 continue;
             }
 
             if (at < 0)
             {
-                pending.Add(new PendingLoot(gain.ItemId, gain.Quantity));
+                pending.Add(new PendingLoot(gain.ItemId, total));
             }
             else
             {
-                pending[at] = new PendingLoot(gain.ItemId, pending[at].Quantity + gain.Quantity);
+                pending[at] = new PendingLoot(gain.ItemId, total);
             }
 
             Revision++;
         }
     }
+
+    // Called while a treasure dungeon goes on, with everything it has given so far, so its loot shows before it ends.
+    public static void ShowPreview(ImmutableArray<ItemGain> gains, Dictionary<uint, int> bagsBefore)
+    {
+        preview.Clear();
+        if (Plugin.Instance.Configuration.AutoDiscard && !gains.IsDefaultOrEmpty)
+        {
+            var limit = Plugin.Instance.Configuration.AutoDiscardMaxQuantity;
+            var items = gains.AsSpan();
+            for (var index = 0; index < items.Length; index++)
+            {
+                var gain = items[index];
+                var at = IndexOf(gain.ItemId);
+                if (Listable(gain, bagsBefore, log: false) && !OverLimit((at < 0 ? 0 : pending[at].Quantity) + gain.Quantity, limit))
+                {
+                    preview.Add(new PendingLoot(gain.ItemId, gain.Quantity));
+                }
+            }
+        }
+
+        Revision++;
+    }
+
+    public static void DropPreview()
+    {
+        if (preview.Count == 0)
+        {
+            return;
+        }
+
+        preview.Clear();
+        Revision++;
+    }
+
+    // A lower limit takes the items now over it off the list.
+    public static void ApplyLimit()
+    {
+        var limit = Plugin.Instance.Configuration.AutoDiscardMaxQuantity;
+        var removed = pending.RemoveAll(item => OverLimit(item.Quantity, limit)) + preview.RemoveAll(item => OverLimit(item.Quantity, limit));
+        if (removed > 0)
+        {
+            Revision++;
+        }
+    }
+
+    // Every copy in the bags must be loot: an item the bags held before the coffer is listed only if it is already.
+    private static bool Listable(in ItemGain gain, Dictionary<uint, int> bagsBefore, bool log)
+    {
+        if (gain.Quantity <= 0 || IsKept(gain.ItemId) || !InBags(gain.ItemId))
+        {
+            return false;
+        }
+
+        if (IndexOf(gain.ItemId) < 0 && bagsBefore.GetValueOrDefault(gain.ItemId) > 0)
+        {
+            if (log)
+            {
+                RunLog.Debug($"Cleanup: not listing item {gain.ItemId}; the bags held {bagsBefore[gain.ItemId]} before the coffer");
+            }
+
+            return false;
+        }
+
+        return true;
+    }
+
+    // A limit of 0 keeps nothing back for its quantity.
+    private static bool OverLimit(int quantity, int limit) => limit > 0 && quantity > limit;
 
     public static bool IsKept(uint itemId)
         => IsAlwaysKept(itemId) || OnWhitelist(itemId);
@@ -110,6 +195,11 @@ internal static unsafe class LootCleanup
         if (at >= 0)
         {
             pending.RemoveAt(at);
+            Revision++;
+        }
+
+        if (preview.RemoveAll(item => item.ItemId == itemId) > 0)
+        {
             Revision++;
         }
     }
@@ -141,6 +231,7 @@ internal static unsafe class LootCleanup
     public static void Clear()
     {
         Stop();
+        DropPreview();
         if (pending.Count == 0)
         {
             return;

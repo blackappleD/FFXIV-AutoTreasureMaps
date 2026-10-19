@@ -86,7 +86,13 @@ internal sealed class AutoTreasureRun(TreasureSession session, TreasureProgress 
                 return;
             }
 
-            var step = session.ActiveMap is not null || HeldMapReader.TryRead(plugin.Catalog, out _)
+            var held = session.ActiveMap is not null || HeldMapReader.TryRead(plugin.Catalog, out _);
+            if (held && session.ActiveMap is null && await BuySpareFirst(plugin) == LoopStep.Stop)
+            {
+                return;
+            }
+
+            var step = held
                 ? await RunMap(plugin)
                 : await SupplyMap(plugin);
             if (step == LoopStep.Stop)
@@ -143,6 +149,76 @@ internal sealed class AutoTreasureRun(TreasureSession session, TreasureProgress 
         NoteMapFinished();
         await UpkeepBetweenMaps(plugin);
         return LoopStep.Continue;
+    }
+
+    // A run that starts with a deciphered map in hand buys its spare before the dig, as a run that buys its map does at
+    // the board, so the map after it needs no trip of its own. Once a run: from then on the spare comes with each purchase.
+    private async Task<LoopStep> BuySpareFirst(Plugin plugin)
+    {
+        if (session.SpareChecked)
+        {
+            return LoopStep.Continue;
+        }
+
+        session.NoteSpareChecked();
+        var configuration = plugin.Configuration;
+        if (!configuration.MarketBuyAhead)
+        {
+            return LoopStep.Continue;
+        }
+
+        if (configuration.RunMapLimit > 0 && session.MapsRun + 2 > configuration.RunMapLimit)
+        {
+            Diag("Run: a deciphered map is held, and the map limit leaves no room for a spare.");
+            return LoopStep.Continue;
+        }
+
+        if (HoldsEnabledMap(plugin))
+        {
+            Diag("Run: a deciphered map is held, and a spare is in the bags already.");
+            return LoopStep.Continue;
+        }
+
+        var market = new MarketSupplyStep();
+        var check = market.Check(plugin);
+        if (!check.CanSupply)
+        {
+            Diag($"Run: a deciphered map is held, but no spare can be bought ({check.Reason.Key}).");
+            return LoopStep.Continue;
+        }
+
+        Diag("Run: a deciphered map is held but no spare; buying one before the dig.");
+        progress.SetPhase(market.Phase);
+        var task = market.CreateTask();
+        await RunWithStatusFrom(task, () => RunCancellable(task, market.TimeoutMs, "supply-spare"));
+        if (CancelToken.IsCancellationRequested)
+        {
+            return LoopStep.Stop;
+        }
+
+        if (task.Fault is { } fault)
+        {
+            session.RecordFault(fault, CancelToken);
+            return LoopStep.Stop;
+        }
+
+        // Without a spare the held map is still dug; the next map is bought when it is needed.
+        Diag($"Run: the spare purchase ended {task.Answer.Outcome}; on to the held map.");
+        return LoopStep.Continue;
+    }
+
+    private static bool HoldsEnabledMap(Plugin plugin)
+    {
+        var owned = MapBag.Read(plugin.Catalog);
+        for (var index = 0; index < owned.Length; index++)
+        {
+            if (MapTierRules.IsEnabled(plugin.Configuration, owned[index].Tier))
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private async Task<LoopStep> HandleRefusal(MapResult result)

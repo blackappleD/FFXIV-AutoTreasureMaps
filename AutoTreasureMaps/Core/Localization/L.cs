@@ -179,8 +179,19 @@ internal static partial class L
         public static readonly LocString HoursAgo = new("history.time.hoursAgo", "{0}h ago");
         public static readonly LocString DaysAgo = new("history.time.daysAgo", "{0}d ago");
         public static readonly LocString ClearHistory = new("history.clear", "Clear history");
-        public static readonly LocString ClearQuestion = new("history.clearQuestion", "Delete all recorded runs?");
+        public static readonly LocString ClearQuestion = new("history.clearQuestion", "Delete all recorded runs and the map log?");
         public static readonly LocString ClearYes = new("history.clearYes", "Yes, clear");
+        public static readonly LocString MapLogTab = new("history.mapLogTab", "Map log");
+        public static readonly LocString NoMapLog = new("history.noMapLog", "No maps logged yet. Every map a run finishes is added here.");
+        public static readonly LocString LogNumber = new("history.log.number", "No.");
+        public static readonly LocString LogMap = new("history.log.map", "Map");
+        public static readonly LocString LogPortal = new("history.log.portal", "Portal");
+        public static readonly LocString LogFloor = new("history.log.floor", "Floor");
+        public static readonly LocString LogDeaths = new("history.log.deaths", "Deaths");
+        public static readonly LocString LogLoot = new("history.log.loot", "High-value loot");
+        public static readonly LocString LogYes = new("history.log.yes", "Yes");
+        public static readonly LocString LogLootItem = new("history.log.lootItem", "{0}×{1}");
+        public static readonly LocString LogLootSeparator = new("history.log.lootSeparator", ", ");
     }
 
     internal static class Plugins

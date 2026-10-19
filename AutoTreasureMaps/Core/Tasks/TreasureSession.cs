@@ -19,6 +19,9 @@ public sealed class TreasureSession
     // The map whose portal the run last saw, so the dungeon behind it is credited to that map.
     private uint portalMapItemId;
 
+    // That map's line in the map log, which the dungeon's floor, knockout and loot are added to.
+    private MapLogEntry? portalLogEntry;
+
     public TreasureSession()
     {
         JobAbbreviation = CurrentJobAbbreviation();
@@ -100,6 +103,9 @@ public sealed class TreasureSession
     // does not go back after every map.
     internal bool DailyGatherTried { get; private set; }
 
+    // Set once the run looked at buying a spare for the deciphered map it started with, whatever came of it.
+    internal bool SpareChecked { get; private set; }
+
     // A run that only bought or gathered a map still spent gil or the day's allowance, so it is recorded.
     public bool DidNothing => MapsRun == 0 && MapsBought == 0 && MapsGathered == 0 && DungeonsRun == 0;
 
@@ -143,6 +149,8 @@ public sealed class TreasureSession
             tally.Maps++;
             NoteHighValueItems(tally, mapItemId, result.Items);
             portalMapItemId = portal ? mapItemId : 0;
+            var entry = Plugin.Instance.MapLog.Add(mapItemId, portal, result.Outcome == MapOutcome.Died ? 1 : 0, result.Items);
+            portalLogEntry = portal ? entry : null;
         }
     }
 
@@ -171,6 +179,12 @@ public sealed class TreasureSession
         var tally = TallyFor(mapItemId);
         tally.NoteFloor(result.Round);
         NoteHighValueItems(tally, mapItemId, result.Items);
+
+        // A dungeon without its map's line in this run gets a line of its own.
+        var mapLog = Plugin.Instance.MapLog;
+        var entry = portalLogEntry ?? mapLog.Add(mapItemId, portal: true, deaths: 0, ImmutableArray<ItemGain>.Empty);
+        portalLogEntry = null;
+        mapLog.NoteDungeon(entry, result.Round, result.Outcome == DungeonOutcome.Died, result.Items);
     }
 
     internal void RecordPurchase(int gil)
@@ -196,6 +210,8 @@ public sealed class TreasureSession
     internal void NoteMapGathered() => MapsGathered++;
 
     internal void NoteDailyGatherTried() => DailyGatherTried = true;
+
+    internal void NoteSpareChecked() => SpareChecked = true;
 
     // A run stopped from outside keeps the end it had already decided on.
     internal void MarkStopped() => EndedBy ??= RunEnd.Stopped;

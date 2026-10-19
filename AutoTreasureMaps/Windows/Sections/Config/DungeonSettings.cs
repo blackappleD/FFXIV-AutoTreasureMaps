@@ -34,7 +34,28 @@ internal static class DungeonSettings
     {
         DrawPortal(configuration);
         DrawGates(configuration);
+        DrawBonusEnemies(configuration);
         DrawLure(configuration);
+    }
+
+    private static void DrawBonusEnemies(Configuration configuration)
+    {
+        using var group = SettingsGroup.Begin(Loc.T(L.Dungeon.GroupBonus));
+
+        SettingsRow.Draw(Loc.T(L.Dungeon.PreferBonus),
+            Loc.T(L.Dungeon.PreferBonusHelp),
+            SettingsControls.ToggleWidth,
+            () => SettingsControls.DrawToggle(configuration, () => configuration.DungeonPreferBonusEnemies, value => configuration.DungeonPreferBonusEnemies = value, "##atm_dungeon_bonus"),
+            SettingsRow.ToggleHeight);
+
+        SettingsRow.Draw(Loc.T(L.Dungeon.MandragorasInOrder),
+            Loc.T(L.Dungeon.MandragorasInOrderHelp),
+            SettingsControls.ToggleWidth,
+            () => SettingsControls.DrawToggle(configuration, () => configuration.DungeonMandragorasInOrder, value => configuration.DungeonMandragorasInOrder = value, "##atm_dungeon_mandragoras"),
+            SettingsRow.ToggleHeight);
+
+        // Area attacks kill the party out of order, which a solo character cannot avoid, so the warning stands out.
+        SettingsRow.Note(Loc.T(L.Dungeon.MandragorasSoloNote), Styling.AccentAmber);
     }
 
     private static void DrawPortal(Configuration configuration)

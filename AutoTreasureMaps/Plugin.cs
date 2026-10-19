@@ -48,6 +48,8 @@ public sealed class Plugin : IDalamudPlugin
     internal Configuration Configuration { get; }
     internal WindowSystem WindowSystem { get; } = new("AutoTreasureMaps");
     internal RunHistory History { get; }
+
+    internal MapLog MapLog { get; }
     internal TreasureController Controller { get; }
     internal TreasureCatalog Catalog { get; }
     internal TreasureMessageWatcher Messages { get; }
@@ -76,6 +78,7 @@ public sealed class Plugin : IDalamudPlugin
         }
 
         History = new RunHistory();
+        MapLog = new MapLog();
         Catalog = TreasureCatalog.Build();
         Messages = new TreasureMessageWatcher(Catalog);
         Controller = new TreasureController();

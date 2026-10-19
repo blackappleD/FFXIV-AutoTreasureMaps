@@ -42,6 +42,9 @@ public abstract partial class AutoCommon
     // Set when the last RunDungeon ended on an unexpected error, for the caller to hand to the session's fault handling.
     private protected Exception? DungeonFault { get; private set; }
 
+    // Set while the rotations are told to attack only the enemy the settings want killed first.
+    private bool priorityTargeting;
+
     // Clears the treasure dungeon the character stands in, or picks the session's dungeon up where a pause or a fault
     // left it. Every step reads the field first, so the run carries on wherever the dungeon stands.
     // The caller has found the handler for the territory the character stands in.
@@ -104,6 +107,7 @@ public abstract partial class AutoCommon
         var idleSince = 0L;
         var advanceFailures = 0;
         var lastStep = DungeonStep.Idle;
+        var lootFingerprint = 0L;
         while (true)
         {
             if (CancelToken.IsCancellationRequested)
@@ -121,6 +125,8 @@ public abstract partial class AutoCommon
             {
                 return HowItEnded(dungeon);
             }
+
+            lootFingerprint = PreviewDungeonLoot(dungeon, lootFingerprint);
 
             if (Svc.Party.Length > 0)
             {
@@ -213,6 +219,25 @@ public abstract partial class AutoCommon
                     break;
             }
         }
+    }
+
+    // The loot so far shows in the cleanup list while the dungeon goes on; the bags are compared only when they changed.
+    private static long PreviewDungeonLoot(DungeonInProgress dungeon, long seen)
+    {
+        if (dungeon.BagsBefore is not { } before || !Plugin.Instance.Configuration.AutoDiscard)
+        {
+            return seen;
+        }
+
+        var fingerprint = BagSnapshot.Fingerprint();
+        if (fingerprint == seen)
+        {
+            return seen;
+        }
+
+        var (_, items) = BagSnapshot.Gains(before, BagSnapshot.Capture());
+        LootCleanup.ShowPreview(items, before);
+        return fingerprint;
     }
 
     // In order of what must come first: a dialog that waits on an answer, then anything that attacks, then the loot,
@@ -397,6 +422,12 @@ public abstract partial class AutoCommon
                     Svc.Targets.Target = null;
                 }
 
+                if (FocusPriorityEnemy(context, scope))
+                {
+                    await NextFrame(FightTickFrames);
+                    continue;
+                }
+
                 if (!inCombat && Svc.Targets.Target is null && enemy is not null)
                 {
                     Diag($"{scope}: targeting {enemy.Name} ({enemy.GameObjectId:X}), {enemies} enemy(ies) near.");
@@ -413,9 +444,64 @@ public abstract partial class AutoCommon
         }
         finally
         {
+            ReleasePriorityTargeting(scope);
             BossModIPC.Instance.ClearActive();
             HoldCombatMovement(scope);
         }
+    }
+
+    // Keeps the character on the enemy the settings want killed first, with the rotations told to attack only that
+    // target, and hands targeting back to the rotations once none is left. True while such an enemy is targeted.
+    private bool FocusPriorityEnemy(DungeonContext context, string scope)
+    {
+        var configuration = context.Config;
+        var priority = DungeonField.PriorityEnemy(context.Profile, configuration.DungeonPreferBonusEnemies, configuration.DungeonMandragorasInOrder);
+        if (priority is null)
+        {
+            ReleasePriorityTargeting(scope);
+            return false;
+        }
+
+        if (Svc.Targets.Target?.GameObjectId != priority.GameObjectId)
+        {
+            Diag($"{scope}: targeting {priority.Name} ({priority.GameObjectId:X}, name id {priority.NameId}) first.");
+            Svc.Targets.Target = priority;
+        }
+
+        if (!priorityTargeting)
+        {
+            priorityTargeting = true;
+            var modules = TreasureCombatPreset.TargetingModules;
+            var set = 0;
+            for (var index = 0; index < modules.Length; index++)
+            {
+                if (BossModIPC.Instance.AddTransientStrategy(TreasureCombatPreset.Name, modules[index], TreasureCombatPreset.TargetingTrack, TreasureCombatPreset.ManualTargeting))
+                {
+                    set++;
+                }
+            }
+
+            Diag($"{scope}: the rotations attack only the chosen target for now ({set} of {modules.Length} took it).");
+        }
+
+        return true;
+    }
+
+    private void ReleasePriorityTargeting(string scope)
+    {
+        if (!priorityTargeting)
+        {
+            return;
+        }
+
+        priorityTargeting = false;
+        var modules = TreasureCombatPreset.TargetingModules;
+        for (var index = 0; index < modules.Length; index++)
+        {
+            BossModIPC.Instance.ClearTransientStrategy(TreasureCombatPreset.Name, modules[index], TreasureCombatPreset.TargetingTrack);
+        }
+
+        Diag($"{scope}: no enemy is wanted first any more; the rotations pick their targets again.");
     }
 
     private async Task AnswerDungeonLure(DungeonContext context)

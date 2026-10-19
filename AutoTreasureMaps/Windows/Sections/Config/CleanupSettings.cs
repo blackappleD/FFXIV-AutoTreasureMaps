@@ -15,6 +15,8 @@ internal static class CleanupSettings
     private const float SearchWidth = 340f;
     private const float AddButtonWidth = 96f;
     private const int MaxResults = 20;
+    private const int MaxQuantityStep = 10;
+    private const int MaxQuantityLimit = 9_999;
     private const string KeptListId = "##atm_cleanup_kept";
     private const string ResultListId = "##atm_cleanup_results";
 
@@ -54,6 +56,28 @@ internal static class CleanupSettings
 
         using var body = Motion.PushSwitch("##atm_cleanup_body", configuration.AutoDiscard);
         SettingsRow.Note(Loc.T(configuration.AutoDiscard ? L.Cleanup.EnableHelp : L.Cleanup.Off));
+        if (!configuration.AutoDiscard)
+        {
+            return;
+        }
+
+        SettingsRow.Draw(Loc.T(L.Cleanup.MaxQuantity),
+            Loc.T(L.Cleanup.MaxQuantityHelp),
+            Stepper.DefaultWidth,
+            () => DrawMaxQuantity(configuration));
+    }
+
+    private static void DrawMaxQuantity(Configuration configuration)
+    {
+        var value = configuration.AutoDiscardMaxQuantity;
+        if (!Stepper.Draw("##atm_cleanup_max", ref value, MaxQuantityStep, 0, MaxQuantityLimit, Loc.T(L.Cleanup.MaxQuantityFormat)))
+        {
+            return;
+        }
+
+        configuration.AutoDiscardMaxQuantity = value;
+        configuration.SaveDebounced();
+        LootCleanup.ApplyLimit();
     }
 
     private static void SetAutoDiscard(bool value)

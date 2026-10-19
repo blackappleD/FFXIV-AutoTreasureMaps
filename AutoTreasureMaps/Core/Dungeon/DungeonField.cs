@@ -213,6 +213,52 @@ internal static unsafe class DungeonField
         return nearest;
     }
 
+    // The enemy the settings want killed first: the nearest rare enemy, then the mandragora whose marker comes next. Null
+    // when neither is asked for or none is near. Only live, targetable, hostile combatants within the room count.
+    public static IBattleNpc? PriorityEnemy(DungeonProfile profile, bool bonusFirst, bool mandragorasInOrder)
+    {
+        if (!bonusFirst && !mandragorasInOrder)
+        {
+            return null;
+        }
+
+        var from = PlayerPosition;
+        IBattleNpc? bonus = null;
+        var bonusDistance = EnemyMeters * EnemyMeters;
+        IBattleNpc? mandragora = null;
+        var mandragoraOrder = int.MaxValue;
+        var objects = Svc.Objects;
+        for (var index = 0; index < objects.Length; index++)
+        {
+            if (objects[index] is not IBattleNpc { BattleNpcKind: BattleNpcSubKind.Combatant, IsTargetable: true, IsDead: false } npc || npc.CurrentHp == 0 || !npc.IsHostile())
+            {
+                continue;
+            }
+
+            var distance = Vector3.DistanceSquared(from, npc.Position);
+            if (distance > EnemyMeters * EnemyMeters)
+            {
+                continue;
+            }
+
+            if (bonusFirst && profile.IsBonus(npc.NameId) && distance < bonusDistance)
+            {
+                bonusDistance = distance;
+                bonus = npc;
+                continue;
+            }
+
+            var order = mandragorasInOrder ? profile.MandragoraOrder(npc.NameId) : -1;
+            if (order >= 0 && order < mandragoraOrder)
+            {
+                mandragoraOrder = order;
+                mandragora = npc;
+            }
+        }
+
+        return bonus ?? mandragora;
+    }
+
     private static bool Faded(IGameObject coffer)
     {
         if (coffer.Address == 0)

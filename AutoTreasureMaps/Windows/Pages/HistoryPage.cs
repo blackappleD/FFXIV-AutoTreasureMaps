@@ -23,7 +23,16 @@ internal sealed class HistoryPage
     private const string NoValue = "-";
     private const float BadgeGap = 6f;
 
+    // Indexes the list switch's segments.
+    private enum ListView
+    {
+        Runs,
+        MapLog,
+    }
+
     private readonly MapTallyCards tallyCards = new();
+    private readonly MapLogTable mapLogTable = new();
+    private ListView listView;
     private bool confirmClear;
     private CachedText mapsText;
     private CachedText gilText;
@@ -43,7 +52,8 @@ internal sealed class HistoryPage
         DrawLifetime(totals, LootPrices.ValueOf(history.LifetimeTallies), history.Revision);
         Styling.VSpace(14f);
 
-        if (history.Records.Count == 0)
+        var mapLog = plugin.MapLog;
+        if (history.Records.Count == 0 && mapLog.Entries.Count == 0)
         {
             DrawEmptyState();
             return;
@@ -55,20 +65,45 @@ internal sealed class HistoryPage
             Styling.VSpace(14f);
         }
 
-        Label(Loc.T(L.History.MapsPerRun));
-        DrawChart(history);
-        Styling.VSpace(12f);
-
-        Label(Loc.T(L.History.RecentRuns));
-        var records = history.Records;
-        for (var index = 0; index < records.Count; index++)
+        if (history.Records.Count > 0)
         {
-            DrawRow(records[index], index);
-            Styling.VSpace(2f);
+            Label(Loc.T(L.History.MapsPerRun));
+            DrawChart(history);
+            Styling.VSpace(12f);
+        }
+
+        DrawListSwitch();
+        Styling.VSpace(10f);
+        if (listView == ListView.MapLog)
+        {
+            mapLogTable.Draw(mapLog);
+        }
+        else
+        {
+            var records = history.Records;
+            for (var index = 0; index < records.Count; index++)
+            {
+                DrawRow(records[index], index);
+                Styling.VSpace(2f);
+            }
         }
 
         Styling.VSpace(8f);
-        DrawClearControl(history);
+        DrawClearControl(history, mapLog);
+    }
+
+    private void DrawListSwitch()
+    {
+        ReadOnlySpan<Segmented.Item> items =
+        [
+            new(FontAwesomeIcon.History, Loc.T(L.History.RecentRuns)),
+            new(FontAwesomeIcon.Map, Loc.T(L.History.MapLogTab)),
+        ];
+        var selected = (int)listView;
+        if (Segmented.Draw("##atm_hist_list", items, ref selected, height: Layout.ActionPillHeight + 4f, width: Segmented.PreferredWidth(items)))
+        {
+            listView = (ListView)selected;
+        }
     }
 
     private static void Label(string text)
@@ -366,7 +401,7 @@ internal sealed class HistoryPage
         return span.TotalDays < 7 ? Loc.T(L.History.DaysAgo, (int)span.TotalDays) : utc.ToLocalTime().ToString("M", Loc.Culture);
     }
 
-    private void DrawClearControl(RunHistory history)
+    private void DrawClearControl(RunHistory history, MapLog mapLog)
     {
         var scale = ImGuiHelpers.GlobalScale;
         var available = ImGui.GetContentRegionAvail().X;
@@ -408,6 +443,7 @@ internal sealed class HistoryPage
         if (PillButton.Draw("##atm_hist_clear_yes", yes, Styling.AccentRose, PillButton.Emphasis.Filled))
         {
             history.Clear();
+            mapLog.Clear();
             confirmClear = false;
         }
 

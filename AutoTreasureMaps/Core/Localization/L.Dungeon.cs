@@ -49,6 +49,12 @@ internal static partial class L
         public static readonly LocString FollowHint = new("dungeon.followHint", "Follow a glowing gate");
         public static readonly LocString FollowHintHelp = new("dungeon.followHintHelp", "When the game lights one of the gates, open that one whatever the setting above says.");
         public static readonly LocString PerDungeonHelp = new("dungeon.perDungeonHelp", "The gate to try in this dungeon only.");
+        public static readonly LocString GroupBonus = new("dungeon.group.bonus", "Bonus enemies");
+        public static readonly LocString PreferBonus = new("dungeon.preferBonus", "Attack bonus enemies first");
+        public static readonly LocString PreferBonusHelp = new("dungeon.preferBonusHelp", "Rare enemies that drop extra loot and run off if left too long, such as the goldy cat and the vaultkeeper, are attacked before anything else.");
+        public static readonly LocString MandragorasInOrder = new("dungeon.mandragorasInOrder", "Kill the mandragora party in order");
+        public static readonly LocString MandragorasInOrderHelp = new("dungeon.mandragorasInOrderHelp", "The five mandragoras are killed by the numbers over their heads: onion, eggplant, garlic, tomato, then the queen. With both settings on, bonus enemies still come first.");
+        public static readonly LocString MandragorasSoloNote = new("dungeon.mandragorasSoloNote", "Not recommended solo: area attacks and the rotation's own picks can kill them out of order, which loses the full reward.");
         public static readonly LocString GroupLure = new("dungeon.group.lure", "Gambler's Lure");
         public static readonly LocString LurePolicy = new("dungeon.lurePolicy", "When the lure is set");
         public static readonly LocString LurePolicyHelp = new("dungeon.lurePolicyHelp", "A coffer can come with the Gambler's Lure, a high-or-low game that can multiply its treasure or lose all of it.");

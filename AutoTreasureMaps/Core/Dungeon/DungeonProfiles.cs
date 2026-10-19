@@ -19,6 +19,9 @@ internal static class DungeonProfiles
         AdvanceBaseIds: [2013864, 2013865, 2013866, 2013867, 2013868, 2013869, 2013870, 2013871],
         TransitBaseIds: [],
         ExitBaseIds: [],
+        // Alpaca of fortune, uolon of fortune; Turali onion, eggplant, garlic, tomato, Tuligora queen.
+        BonusNameIds: [13240, 13241],
+        MandragoraNameIds: [13242, 13243, 13244, 13245, 13246],
         Verified: false);
 
     // G18, Timeworn Gargantuaskin Map: one room, five draws of the hypnoslot machine, each paying out a gold, silver or
@@ -34,5 +37,8 @@ internal static class DungeonProfiles
         AdvanceBaseIds: [2014790],
         TransitBaseIds: [],
         ExitBaseIds: [],
+        // Goldy cat, vaultkeeper; vault onion, eggplant, garlic, tomato, queen.
+        BonusNameIds: [14014, 14015],
+        MandragoraNameIds: [14016, 14017, 14018, 14019, 14020],
         Verified: false);
 }

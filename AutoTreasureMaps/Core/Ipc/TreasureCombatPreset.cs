@@ -1,3 +1,4 @@
+using Newtonsoft.Json.Linq;
 using System.IO;
 using System.Reflection;
 
@@ -17,9 +18,37 @@ internal static class TreasureCombatPreset
 
     private const string ResourceName = "AutoTreasureMaps.Core.Ipc.TreasureCombatPreset.json";
 
+    public const string TargetingTrack = "Targeting";
+    // The rotation then attacks only what the character has targeted.
+    public const string ManualTargeting = "Manual";
+
     private static string? serialized;
+    private static string[]? targetingModules;
 
     public static string GetSerialized() => serialized ??= Read();
+
+    // The job rotations that pick their own target, which a fight that wants one enemy first switches to Manual for a while.
+    public static string[] TargetingModules => targetingModules ??= ReadTargetingModules();
+
+    private static string[] ReadTargetingModules()
+    {
+        var modules = JObject.Parse(GetSerialized())["Modules"] as JObject;
+        if (modules is null)
+        {
+            return [];
+        }
+
+        var found = new List<string>();
+        foreach (var (module, tracks) in modules)
+        {
+            if (tracks is JArray entries && entries.Any(entry => (string?)entry["Track"] == TargetingTrack))
+            {
+                found.Add(module);
+            }
+        }
+
+        return [.. found];
+    }
 
     private static string Read()
     {

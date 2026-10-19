@@ -11,6 +11,9 @@ internal static partial class L
         public static readonly LocString EnableHelp = new("cleanup.enableHelp", "Every item a coffer or a treasure dungeon gives is noted. Between maps, before walking into a portal, and once a run finishes, the noted items that are not on the whitelist are discarded from your bags. Maps and each map's high-value loot are never discarded.");
         public static readonly LocString Safety = new("cleanup.safety", "Only treasure-hunt loot is ever discarded. Items you got any other way are never touched, and neither is any item you already had before the coffer opened, even if a coffer gives more of it.");
         public static readonly LocString Off = new("cleanup.off", "Auto-discard is off. Nothing is noted or discarded.");
+        public static readonly LocString MaxQuantity = new("cleanup.maxQuantity", "Keep large stacks");
+        public static readonly LocString MaxQuantityHelp = new("cleanup.maxQuantityHelp", "An item looted in a larger quantity than this is kept instead of discarded, such as a big stack of whetstones from a treasure dungeon. 0 sets no limit.");
+        public static readonly LocString MaxQuantityFormat = new("cleanup.maxQuantityFormat", "over %d");
         public static readonly LocString Whitelist = new("cleanup.whitelist", "Whitelist");
         public static readonly LocString AddItem = new("cleanup.addItem", "Add an item");
         public static readonly LocString AddItemHelp = new("cleanup.addItemHelp", "Search any item in the game by name or item ID. You can also right-click an item in your inventory and choose \"Add to cleanup whitelist\".");

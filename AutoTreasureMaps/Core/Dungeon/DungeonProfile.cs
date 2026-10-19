@@ -12,7 +12,9 @@ internal enum DungeonKind : byte { Gate, Slot }
 // moves the run on (the gates, the slot machine). Transit names the circle a gate dungeon walks into after a gate
 // opens, and may be empty while it is not known yet. Exit names an exit point to use when the game will not let the
 // duty be left from the duty list. MapItemId is the timeworn map whose portal usually leads here, which the stats
-// credit a dungeon to when the run did not see the portal itself.
+// credit a dungeon to when the run did not see the portal itself. BonusNameIds are the BNpcName rows of the rare
+// enemies that drop extra loot and leave if not killed in time; MandragoraNameIds are the mandragora party's, in the
+// order their markers ask them to be killed.
 internal sealed record DungeonProfile(
     string Key,
     uint MapItemId,
@@ -24,6 +26,8 @@ internal sealed record DungeonProfile(
     uint[] AdvanceBaseIds,
     uint[] TransitBaseIds,
     uint[] ExitBaseIds,
+    uint[] BonusNameIds,
+    uint[] MandragoraNameIds,
     bool Verified)
 {
     public bool IsCoffer(uint baseId) => Array.IndexOf(CofferBaseIds, baseId) >= 0;
@@ -33,4 +37,9 @@ internal sealed record DungeonProfile(
     public bool IsTransit(uint baseId) => Array.IndexOf(TransitBaseIds, baseId) >= 0;
 
     public bool IsExit(uint baseId) => Array.IndexOf(ExitBaseIds, baseId) >= 0;
+
+    public bool IsBonus(uint nameId) => Array.IndexOf(BonusNameIds, nameId) >= 0;
+
+    // The mandragora's place in the kill order, or -1 for any other enemy.
+    public int MandragoraOrder(uint nameId) => Array.IndexOf(MandragoraNameIds, nameId);
 }
