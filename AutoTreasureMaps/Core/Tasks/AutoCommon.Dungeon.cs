@@ -31,6 +31,8 @@ public abstract partial class AutoCommon
     private const int DungeonFightCapMs = 600_000;
     private const int LureClickAttempts = 3;
     private const int LureCloseWaitMs = 3_000;
+    // A guess takes about 15 seconds to play out; with no lure message for this long the lure is taken as over.
+    private const int LureQuietLimitMs = 60_000;
     private const int BonusRoundCapMs = 120_000;
     private const float SackReachMeters = 0.6f;
     private const int SackWalkMs = 10_000;
@@ -267,7 +269,7 @@ public abstract partial class AutoCommon
     private DungeonStep Decide(TreasureDungeonHandler handler, DungeonContext context, long idleSince)
     {
         var dungeon = context.Dungeon;
-        if (LureDialog.Open())
+        if (LureOngoing(dungeon))
         {
             return DungeonStep.Lure;
         }
@@ -536,7 +538,7 @@ public abstract partial class AutoCommon
         {
             while (!CancelToken.IsCancellationRequested && Environment.TickCount64 < deadline)
             {
-                if (IsKnockedOut() || context.Zoning || !context.InDungeon || LureDialog.Open())
+                if (IsKnockedOut() || context.Zoning || !context.InDungeon || LureOngoing(context.Dungeon))
                 {
                     return;
                 }
@@ -657,11 +659,46 @@ public abstract partial class AutoCommon
         Diag($"{scope}: no enemy is wanted first any more; the rotations pick their targets again.");
     }
 
+    // The lure's window closes the moment a guess is taken and opens again for the next one, so between the two the
+    // coffer looks free to open and the gates free to take. The lure runs from the trap springing until the game says
+    // how it ended; until then nothing else in the chamber is touched.
+    private bool LureOngoing(DungeonInProgress dungeon)
+    {
+        if (LureDialog.Open())
+        {
+            return true;
+        }
+
+        return Messages.TryGetLatest(LureMessages, dungeon.RoundStartedAtMs, out var latest)
+            && latest.Id is DungeonLogMessages.LureSprung or DungeonLogMessages.LureRound or DungeonLogMessages.LureDisarmed
+            && Environment.TickCount64 - latest.AtMs < LureQuietLimitMs;
+    }
+
+    private static ReadOnlySpan<uint> LureMessages =>
+    [
+        DungeonLogMessages.LureSprung,
+        DungeonLogMessages.LureRound,
+        DungeonLogMessages.LureDisarmed,
+        DungeonLogMessages.LureNotDisarmed,
+        DungeonLogMessages.LureDeclined,
+        DungeonLogMessages.LureStopped,
+        DungeonLogMessages.LureAllDisarmed,
+        DungeonLogMessages.LureFailed,
+    ];
+
     private async Task AnswerDungeonLure(DungeonContext context)
     {
         const string scope = "dungeon-lure";
         var dungeon = context.Dungeon;
         var policy = Plugin.Instance.Configuration.DungeonLurePolicy;
+        if (policy == LurePolicy.OpenCoffer && !LureDialog.Open())
+        {
+            // The coffer was opened as it is; the game has yet to say so.
+            Status = "Gambler's Lure: waiting for it to end";
+            await NextFrame(DungeonTickFrames);
+            return;
+        }
+
         if (policy == LurePolicy.OpenCoffer)
         {
             Status = "Opening the coffer as it is";
@@ -696,7 +733,7 @@ public abstract partial class AutoCommon
         }
 
         Status = "Gambler's Lure: up to you";
-        while (LureDialog.Open() && !CancelToken.IsCancellationRequested && context.InDungeon)
+        while (LureOngoing(dungeon) && !CancelToken.IsCancellationRequested && context.InDungeon)
         {
             await NextFrame(DungeonTickFrames);
         }
@@ -852,7 +889,7 @@ public abstract partial class AutoCommon
 
         // Something on the field that answers what the run just did: a fight, or the lure.
         public bool FieldBusy()
-            => Svc.Condition[ConditionFlag.InCombat] || LureDialog.Open() || DungeonField.NearestEnemy(out _) is not null;
+            => Svc.Condition[ConditionFlag.InCombat] || owner.LureOngoing(Dungeon) || DungeonField.NearestEnemy(out _) is not null;
 
         public bool PromptOpen() => NpcInteraction.SelectYesnoOpen();
 

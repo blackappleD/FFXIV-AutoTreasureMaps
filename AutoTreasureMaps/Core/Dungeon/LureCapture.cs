@@ -2,6 +2,7 @@ using AutoTreasureMaps.Core.Localization;
 using Dalamud.Game.Addon.Lifecycle;
 using Dalamud.Game.Addon.Lifecycle.AddonArgTypes;
 using Dalamud.Game.Chat;
+using Dalamud.Game.ClientState.Conditions;
 using Dalamud.Game.ClientState.Objects.Enums;
 using Dalamud.Hooking;
 using Dalamud.Plugin.Services;
@@ -13,14 +14,17 @@ using System.Globalization;
 using System.IO;
 using System.Numerics;
 using System.Text;
+using NativeGameObject = FFXIVClientStructs.FFXIV.Client.Game.Object.GameObject;
 using NativeTreasure = FFXIVClientStructs.FFXIV.Client.Game.Object.Treasure;
 
 namespace AutoTreasureMaps.Core.Dungeon;
 
-// Writes down everything the Gambler's Lure window shows and does, so the high-or-low game can be read and answered
-// later: the window's values and visible nodes whenever they change, the events and callbacks its buttons fire, the
-// lure's log messages, and the item ids of the coffer it sits on. Always on, and quiet until the window opens. Each
-// day is one plain text file in the plugin's config folder. Read only on the framework thread.
+// Writes down everything the Gambler's Lure shows and does, so the high-or-low game can be read and answered later:
+// the lure window's values and visible nodes whenever they change, the events and callbacks its buttons fire, the
+// lure's log messages and the item ids of the coffer it sits on. The cards are dealt after the window closes, so from
+// the trap springing until the game says how it ended, every other window that opens, every callback, log message,
+// condition change and object that comes or goes nearby is written down too. Always on, and quiet until a lure
+// springs. Each day is one plain text file in the plugin's config folder. Read only on the framework thread.
 internal sealed unsafe class LureCapture : IDisposable
 {
     private const string AddonName = "TreasureHighLow";
@@ -30,11 +34,16 @@ internal sealed unsafe class LureCapture : IDisposable
     private const float CofferMeters = 8f;
     private const uint FirstLureMessage = DungeonLogMessages.LureNotDisarmed;
     private const uint LastLureMessage = DungeonLogMessages.LureSet;
+    private const float FieldMeters = 20f;
 
     private static readonly AddonEvent[] snapshotEvents = [AddonEvent.PostSetup, AddonEvent.PostRefresh, AddonEvent.PostRequestedUpdate];
+    private static readonly AddonEvent[] otherAddonEvents = [AddonEvent.PostSetup, AddonEvent.PostRefresh, AddonEvent.PreFinalize];
 
     private readonly Hook<AtkUnitBase.Delegates.FireCallback>? callbackHook;
+    private readonly Dictionary<string, string> otherSnapshots = [];
+    private readonly Dictionary<ulong, string> fieldObjects = [];
     private string lastSnapshot = string.Empty;
+    private bool lureRunning;
     private int framesUntilPoll;
     private bool open;
     private bool noticeShown;
@@ -48,6 +57,12 @@ internal sealed unsafe class LureCapture : IDisposable
 
         Svc.AddonLifecycle.RegisterListener(AddonEvent.PreReceiveEvent, AddonName, OnReceiveEvent);
         Svc.AddonLifecycle.RegisterListener(AddonEvent.PreFinalize, AddonName, OnFinalize);
+        foreach (var otherEvent in otherAddonEvents)
+        {
+            Svc.AddonLifecycle.RegisterListener(otherEvent, OnOtherAddon);
+        }
+
+        Svc.Condition.ConditionChange += OnConditionChange;
         Svc.Chat.LogMessage += OnLogMessage;
         Svc.Framework.Update += OnUpdate;
         try
@@ -68,6 +83,12 @@ internal sealed unsafe class LureCapture : IDisposable
         callbackHook?.Dispose();
         Svc.Framework.Update -= OnUpdate;
         Svc.Chat.LogMessage -= OnLogMessage;
+        Svc.Condition.ConditionChange -= OnConditionChange;
+        foreach (var otherEvent in otherAddonEvents)
+        {
+            Svc.AddonLifecycle.UnregisterListener(otherEvent, OnOtherAddon);
+        }
+
         foreach (var snapshotEvent in snapshotEvents)
         {
             Svc.AddonLifecycle.UnregisterListener(snapshotEvent, AddonName, OnSnapshotEvent);
@@ -83,6 +104,7 @@ internal sealed unsafe class LureCapture : IDisposable
         if (type == AddonEvent.PostSetup)
         {
             open = true;
+            BeginLure();
             lastSnapshot = string.Empty;
             Write("open");
             WriteCoffers();
@@ -115,9 +137,9 @@ internal sealed unsafe class LureCapture : IDisposable
     {
         try
         {
-            if (addon is not null && addon->NameString == AddonName)
+            if (addon is not null && (lureRunning || addon->NameString == AddonName))
             {
-                var line = new StringBuilder("callback: close ").Append(close).Append(", values [");
+                var line = new StringBuilder("callback ").Append(addon->NameString).Append(": close ").Append(close).Append(", values [");
                 for (var index = 0; index < valueCount; index++)
                 {
                     line.Append(index > 0 ? ", " : string.Empty).Append(DescribeValue(values[index]));
@@ -137,23 +159,140 @@ internal sealed unsafe class LureCapture : IDisposable
     // Catches what changes without a refresh, such as the second card turning over.
     private void OnUpdate(IFramework framework)
     {
-        if (!open || --framesUntilPoll > 0)
+        if (!(open || lureRunning) || --framesUntilPoll > 0)
         {
             return;
         }
 
         framesUntilPoll = PollIntervalFrames;
-        if (GenericHelpers.TryGetAddonByName<AtkUnitBase>(AddonName, out var addon))
+        if (open && GenericHelpers.TryGetAddonByName<AtkUnitBase>(AddonName, out var addon))
         {
             Snapshot(addon, "poll");
+        }
+
+        if (lureRunning)
+        {
+            ScanField();
+        }
+    }
+
+    private void BeginLure()
+    {
+        if (lureRunning)
+        {
+            return;
+        }
+
+        lureRunning = true;
+        otherSnapshots.Clear();
+        fieldObjects.Clear();
+        Write("lure running");
+        ScanField();
+    }
+
+    private void EndLure(uint messageId)
+    {
+        if (!lureRunning)
+        {
+            return;
+        }
+
+        ScanField();
+        lureRunning = false;
+        Write($"lure over: {messageId}");
+    }
+
+    // The window the cards are guessed in is not known yet, so every window but the HUD's is written down while a
+    // lure runs.
+    private void OnOtherAddon(AddonEvent type, AddonArgs args)
+    {
+        var name = args.AddonName;
+        if (!lureRunning || name == AddonName || name.StartsWith('_'))
+        {
+            return;
+        }
+
+        if (type == AddonEvent.PreFinalize)
+        {
+            Write($"addon {name}: close");
+            otherSnapshots.Remove(name);
+            return;
+        }
+
+        var addon = (AtkUnitBase*)args.Addon.Address;
+        if (addon is null)
+        {
+            return;
+        }
+
+        var text = Describe(addon);
+        if (otherSnapshots.TryGetValue(name, out var before) && before == text)
+        {
+            return;
+        }
+
+        otherSnapshots[name] = text;
+        Write($"addon {name} ({type}):\n{text.TrimEnd()}");
+    }
+
+    private void OnConditionChange(ConditionFlag flag, bool value)
+    {
+        if (lureRunning)
+        {
+            Write($"condition {flag} = {value}");
+        }
+    }
+
+    // The cards may be objects of their own above the coffer, so whatever comes, changes or goes nearby is written.
+    private void ScanField()
+    {
+        if (Svc.Objects.LocalPlayer is not { } player)
+        {
+            return;
+        }
+
+        var still = new HashSet<ulong>();
+        foreach (var candidate in Svc.Objects)
+        {
+            if (candidate.ObjectKind is ObjectKind.Pc or ObjectKind.Companion
+                || candidate.Address == 0 || Vector3.Distance(player.Position, candidate.Position) > FieldMeters)
+            {
+                continue;
+            }
+
+            var id = candidate.GameObjectId;
+            still.Add(id);
+            var native = (NativeGameObject*)candidate.Address;
+            var position = candidate.Position;
+            var line = string.Create(CultureInfo.InvariantCulture,
+                $"{candidate.ObjectKind} base {candidate.BaseId} '{candidate.Name.TextValue}' ({id:X}) at ({position.X:F2}, {position.Y:F2}, {position.Z:F2}) rot {candidate.Rotation:F2}, targetable {candidate.IsTargetable}, render {native->RenderFlags}");
+            if (fieldObjects.TryGetValue(id, out var before) && before == line)
+            {
+                continue;
+            }
+
+            Write($"{(before is null ? "object" : "object change")}: {line}");
+            fieldObjects[id] = line;
+        }
+
+        foreach (var id in fieldObjects.Keys.Where(id => !still.Contains(id)).ToArray())
+        {
+            Write($"object gone: {fieldObjects[id]}");
+            fieldObjects.Remove(id);
         }
     }
 
     private void OnLogMessage(ILogMessage message)
     {
-        if (message.LogMessageId is < FirstLureMessage or > LastLureMessage)
+        var lureMessage = message.LogMessageId is >= FirstLureMessage and <= LastLureMessage;
+        if (!lureMessage && !lureRunning)
         {
             return;
+        }
+
+        if (message.LogMessageId == DungeonLogMessages.LureSprung)
+        {
+            BeginLure();
         }
 
         var line = new StringBuilder("log ").Append(message.LogMessageId).Append(": params [");
@@ -168,6 +307,12 @@ internal sealed unsafe class LureCapture : IDisposable
         {
             WriteCoffers();
         }
+
+        if (message.LogMessageId is DungeonLogMessages.LureNotDisarmed or DungeonLogMessages.LureDeclined or DungeonLogMessages.LureStopped
+            or DungeonLogMessages.LureAllDisarmed or DungeonLogMessages.LureFailed)
+        {
+            EndLure(message.LogMessageId);
+        }
     }
 
     private void Snapshot(AtkUnitBase* addon, string reason)
@@ -177,6 +322,18 @@ internal sealed unsafe class LureCapture : IDisposable
             return;
         }
 
+        var text = Describe(addon);
+        if (text == lastSnapshot)
+        {
+            return;
+        }
+
+        lastSnapshot = text;
+        Write($"snapshot ({reason}):\n{text.TrimEnd()}");
+    }
+
+    private static string Describe(AtkUnitBase* addon)
+    {
         var body = new StringBuilder();
         body.Append("  visible ").Append(addon->IsVisible).Append(", values ").Append(addon->AtkValuesCount).AppendLine();
         for (var index = 0; index < addon->AtkValuesCount; index++)
@@ -189,14 +346,7 @@ internal sealed unsafe class LureCapture : IDisposable
         }
 
         DescribeNodes(&addon->UldManager, body, "  ", NodeDepth);
-        var text = body.ToString();
-        if (text == lastSnapshot)
-        {
-            return;
-        }
-
-        lastSnapshot = text;
-        Write($"snapshot ({reason}):\n{text.TrimEnd()}");
+        return body.ToString();
     }
 
     private static void DescribeNodes(AtkUldManager* manager, StringBuilder body, string indent, int depth)
