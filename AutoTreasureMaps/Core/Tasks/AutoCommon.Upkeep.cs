@@ -1,3 +1,4 @@
+using AutoTreasureMaps.Core.Cleanup;
 using AutoTreasureMaps.Core.Game.Ops;
 using AutoTreasureMaps.Core.Travel;
 using Dalamud.Game.ClientState.Conditions;
@@ -13,6 +14,8 @@ public abstract partial class AutoCommon
     // A failed repair or break tends to fail the same way straight after (no Dark Matter, city not attuned), so it rests first.
     private const int UpkeepRepairRetryMs = 600_000;
     private const int UpkeepBreakRetryMs = 300_000;
+    // Each slot takes about a second, and a pass stops itself at its cap well inside this.
+    private const int UpkeepCleanupWaitMs = 120_000;
 
     private int mapsSinceBreak;
     private long repairRetryAtMs;
@@ -29,7 +32,8 @@ public abstract partial class AutoCommon
         var configuration = Plugin.Instance.Configuration;
         var repairDue = UpkeepRepairDue(configuration);
         var breakDue = UpkeepBreakDue(configuration);
-        if (!repairDue && !breakDue && !UpkeepConsumablesDue(configuration))
+        var cleanupDue = UpkeepCleanupDue(configuration);
+        if (!repairDue && !breakDue && !cleanupDue && !UpkeepConsumablesDue(configuration))
         {
             return false;
         }
@@ -39,7 +43,12 @@ public abstract partial class AutoCommon
             return false;
         }
 
-        if (repairDue)
+        if (cleanupDue)
+        {
+            await RunScheduledCleanup();
+        }
+
+        if (repairDue && !CancelToken.IsCancellationRequested)
         {
             await RunScheduledRepair();
         }
@@ -66,6 +75,9 @@ public abstract partial class AutoCommon
         => configuration.CityBreaksEnabled
         && Environment.TickCount64 >= breakRetryAtMs
         && mapsSinceBreak >= Math.Max(1, configuration.HumanizerMapsBeforeBreak);
+
+    private static bool UpkeepCleanupDue(Configuration configuration)
+        => configuration.AutoDiscard && LootCleanup.HasPending;
 
     private static bool UpkeepConsumablesDue(Configuration configuration)
         => configuration.AutoConsume
@@ -98,6 +110,22 @@ public abstract partial class AutoCommon
 
         Diag($"Upkeep: something is due but the character is busy ({ConditionTag()}); trying again after the next map");
         return false;
+    }
+
+    // The discards run on the framework tick; this only starts the pass and waits it out, stopping it with the run.
+    private async Task RunScheduledCleanup()
+    {
+        Status = "Discarding loot";
+        Diag($"Upkeep: discarding {LootCleanup.Pending.Count} kinds of noted loot");
+        LootCleanup.Start();
+        if (!await WaitUntilTimed(() => !LootCleanup.Running, UpkeepCleanupWaitMs, "loot-cleanup") && LootCleanup.Running)
+        {
+            LootCleanup.Stop();
+            if (!CancelToken.IsCancellationRequested)
+            {
+                Warn("Upkeep: the loot cleanup did not finish; the rest waits for the next map");
+            }
+        }
     }
 
     private async Task RunScheduledRepair()

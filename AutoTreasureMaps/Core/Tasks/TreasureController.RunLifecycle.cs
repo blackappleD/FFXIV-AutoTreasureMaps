@@ -1,3 +1,4 @@
+using AutoTreasureMaps.Core.Cleanup;
 using AutoTreasureMaps.Core.Stats;
 
 namespace AutoTreasureMaps.Core.Tasks;
@@ -37,10 +38,24 @@ internal sealed partial class TreasureController
             return;
         }
 
+        StartFinalCleanup(owningSession);
+
         if (!TryRunAfterAction(owningSession))
         {
             ClearRun();
         }
+    }
+
+    // The loot of the last maps never reaches an upkeep, so a run that met its stop condition discards it as it ends.
+    private void StartFinalCleanup(TreasureSession ending)
+    {
+        if (!ending.CompletedByStopCondition || ending.EndedWithFault || !Plugin.Instance.Configuration.AutoDiscard || !LootCleanup.HasPending)
+        {
+            return;
+        }
+
+        Diag($"Run ended by its stop condition; discarding {LootCleanup.Pending.Count} kinds of noted loot.");
+        LootCleanup.Start();
     }
 
     // The finished run stays on screen while its after-run action runs, and is cleared once that ends.
@@ -126,6 +141,7 @@ internal sealed partial class TreasureController
                 GilSpentOnMaps = ending.GilSpentOnMaps,
                 MapsGathered = ending.MapsGathered,
                 NotableItems = ending.NotableItems.Count == 0 ? null : new Dictionary<uint, int>(ending.NotableItems),
+                Tallies = ending.Tallies.Count == 0 ? null : MapTally.Copy(ending.Tallies),
                 EndedBy = ending.EndedBy ?? (ending.EndedWithFault ? RunEnd.Faulted : RunEnd.Stopped),
                 Refusal = ending.EndRefusal,
                 JobAbbreviation = ending.JobAbbreviation,

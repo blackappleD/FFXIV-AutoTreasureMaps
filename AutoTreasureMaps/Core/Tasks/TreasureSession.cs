@@ -1,4 +1,5 @@
 using AutoTreasureMaps.Core.Dungeon;
+using AutoTreasureMaps.Core.Stats;
 using AutoTreasureMaps.Core.Treasure;
 using ECommons.DalamudServices;
 using System.Collections.Immutable;
@@ -14,6 +15,9 @@ public sealed class TreasureSession
     private long pausedMs;
     private long pauseStartedAtMs;
     private DateTime? endedAt;
+
+    // The map whose portal the run last saw, so the dungeon behind it is credited to that map.
+    private uint portalMapItemId;
 
     public TreasureSession()
     {
@@ -78,6 +82,12 @@ public sealed class TreasureSession
 
     internal Dictionary<uint, int> NotableItems { get; } = [];
 
+    // Per kind of map, by the timeworn map's item id; only the maps this run took on appear.
+    internal Dictionary<uint, MapTally> Tallies { get; } = [];
+
+    // Bumped whenever a tally changes, so captions built from them know when to rebuild.
+    internal int TallyRevision { get; private set; }
+
     // Null while the run goes on, and for a run stopped from outside before it decided.
     internal RunEnd? EndedBy { get; private set; }
 
@@ -118,13 +128,22 @@ public sealed class TreasureSession
         MapsRun++;
         Gil += result.Gil;
         ItemsGained += result.ItemCount;
-        if (result.PortalSeen || result.Refusal == MapRefusal.PortalDug)
+        var portal = result.PortalSeen || result.Refusal == MapRefusal.PortalDug;
+        if (portal)
         {
             PortalsSeen++;
         }
 
         NoteNotableItems(result.Items);
         CountOutcome(result.Outcome);
+        if (result.HasTier)
+        {
+            var mapItemId = result.Tier.TimewornItemId;
+            var tally = TallyFor(mapItemId);
+            tally.Maps++;
+            NoteHighValueItems(tally, mapItemId, result.Items);
+            portalMapItemId = portal ? mapItemId : 0;
+        }
     }
 
     // A dungeon's gains count once it has ended, like a map's.
@@ -144,6 +163,14 @@ public sealed class TreasureSession
         Gil += result.Gil;
         ItemsGained += result.ItemCount;
         NoteNotableItems(result.Items);
+
+        // A dungeon entered by hand, or resumed after the portal's map was recorded in another run, goes to the map
+        // that usually leads there.
+        var mapItemId = portalMapItemId != 0 ? portalMapItemId : result.Profile.MapItemId;
+        portalMapItemId = 0;
+        var tally = TallyFor(mapItemId);
+        tally.NoteFloor(result.Round);
+        NoteHighValueItems(tally, mapItemId, result.Items);
     }
 
     internal void RecordPurchase(int gil)
@@ -270,6 +297,36 @@ public sealed class TreasureSession
             if (NotableLoot.IsNotable(item.ItemId))
             {
                 NotableItems[item.ItemId] = NotableItems.GetValueOrDefault(item.ItemId) + item.Quantity;
+            }
+        }
+    }
+
+    private MapTally TallyFor(uint mapItemId)
+    {
+        TallyRevision++;
+        if (!Tallies.TryGetValue(mapItemId, out var tally))
+        {
+            tally = new MapTally();
+            Tallies[mapItemId] = tally;
+        }
+
+        return tally;
+    }
+
+    private static void NoteHighValueItems(MapTally tally, uint mapItemId, ImmutableArray<ItemGain> gains)
+    {
+        if (gains.IsDefaultOrEmpty)
+        {
+            return;
+        }
+
+        var items = gains.AsSpan();
+        for (var index = 0; index < items.Length; index++)
+        {
+            var item = items[index];
+            if (HighValueLoot.Counts(mapItemId, item.ItemId))
+            {
+                tally.NoteItem(item.ItemId, item.Quantity);
             }
         }
     }

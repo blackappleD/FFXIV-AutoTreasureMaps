@@ -1,3 +1,4 @@
+using AutoTreasureMaps.Core.Cleanup;
 using AutoTreasureMaps.Core.External;
 using AutoTreasureMaps.Core.Gather;
 using AutoTreasureMaps.Core.Ipc;
@@ -111,6 +112,7 @@ internal sealed partial class TreasureController
         currentTask = null;
         PauseReason = PauseReason.None;
         Svc.Automation.Stop();
+        LootCleanup.Stop();
         if (ending is not null || taskWasRunning)
         {
             ReleaseHelpers();

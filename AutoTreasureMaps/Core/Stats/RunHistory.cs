@@ -20,6 +20,9 @@ internal sealed class RunHistory
 
     public LifetimeTotals Lifetime { get; private set; }
 
+    // Every recorded run's tallies summed per kind of map.
+    public Dictionary<uint, MapTally> LifetimeTallies { get; private set; } = [];
+
     // Bumped on every change, so captions built from the history know when to rebuild.
     public int Revision { get; private set; }
 
@@ -82,6 +85,7 @@ internal sealed class RunHistory
     private void RecomputeLifetime()
     {
         var totals = new LifetimeTotals { Runs = Records.Count };
+        var tallies = new Dictionary<uint, MapTally>();
         for (var index = 0; index < Records.Count; index++)
         {
             var record = Records[index];
@@ -90,9 +94,25 @@ internal sealed class RunHistory
             totals.Gil += record.NetGil;
             totals.Portals += record.PortalsSeen;
             totals.Seconds += record.DurationSeconds;
+            if (record.Tallies is null)
+            {
+                continue;
+            }
+
+            foreach (var (mapItemId, tally) in record.Tallies)
+            {
+                if (!tallies.TryGetValue(mapItemId, out var sum))
+                {
+                    sum = new MapTally();
+                    tallies[mapItemId] = sum;
+                }
+
+                sum.Add(tally);
+            }
         }
 
         Lifetime = totals;
+        LifetimeTallies = tallies;
         Revision++;
     }
 
@@ -126,7 +146,6 @@ internal sealed class RunHistory
         public double Seconds;
 
         public readonly double MapsPerHour => Seconds > 0 ? Maps / (Seconds / 3600.0) : 0;
-        public readonly long GilPerMap => MapsRun > 0 ? Gil / MapsRun : 0;
         public readonly TimeSpan Duration => TimeSpan.FromSeconds(Seconds);
     }
 }

@@ -1,4 +1,5 @@
 using AutoTreasureMaps.Core.Localization;
+using AutoTreasureMaps.Core.Market;
 using AutoTreasureMaps.Core.Tasks;
 using AutoTreasureMaps.Core.Treasure;
 using AutoTreasureMaps.Windows.Components;
@@ -25,6 +26,7 @@ internal static class RunningPanel
     private static CachedText gilText;
     private static CachedText itemsText;
     private static CachedText timeLeftText;
+    private static readonly MapTallyCards tallyCards = new();
 
     public static void Draw(TreasureController controller)
     {
@@ -37,6 +39,16 @@ internal static class RunningPanel
 
         Styling.VSpace(10f);
         DrawStatTiles(controller);
+    }
+
+    // The run's maps so far, one card per kind; nothing until the first map has ended.
+    public static void DrawTallies(TreasureController controller)
+    {
+        if (controller.SessionSnapshot is { Tallies.Count: > 0 } session)
+        {
+            Styling.VSpace(20f);
+            tallyCards.Draw(session.Tallies, session.TallyRevision);
+        }
     }
 
     private static void DrawHeaderStrip(string footer, Vector4 accent, Vector4 accentSoft, bool paused)
@@ -230,12 +242,14 @@ internal static class RunningPanel
         ImGui.SameLine(0, gap);
         var items = session?.ItemsGained ?? 0;
         var itemsSub = items > 0 ? itemsText.Get(items, static key => Loc.Plural(L.MapRun.Items, (int)key)) : null;
-        var netGil = session is null ? 0 : session.Gil - session.GilSpentOnMaps;
+        // The high-value loot counts at its market price on top of the gil looted less the gil spent on maps.
+        var lootValue = session is null ? 0 : LootPrices.ValueOf(session.Tallies);
+        var netGil = session is null ? 0 : session.Gil - session.GilSpentOnMaps + lootValue;
         var gil = gilText.Get(netGil, static key => key.ToString("N0", Loc.Culture));
         StatTile.Draw(Loc.T(L.Run.TileGil), gil, itemsSub, Styling.AccentAmber, tileWidth);
-        if (session is not null && (session.NotableItems.Count > 0 || session.MapsBought > 0) && ImGui.IsItemHovered())
+        if (session is not null && (session.NotableItems.Count > 0 || session.MapsBought > 0 || lootValue > 0) && ImGui.IsItemHovered())
         {
-            Tooltip.Show(GilTooltip(session));
+            Tooltip.Show(GilTooltip(session, lootValue));
         }
 
         ImGui.SameLine(0, gap);
@@ -282,13 +296,22 @@ internal static class RunningPanel
         }
     }
 
-    // The tile shows the gil looted less the gil spent on maps; the tooltip splits the two.
-    private static string GilTooltip(TreasureSession session)
+    // The tile shows the gil looted and the high-value loot's worth, less the gil spent on maps; the tooltip splits them.
+    private static string GilTooltip(TreasureSession session, long lootValue)
     {
         var lines = new StringBuilder();
-        if (session.MapsBought > 0)
+        if (session.MapsBought > 0 || lootValue > 0)
         {
             lines.Append(Loc.T(L.Run.TooltipCount, Loc.T(L.Market.TooltipLooted), session.Gil.ToString("N0", Loc.Culture)));
+        }
+
+        if (lootValue > 0)
+        {
+            lines.Append('\n').Append(Loc.T(L.Run.TooltipCount, Loc.T(L.Stats.LootValue), lootValue.ToString("N0", Loc.Culture)));
+        }
+
+        if (session.MapsBought > 0)
+        {
             lines.Append('\n').Append(Loc.T(L.Run.TooltipCount, Loc.T(L.Market.TooltipSpent), session.GilSpentOnMaps.ToString("N0", Loc.Culture)));
             lines.Append('\n').Append(Loc.T(L.Run.TooltipCount, Loc.T(L.Market.TooltipBought), session.MapsBought));
         }

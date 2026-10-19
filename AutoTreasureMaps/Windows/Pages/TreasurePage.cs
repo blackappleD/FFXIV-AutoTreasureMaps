@@ -31,6 +31,8 @@ internal sealed class TreasurePage
             RunningPanel.Draw(controller);
             DrawLiveMap(controller.Progress);
             DrawLastMap(controller.Progress);
+            LootCleanupCard.Draw(controller);
+            RunningPanel.DrawTallies(controller);
             return;
         }
 
@@ -48,6 +50,7 @@ internal sealed class TreasurePage
         SectionTitle(Loc.T(L.Treasure.CurrentMap));
         DrawCurrentMap(plugin);
         DrawLastMap(plugin.Controller.Progress);
+        LootCleanupCard.Draw(plugin.Controller);
         Styling.VSpace(20f);
         SectionTitle(Loc.T(L.Maps.BagTitle));
         MapBagCard.Draw(plugin);

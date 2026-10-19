@@ -30,6 +30,9 @@ internal sealed class RunRecord
     public int ItemsGained { get; set; }
     public int MapsGathered { get; set; }
     public Dictionary<uint, int>? NotableItems { get; set; }
+
+    // Per kind of map, by the timeworn map's item id.
+    public Dictionary<uint, MapTally>? Tallies { get; set; }
     public int MapsBought { get; set; }
 
     // Market tax included.

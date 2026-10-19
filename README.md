@@ -59,6 +59,7 @@ Works through the timeworn maps in your bags for you. Press **Start** and the pl
 - **After-run action**: stay logged in, return to the inn, log out, or close the game once the last map is done.
 - **Auto-repair**: Dark Matter first, then your Grand Company mender or a repair NPC you pick.
 - **Auto-consume**: keeps food and medicine buffs up between maps, HQ first.
+- **Loot cleanup** (off by default): notes what each coffer and treasure dungeon gives and discards whatever is not on your whitelist, between maps and when a run finishes. Maps and each map's high-value loot are always kept; right-click an item in your inventory to whitelist it.
 - **Humanizer**: waits a random moment before each teleport, dig, coffer and fight, and takes city breaks between maps, so long sessions look less mechanical.
 - **Pause & resume**: park a run without losing your place, and auto-pause while you're in a duty.
 - **Party invites**: auto-declines incoming invites during a run after a random delay, with an optional reply message.

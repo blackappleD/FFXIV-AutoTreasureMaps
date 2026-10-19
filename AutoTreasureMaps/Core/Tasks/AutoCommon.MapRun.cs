@@ -1,3 +1,4 @@
+using AutoTreasureMaps.Core.Cleanup;
 using AutoTreasureMaps.Core.Localization;
 using AutoTreasureMaps.Core.Treasure;
 using ECommons.DalamudServices;
@@ -54,6 +55,7 @@ public abstract partial class AutoCommon
         }
 
         session.RecordMap(result);
+        LootCleanup.Note(result.Items);
         progress.FinishMap(result);
         Diag($"Map: {(result.HasTier ? result.Tier.Name : "no map")} ended {result.Outcome}{(result.Refusal == MapRefusal.None ? string.Empty : $" ({result.Refusal})")}, {result.Gil} gil, {result.ItemCount} items in {result.Items.Length} stacks, portal {(result.PortalSeen ? "seen" : "not seen")}, {result.Duration.TotalSeconds:F0}s.");
         Announce(result);

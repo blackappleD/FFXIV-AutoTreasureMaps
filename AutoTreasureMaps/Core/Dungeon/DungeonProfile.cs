@@ -11,9 +11,11 @@ internal enum DungeonKind : byte { Gate, Slot }
 // the chamber's treasure stands in; a coffer of the Treasure kind is found without a listed id. Advance names what
 // moves the run on (the gates, the slot machine). Transit names the circle a gate dungeon walks into after a gate
 // opens, and may be empty while it is not known yet. Exit names an exit point to use when the game will not let the
-// duty be left from the duty list.
+// duty be left from the duty list. MapItemId is the timeworn map whose portal usually leads here, which the stats
+// credit a dungeon to when the run did not see the portal itself.
 internal sealed record DungeonProfile(
     string Key,
+    uint MapItemId,
     uint TerritoryId,
     uint ContentFinderConditionId,
     DungeonKind Kind,

@@ -1,3 +1,4 @@
+using AutoTreasureMaps.Core.Cleanup;
 using AutoTreasureMaps.Core.Dungeon;
 using AutoTreasureMaps.Core.Game.Ops;
 using AutoTreasureMaps.Core.Ipc;
@@ -82,6 +83,7 @@ public abstract partial class AutoCommon
 
         session.ActiveDungeon = null;
         session.RecordDungeon(result);
+        LootCleanup.Note(result.Items);
         Diag($"Dungeon: {dungeon.Profile.Key} ended {outcome} in round {dungeon.Round} of {dungeon.Profile.Rounds}, {gil} gil, {result.ItemCount} items in {items.Length} stacks, {result.Duration.TotalSeconds:F0}s.");
         AnnounceDungeon(result);
         return result;
