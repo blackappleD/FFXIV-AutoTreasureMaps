@@ -21,6 +21,9 @@ internal sealed class MapLogEntry
     // The treasure dungeon's last round reached, or 0 when the map led to none.
     public int Floor { get; set; }
 
+    // How many rounds that dungeon has, so the floor reads against it; 0 on lines written before it was kept.
+    public int Rounds { get; set; }
+
     public int Deaths { get; set; }
 
     // The high-value loot of the map and its dungeon, by item id.
@@ -67,10 +70,11 @@ internal sealed class MapLog
         return entry;
     }
 
-    public void NoteDungeon(MapLogEntry entry, int floor, bool died, ImmutableArray<ItemGain> gains)
+    public void NoteDungeon(MapLogEntry entry, int floor, int rounds, bool died, ImmutableArray<ItemGain> gains)
     {
         entry.Portal = true;
         entry.Floor = Math.Max(entry.Floor, floor);
+        entry.Rounds = rounds;
         if (died)
         {
             entry.Deaths++;

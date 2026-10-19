@@ -77,7 +77,7 @@ public abstract partial class AutoCommon
         }
 
         var (gil, items) = BagSnapshot.Gains(dungeon.BagsBefore, BagSnapshot.Capture());
-        var result = new DungeonResult(dungeon.Profile, outcome, dungeon.Round, gil, items, TimeSpan.FromMilliseconds(Environment.TickCount64 - dungeon.StartedAtMs));
+        var result = new DungeonResult(dungeon.Profile, outcome, dungeon.RoundReached, gil, items, TimeSpan.FromMilliseconds(Environment.TickCount64 - dungeon.StartedAtMs));
         if (!DungeonOutcomes.Final(outcome))
         {
             Diag($"Dungeon: {dungeon.Profile.Key} {outcome} in round {dungeon.Round}; the session keeps it for a resume.");
@@ -87,7 +87,7 @@ public abstract partial class AutoCommon
         session.ActiveDungeon = null;
         session.RecordDungeon(result);
         LootCleanup.Note(result.Items, dungeon.BagsBefore);
-        Diag($"Dungeon: {dungeon.Profile.Key} ended {outcome} in round {dungeon.Round} of {dungeon.Profile.Rounds}, {gil} gil, {result.ItemCount} items in {items.Length} stacks, {result.Duration.TotalSeconds:F0}s.");
+        Diag($"Dungeon: {dungeon.Profile.Key} ended {outcome} in round {dungeon.Round} of {dungeon.Profile.Rounds} (reached {dungeon.RoundReached}), {gil} gil, {result.ItemCount} items in {items.Length} stacks, {result.Duration.TotalSeconds:F0}s.");
         AnnounceDungeon(result);
         return result;
     }
@@ -153,6 +153,11 @@ public abstract partial class AutoCommon
             {
                 idleSince = 0;
                 dungeon.LastBusyAtMs = Environment.TickCount64;
+            }
+
+            if (step is DungeonStep.Lure or DungeonStep.Bonus or DungeonStep.Fight or DungeonStep.Loot or DungeonStep.Coffer)
+            {
+                dungeon.NoteRoundReached();
             }
 
             switch (step)
