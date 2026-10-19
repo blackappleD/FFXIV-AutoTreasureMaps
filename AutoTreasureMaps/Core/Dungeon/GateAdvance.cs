@@ -1,4 +1,5 @@
 using AutoTreasureMaps.Core.Treasure;
+using Dalamud.Game.ClientState.Conditions;
 using Dalamud.Game.ClientState.Objects.Types;
 using ECommons.DalamudServices;
 using System.Threading.Tasks;
@@ -12,6 +13,7 @@ internal sealed class GateAdvance : IAdvanceStrategy
 {
     private const string Scope = "dungeon-gate";
     private const int GateAnswerMs = 15_000;
+    private const int AnswerPollMs = 200;
     private const int LeftHint = 1;
     private const int RightHint = 2;
     private const int CentreHint = 3;
@@ -53,10 +55,23 @@ internal sealed class GateAdvance : IAdvanceStrategy
             return AdvanceOutcome.Of(AdvanceResult.Cancelled);
         }
 
+        // Putting a hand on the gate is a cast; the gate answers once it ends, and any question it asks may come after.
         var since = TreasureMessageWatcher.Now;
-        var interacted = await context.Interact(() => Svc.Objects.SearchById(gateId), $"gate {gateId:X}", () => Answered(context, since) || context.PromptOpen(), Scope);
-        context.ConfirmPrompt(Scope);
-        await context.WaitUntil(() => Answered(context, since) || context.Zoning || !context.InDungeon, GateAnswerMs, "gate answer");
+        bool Taken() => Answered(context, since) || context.PromptOpen() || Svc.Condition[ConditionFlag.Casting] || context.MessageSince(DungeonLogMessages.GateHandPlaced, since);
+        var interacted = await context.Interact(() => Svc.Objects.SearchById(gateId), $"gate {gateId:X}", Taken, Scope);
+        if (!interacted && !Taken())
+        {
+            context.Warn($"{Scope}: could not use gate {gateBaseId}.");
+            return AdvanceOutcome.Of(AdvanceResult.Failed);
+        }
+
+        var deadline = Environment.TickCount64 + GateAnswerMs;
+        while (!context.Cancelled && Environment.TickCount64 < deadline && !Answered(context, since) && !context.Zoning && context.InDungeon)
+        {
+            context.ConfirmPrompt(Scope);
+            await context.DelayMs(AnswerPollMs);
+        }
+
         if (context.Cancelled)
         {
             return AdvanceOutcome.Of(AdvanceResult.Cancelled);

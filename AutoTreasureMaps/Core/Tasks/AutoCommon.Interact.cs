@@ -1,5 +1,6 @@
 using AutoTreasureMaps.Core.Game.Ops;
 using AutoTreasureMaps.Core.Ipc;
+using AutoTreasureMaps.Core.Travel;
 using clib.Extensions;
 using clib.TaskSystem;
 using Dalamud.Game.ClientState.Conditions;
@@ -16,6 +17,8 @@ public abstract partial class AutoCommon
     private const int InteractApproachWatchdogMs = 20_000;
     // Travel arrival includes slack; like the triad NPC approach, use a strict distance before interacting.
     private const float InteractRangeMeters = 3f;
+    // The treasure vault's gates stand 3 to 4m above the floor in front of them.
+    private const float InteractHeightMeters = 5f;
     private const float InteractApproachToleranceMeters = 0.5f;
     // An object on a wall or a ledge cannot be stood on, so the walk aims at the reachable floor in front of it instead.
     private const float InteractStandSearchMeters = 5f;
@@ -69,9 +72,12 @@ public abstract partial class AutoCommon
         return null;
     }
 
+    // Measured across the floor: an object set into a wall or a gate stands a few metres above the floor in front of
+    // it, and the game lets it be used from there.
     private static bool WithinInteractRange(IGameObject target)
         => Svc.Objects.LocalPlayer is { } player
-            && Vector3.DistanceSquared(player.Position, target.Position) <= InteractRangeMeters * InteractRangeMeters
+            && GroundDistance.Between(player.Position, target.Position) <= InteractRangeMeters
+            && MathF.Abs(player.Position.Y - target.Position.Y) <= InteractHeightMeters
             && target.IsInInteractRange();
 
     private protected async Task<bool> ReadyToInteract(string scope)

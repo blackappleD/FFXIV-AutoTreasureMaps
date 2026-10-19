@@ -7,6 +7,7 @@ using AutoTreasureMaps.Core.Travel;
 using AutoTreasureMaps.Core.Treasure;
 using clib.TaskSystem;
 using Dalamud.Game.ClientState.Conditions;
+using Dalamud.Game.ClientState.Objects.Enums;
 using Dalamud.Game.ClientState.Objects.Types;
 using ECommons.DalamudServices;
 using FFXIVClientStructs.FFXIV.Client.Game.Event;
@@ -484,6 +485,9 @@ public abstract partial class AutoCommon
         EnterStep(TreasurePhase.Opening);
         Status = "Opening the coffer";
         var cofferId = coffer.GameObjectId;
+        // The dungeon's own coffers ask their own question (要打开宝箱吗？ rather than the dug-up coffer's), which no
+        // sheet row gives; a question that opens right after asking one of them is that coffer's.
+        var listedCoffer = coffer.ObjectKind == ObjectKind.EventObj && context.Profile.IsCoffer(coffer.BaseId);
         Diag($"{scope}: {coffer.ObjectKind} base {coffer.BaseId} '{coffer.Name}' ({cofferId:X}), interaction {context.Dungeon.CofferInteractions(cofferId)}.");
         if (!await HumanDelay(HumanAction.OpenCoffer, scope))
         {
@@ -497,7 +501,7 @@ public abstract partial class AutoCommon
         if (NpcInteraction.SelectYesnoOpen())
         {
             var prompt = NpcInteraction.SelectYesnoText();
-            if (DigOps.IsCofferPrompt(prompt))
+            if (listedCoffer || DigOps.IsCofferPrompt(prompt))
             {
                 context.ConfirmPrompt(scope);
             }
