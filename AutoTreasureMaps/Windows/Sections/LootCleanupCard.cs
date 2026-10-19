@@ -28,7 +28,8 @@ internal static class LootCleanupCard
     // Three columns once each is at least this wide, two below it.
     private const float WideColumn = 180f;
 
-    private static readonly List<(uint ItemId, uint IconId, string Label)> rows = [];
+    private static readonly List<(uint ItemId, bool HighQuality, uint IconId, string Label)> rows = [];
+    // By the snapshot's key, so an item's normal- and high-quality loot show as rows of their own.
     private static readonly Dictionary<uint, int> quantities = [];
     private static int builtRevision = -1;
     private static LanguageInfo? builtLanguage;
@@ -109,7 +110,7 @@ internal static class LootCleanupCard
             var x = left + index % columns * (columnWidth + columnGap);
             var y = origin.Y + PadY * scale + index / columns * (rowHeight + gap);
             var inset = IconInset * scale;
-            ItemIcon.Draw(drawList, rows[index].IconId, new Vector2(x + inset, y + inset), new Vector2(x + rowHeight - inset, y + rowHeight - inset), IconRounding * scale);
+            ItemIcon.Draw(drawList, rows[index].IconId, new Vector2(x + inset, y + inset), new Vector2(x + rowHeight - inset, y + rowHeight - inset), IconRounding * scale, rows[index].HighQuality);
             var buttonX = x + columnWidth - rowHeight;
             ImGui.SetCursorScreenPos(new Vector2(buttonX, y));
             ImGui.PushID(index);
@@ -141,9 +142,12 @@ internal static class LootCleanupCard
         quantities.Clear();
         Merge(LootCleanup.Pending);
         Merge(LootCleanup.Preview);
-        foreach (var (itemId, quantity) in quantities)
+        foreach (var (key, quantity) in quantities)
         {
-            rows.Add((itemId, ItemIcon.IdOf(itemId), Loc.T(L.Cleanup.ItemLine, NotableLoot.Name(itemId), quantity)));
+            var itemId = BagSnapshot.ItemIdOf(key);
+            var highQuality = BagSnapshot.IsHighQualityKey(key);
+            var name = highQuality ? $"{NotableLoot.Name(itemId)} HQ" : NotableLoot.Name(itemId);
+            rows.Add((itemId, highQuality, ItemIcon.IdOf(itemId), Loc.T(L.Cleanup.ItemLine, name, quantity)));
         }
 
         kindsCaption = Loc.Plural(L.Cleanup.PendingKinds, rows.Count);
@@ -155,7 +159,8 @@ internal static class LootCleanupCard
         for (var index = 0; index < items.Count; index++)
         {
             var item = items[index];
-            quantities[item.ItemId] = quantities.GetValueOrDefault(item.ItemId) + item.Quantity;
+            var key = BagSnapshot.Key(item.ItemId, item.HighQuality);
+            quantities[key] = quantities.GetValueOrDefault(key) + item.Quantity;
         }
     }
 }

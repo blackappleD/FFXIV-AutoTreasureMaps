@@ -56,7 +56,7 @@ public abstract partial class AutoCommon
         }
 
         session.RecordMap(result);
-        LootCleanup.Note(result.Items, bagsBefore);
+        LootCleanup.Note(bagsBefore);
         progress.FinishMap(result);
         Diag($"Map: {(result.HasTier ? result.Tier.Name : "no map")} ended {result.Outcome}{(result.Refusal == MapRefusal.None ? string.Empty : $" ({result.Refusal})")}, {result.Gil} gil, {result.ItemCount} items in {result.Items.Length} stacks, portal {(result.PortalSeen ? "seen" : "not seen")}, {result.Duration.TotalSeconds:F0}s.");
         Announce(result);
