@@ -542,6 +542,7 @@
   "maps.underseaNote": "水下藏宝图需在海底挖掘。在插件能潜水之前保持关闭。",
   "maps.fullPartyBadge": "满员小队",
   "maps.underseaBadge": "水下",
+  "maps.patchBadge": "版本 {0}",
   "maps.soloHelp": "单人藏宝图：守卫按1名玩家设计。",
   "maps.fullPartyHelp": "按8人满员小队设计。单人时，守卫可能对你的职业和装备来说太强。",
   "maps.underseaHelp": "这张藏宝图的挖掘地点全部在水下，因此在插件能潜水之前保持关闭。",

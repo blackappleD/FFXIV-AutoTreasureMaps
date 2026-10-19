@@ -19,5 +19,7 @@ internal readonly record struct TreasureTier(
 
     public bool HasPortal => PortalKeyItemId != 0;
 
+    public GamePatch Patch => MapPatches.Of(TimewornItemId);
+
     public bool TunedForFullParty => MaxPartySize >= FullPartySize;
 }

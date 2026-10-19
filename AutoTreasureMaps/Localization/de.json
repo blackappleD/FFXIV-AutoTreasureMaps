@@ -542,6 +542,7 @@
   "maps.underseaNote": "Unterwasserkarten werden auf dem Meeresgrund ausgegraben. Sie bleiben aus, bis das Plugin tauchen kann.",
   "maps.fullPartyBadge": "Volle Gruppe",
   "maps.underseaBadge": "Unterwasser",
+  "maps.patchBadge": "Patch {0}",
   "maps.soloHelp": "Eine Solo-Karte: Ihre Wächter sind auf einen Spieler ausgelegt.",
   "maps.fullPartyHelp": "Auf eine volle Gruppe von acht Spielern ausgelegt. Allein können die Wächter für deine Klasse und Ausrüstung zu stark sein.",
   "maps.underseaHelp": "Jede Grabungsstelle dieser Karte liegt unter Wasser, daher bleibt sie aus, bis das Plugin tauchen kann.",

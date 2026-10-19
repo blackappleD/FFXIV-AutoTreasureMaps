@@ -542,6 +542,7 @@
   "maps.underseaNote": "水中の地図は海底で発掘します。プラグインが潜水できるようになるまでオフのままです。",
   "maps.fullPartyBadge": "フルパーティ",
   "maps.underseaBadge": "水中",
+  "maps.patchBadge": "パッチ{0}",
   "maps.soloHelp": "ソロ用の地図です。敵は1人向けに調整されています。",
   "maps.fullPartyHelp": "8人のフルパーティ向けに調整されています。ソロではジョブや装備によって敵が手強すぎることがあります。",
   "maps.underseaHelp": "この地図の発掘地点はすべて水中にあるため、プラグインが潜水できるようになるまでオフのままです。",

@@ -542,6 +542,7 @@
   "maps.underseaNote": "Mapas submarinos são escavados no fundo do mar. Eles ficam desativados até o plugin conseguir mergulhar.",
   "maps.fullPartyBadge": "Grupo completo",
   "maps.underseaBadge": "Submarino",
+  "maps.patchBadge": "Patch {0}",
   "maps.soloHelp": "Um mapa solo: seus guardiões são pensados para um jogador.",
   "maps.fullPartyHelp": "Pensado para um grupo completo de oito. Sozinho, os guardiões podem ser demais para sua classe e seu equipamento.",
   "maps.underseaHelp": "Todos os pontos de escavação deste mapa ficam debaixo d'água, então ele fica desativado até o plugin conseguir mergulhar.",

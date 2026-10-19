@@ -542,6 +542,7 @@
   "maps.underseaNote": "Undersea maps are dug on the sea floor. They stay off until the plugin can dive.",
   "maps.fullPartyBadge": "Full party",
   "maps.underseaBadge": "Undersea",
+  "maps.patchBadge": "Patch {0}",
   "maps.soloHelp": "A solo map: its guards are tuned for one player.",
   "maps.fullPartyHelp": "Tuned for a full party of eight. Alone, the guards may be too much for your job and gear.",
   "maps.underseaHelp": "Every dig spot of this map lies under water, so it stays off until the plugin can dive.",

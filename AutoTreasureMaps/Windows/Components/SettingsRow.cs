@@ -1,3 +1,4 @@
+using AutoTreasureMaps.Core.Treasure;
 using Dalamud.Bindings.ImGui;
 using Dalamud.Interface;
 using Dalamud.Interface.Utility;
@@ -10,6 +11,7 @@ internal static class SettingsRow
 {
     private const float RowHeight = 40f;
     private const float HelpIconGap = 7f;
+    private const float PatchBadgeGap = 6f;
     private const float CaptionPullUp = 7f;
     private const float CaptionBottomGap = 10f;
     private const float BlockBottomGap = 6f;
@@ -24,13 +26,15 @@ internal static class SettingsRow
     }
 
     // A row named after an item passes its id: the label then shows the game's item tooltip, and the help stays on the icon.
-    public static void Draw(string label, string? help, float controlWidth, Action drawControl, float controlHeight = 0f, uint itemId = 0)
+    // A map row also passes the patch its map arrived in, shown as the wiki's patch label ahead of the name.
+    public static void Draw(string label, string? help, float controlWidth, Action drawControl, float controlHeight = 0f, uint itemId = 0, GamePatch patch = default)
     {
         var area = BeginRow();
 
         DrawTopDivider(area);
-        var labelHovered = DrawLabel(area, label);
-        var iconHovered = DrawHelpIcon(area, label, help);
+        var labelX = DrawPatchBadge(area, patch);
+        var labelHovered = DrawLabel(area, labelX, label);
+        var iconHovered = DrawHelpIcon(area, labelX, label, help);
 
         if (labelHovered && itemId != 0)
         {
@@ -109,10 +113,21 @@ internal static class SettingsRow
         SettingsGroup.RowDrawnInGroup = true;
     }
 
-    private static bool DrawLabel(RowArea area, string label)
+    private static float DrawPatchBadge(RowArea area, GamePatch patch)
+    {
+        if (!patch.IsKnown)
+        {
+            return area.Origin.X;
+        }
+
+        var width = PatchBadge.Draw(ImGui.GetWindowDrawList(), patch, area.Origin.X, area.MiddleY);
+        return area.Origin.X + width + PatchBadgeGap * ImGuiHelpers.GlobalScale;
+    }
+
+    private static bool DrawLabel(RowArea area, float labelX, string label)
     {
         var labelSize = ImGui.CalcTextSize(label);
-        ImGui.SetCursorScreenPos(new Vector2(area.Origin.X, area.MiddleY - labelSize.Y * 0.5f));
+        ImGui.SetCursorScreenPos(new Vector2(labelX, area.MiddleY - labelSize.Y * 0.5f));
         using (ImRaii.PushColor(ImGuiCol.Text, area.Hovered ? Styling.TextStrong : Styling.TextSecondary))
         {
             ImGui.TextUnformatted(label);
@@ -121,7 +136,7 @@ internal static class SettingsRow
         return ImGui.IsItemHovered();
     }
 
-    private static bool DrawHelpIcon(RowArea area, string label, string? help)
+    private static bool DrawHelpIcon(RowArea area, float labelX, string label, string? help)
     {
         if (string.IsNullOrEmpty(help) || !area.Hovered)
         {
@@ -134,7 +149,7 @@ internal static class SettingsRow
         {
             var iconSize = ImGui.CalcTextSize(iconString);
             ImGui.SetCursorScreenPos(new Vector2(
-                area.Origin.X + labelWidth + HelpIconGap * ImGuiHelpers.GlobalScale,
+                labelX + labelWidth + HelpIconGap * ImGuiHelpers.GlobalScale,
                 area.MiddleY - iconSize.Y * 0.5f));
             using (ImRaii.PushColor(ImGuiCol.Text, Styling.WithAlpha(Styling.TextMuted, 0.9f)))
             {

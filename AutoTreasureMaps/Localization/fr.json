@@ -542,6 +542,7 @@
   "maps.underseaNote": "Les cartes sous-marines se fouillent au fond de la mer. Elles restent désactivées tant que le plugin ne sait pas plonger.",
   "maps.fullPartyBadge": "Équipe complète",
   "maps.underseaBadge": "Sous-marine",
+  "maps.patchBadge": "Patch {0}",
   "maps.soloHelp": "Une carte solo : ses gardiens sont conçus pour un joueur.",
   "maps.fullPartyHelp": "Conçue pour une équipe complète de huit. En solo, les gardiens peuvent être trop forts pour votre classe et votre équipement.",
   "maps.underseaHelp": "Chaque lieu de fouille de cette carte est sous l'eau, elle reste donc désactivée tant que le plugin ne sait pas plonger.",

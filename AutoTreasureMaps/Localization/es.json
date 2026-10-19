@@ -542,6 +542,7 @@
   "maps.underseaNote": "Los mapas submarinos se excavan en el fondo del mar. Siguen desactivados hasta que el plugin pueda bucear.",
   "maps.fullPartyBadge": "Grupo completo",
   "maps.underseaBadge": "Submarino",
+  "maps.patchBadge": "Parche {0}",
   "maps.soloHelp": "Un mapa en solitario: sus guardianes están pensados para un jugador.",
   "maps.fullPartyHelp": "Pensado para un grupo completo de ocho. En solitario, los guardianes pueden ser demasiado para tu clase y tu equipo.",
   "maps.underseaHelp": "Todos los puntos de excavación de este mapa están bajo el agua, así que sigue desactivado hasta que el plugin pueda bucear.",
