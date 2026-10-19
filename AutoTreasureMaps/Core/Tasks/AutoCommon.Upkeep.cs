@@ -174,6 +174,19 @@ public abstract partial class AutoCommon
         Warn($"Upkeep: could not reach {TerritoryNames.Of(cityTerritoryId)} for the break; the next try waits {UpkeepBreakRetryMs / TimeUnits.MillisecondsPerMinute} minutes");
     }
 
+    // Upkeep runs only between maps, so a map's start and each round of a dungeon top the buffs up here as well: the
+    // first map of a run would go without, and a dungeon outlasts a meal.
+    private protected async Task TopUpConsumables()
+    {
+        var configuration = Plugin.Instance.Configuration;
+        if (CancelToken.IsCancellationRequested || !UpkeepConsumablesDue(configuration) || !UpkeepCharacterFree())
+        {
+            return;
+        }
+
+        await RefreshConsumables(configuration);
+    }
+
     // Each item gets a wall-clock deadline, so a use the game never applies cannot park the run.
     private async Task RefreshConsumables(Configuration configuration)
     {

@@ -178,6 +178,7 @@ public abstract partial class AutoCommon
 
                     break;
                 case DungeonStep.Advance:
+                    await TopUpConsumables();
                     var advanced = await AdvanceDungeon(handler, context);
                     if (advanced is AdvanceResult.Expelled)
                     {

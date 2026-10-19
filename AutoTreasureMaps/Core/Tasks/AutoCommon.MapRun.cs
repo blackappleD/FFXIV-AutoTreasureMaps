@@ -87,6 +87,7 @@ public abstract partial class AutoCommon
         ShowMap(map);
         Diag($"Map: {tier.Name} (rank {tier.Rank}, spot {spot.SpotIndex}, Level {spot.LevelId}) in {spot.ZoneName} at {FormatPosition(spot.Position)}, flying {(spot.FlyingUnlocked ? "unlocked" : "locked")}.");
         Svc.Chat.Print($"{AtmConstants.LogPrefix} {Loc.T(L.MapRun.ChatStarted, tier.Name, spot.ZoneName)}");
+        await TopUpConsumables();
 
         if (!await ReachSpot(map.Spot))
         {
