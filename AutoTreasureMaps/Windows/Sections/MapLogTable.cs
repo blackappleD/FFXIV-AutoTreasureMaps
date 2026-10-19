@@ -9,7 +9,7 @@ using System.Numerics;
 
 namespace AutoTreasureMaps.Windows.Sections;
 
-// The map log as a table, newest first: number, map, portal, dungeon floor, knockouts and the high-value loot laid out
+// The map log as a table, newest first: number, map, portal, dungeon floor, knockouts and the rare loot laid out
 // flat. The text is built once per change of the log or the language; rows off screen are only measured.
 internal sealed class MapLogTable
 {

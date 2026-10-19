@@ -116,7 +116,7 @@ internal sealed class HistoryPage
     }
 
     // The captions are rebuilt only when what they show changes: the history's revision, or the gil they total. The
-    // high-value loot counts at today's market price, on top of the gil looted less the gil spent on maps.
+    // rare loot counts at today's market price, on top of the gil looted less the gil spent on maps.
     private void DrawLifetime(RunHistory.LifetimeTotals totals, long lootValue, int revision)
     {
         var scale = ImGuiHelpers.GlobalScale;

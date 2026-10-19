@@ -18,6 +18,7 @@ internal static unsafe class DungeonField
     private const float EnemyMeters = 45f;
     // Squared distances are compared, so a gold sack three times as far as a silver one weighs the same.
     private const float SilverSackWeight = 9f;
+    private const float SackMovedMeters = 1f;
 
     public static Vector3 PlayerPosition => Svc.Objects.LocalPlayer?.Position ?? Vector3.Zero;
 
@@ -48,9 +49,15 @@ internal static unsafe class DungeonField
         return nearest;
     }
 
+    // The game moves a sack it has handed out to a new spot rather than removing it, so one that left its spot counts as
+    // picked up.
+    public static bool SackMoved(IGameObject sack, Vector3 from)
+        => Vector3.DistanceSquared(sack.Position, from) > SackMovedMeters * SackMovedMeters;
+
     // The bonus round's sack to walk to next: the nearest, with a gold sack counted as near as a silver one three times
-    // closer, since it is worth three. Null when the profile knows no sacks or none is on the field.
-    public static IGameObject? NextSack(DungeonProfile profile, IReadOnlySet<ulong>? skipped = null)
+    // closer, since it is worth three. Null when the profile knows no sacks or none is on the field. A skipped sack is
+    // passed over only while it still stands where it was skipped, since the game reuses it once it moves.
+    public static IGameObject? NextSack(DungeonProfile profile, IReadOnlyDictionary<ulong, Vector3>? skipped = null)
     {
         if (!profile.HasSacks)
         {
@@ -63,7 +70,8 @@ internal static unsafe class DungeonField
         var objects = Svc.Objects;
         for (var index = 0; index < objects.Length; index++)
         {
-            if (objects[index] is not { ObjectKind: ObjectKind.EventObj } candidate || skipped?.Contains(candidate.GameObjectId) == true)
+            if (objects[index] is not { ObjectKind: ObjectKind.EventObj, IsTargetable: true } candidate
+                || skipped is not null && skipped.TryGetValue(candidate.GameObjectId, out var at) && !SackMoved(candidate, at))
             {
                 continue;
             }

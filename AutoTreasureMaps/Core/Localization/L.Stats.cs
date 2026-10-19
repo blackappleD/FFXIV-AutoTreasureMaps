@@ -11,6 +11,6 @@ internal static partial class L
         public static readonly LocPlural Dungeons = new("stats.dungeons", "{0} dungeon", "{0} dungeons");
         public static readonly LocString Floor = new("stats.floor", "Floor {0} ×{1}");
         public static readonly LocString Worth = new("stats.worth", "Worth {0}");
-        public static readonly LocString LootValue = new("stats.lootValue", "High-value loot worth");
+        public static readonly LocString LootValue = new("stats.lootValue", "Rare loot worth");
     }
 }

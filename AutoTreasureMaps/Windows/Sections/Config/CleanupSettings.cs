@@ -226,7 +226,7 @@ internal static class CleanupSettings
         }
 
         alwaysKeptLanguage = Loc.Current;
-        var items = HighValueLoot.AllItems;
+        var items = RareLoot.AllItems;
         var names = new string[items.Length];
         for (var index = 0; index < items.Length; index++)
         {

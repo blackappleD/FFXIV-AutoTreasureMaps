@@ -26,7 +26,7 @@ internal sealed class MapLogEntry
 
     public int Deaths { get; set; }
 
-    // The high-value loot of the map and its dungeon, by item id.
+    // The rare loot of the map and its dungeon, by item id.
     public Dictionary<uint, int>? Loot { get; set; }
 }
 
@@ -101,7 +101,7 @@ internal sealed class MapLog
         for (var index = 0; index < items.Length; index++)
         {
             var item = items[index];
-            if (!HighValueLoot.IsHighValue(item.ItemId))
+            if (!RareLoot.IsRare(item.ItemId))
             {
                 continue;
             }

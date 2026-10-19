@@ -407,7 +407,7 @@ public abstract partial class AutoCommon
         EnterStep(TreasurePhase.Fighting);
         Status = "Bonus round: picking up sacks";
         HoldCombatMovement(scope);
-        var skipped = new HashSet<ulong>();
+        var skipped = new Dictionary<ulong, Vector3>();
         var picked = 0;
         var deadline = Environment.TickCount64 + BonusRoundCapMs;
         while (!CancelToken.IsCancellationRequested && Environment.TickCount64 < deadline && context.InDungeon && !context.Zoning && !IsKnockedOut() && BonusRoundOn(dungeon))
@@ -422,9 +422,10 @@ public abstract partial class AutoCommon
 
             var sackId = sack.GameObjectId;
             var position = sack.Position;
-            bool Gone() => Svc.Objects.SearchById(sackId) is null;
-            await context.WalkTo(position, SackReachMeters, Gone, SackWalkMs, scope);
-            if (Gone())
+            // A sack handed out is moved to a new spot, or gone or untargetable on the way there.
+            bool Taken() => Svc.Objects.SearchById(sackId) is not { IsTargetable: true } now || DungeonField.SackMoved(now, position);
+            await context.WalkTo(position, SackReachMeters, Taken, SackWalkMs, scope);
+            if (Taken())
             {
                 picked++;
                 continue;
@@ -433,11 +434,11 @@ public abstract partial class AutoCommon
             if (!WithinReach(position, SackReachMeters * 2f))
             {
                 Diag($"{scope}: could not reach sack {sackId:X} at ({position.X:F1}, {position.Y:F1}, {position.Z:F1}); leaving it.");
-                skipped.Add(sackId);
+                skipped[sackId] = position;
                 continue;
             }
 
-            if (await WaitUntilTimed(Gone, SackPickupMs, "sack picked up"))
+            if (await WaitUntilTimed(Taken, SackPickupMs, "sack picked up"))
             {
                 picked++;
                 continue;
@@ -446,16 +447,16 @@ public abstract partial class AutoCommon
             Diag($"{scope}: standing on sack {sackId:X} did not pick it up; interacting with it.");
             if (Svc.Objects.SearchById(sackId) is { } still)
             {
-                await InteractWithObject(still, Gone, scope);
+                await InteractWithObject(still, Taken, scope);
             }
 
-            if (Gone())
+            if (Taken())
             {
                 picked++;
             }
             else
             {
-                skipped.Add(sackId);
+                skipped[sackId] = position;
             }
         }
 

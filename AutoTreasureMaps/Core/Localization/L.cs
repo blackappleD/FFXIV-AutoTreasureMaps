@@ -188,7 +188,7 @@ internal static partial class L
         public static readonly LocString LogPortal = new("history.log.portal", "Portal");
         public static readonly LocString LogFloor = new("history.log.floor", "Floor");
         public static readonly LocString LogDeaths = new("history.log.deaths", "Deaths");
-        public static readonly LocString LogLoot = new("history.log.loot", "High-value loot");
+        public static readonly LocString LogLoot = new("history.log.loot", "Rare loot");
         public static readonly LocString LogYes = new("history.log.yes", "Yes");
         public static readonly LocString LogLootItem = new("history.log.lootItem", "{0}×{1}");
         public static readonly LocString LogLootSeparator = new("history.log.lootSeparator", ", ");

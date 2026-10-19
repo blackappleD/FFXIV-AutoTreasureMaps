@@ -1,7 +1,7 @@
 namespace AutoTreasureMaps.Core.Stats;
 
 // What one kind of map came to: how often it was run, how often its portal led into a treasure dungeon and on which
-// floor each of those ended, and the high-value loot from both. Kept per run and summed for the history.
+// floor each of those ended, and the rare loot from both. Kept per run and summed for the history.
 [Serializable]
 internal sealed class MapTally
 {
@@ -11,7 +11,7 @@ internal sealed class MapTally
     // Dungeons by the floor they ended on: the chamber reached in a gate dungeon, the draws made in a slot dungeon.
     public Dictionary<int, int> Floors { get; set; } = [];
 
-    // High-value items only, by item id.
+    // Rare items only, by item id.
     public Dictionary<uint, int> Items { get; set; } = [];
 
     public void NoteFloor(int floor)

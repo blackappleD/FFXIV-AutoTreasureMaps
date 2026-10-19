@@ -9,7 +9,7 @@ using System.Numerics;
 namespace AutoTreasureMaps.Windows.Sections;
 
 // One card per kind of map that was run: how often, the dungeons behind its portal by the floor they ended on, and
-// its high-value loot priced from Universalis. Highest tier first. The text is rebuilt only when the tallies, the
+// its rare loot priced from Universalis. Highest tier first. The text is rebuilt only when the tallies, the
 // prices or the language change; keep one instance per place it is drawn.
 internal sealed class MapTallyCards
 {
@@ -163,7 +163,7 @@ internal sealed class MapTallyCards
             }
         }
 
-        var listed = HighValueLoot.For(mapItemId);
+        var listed = RareLoot.For(mapItemId);
         var items = new ItemLine[listed.Length];
         for (var index = 0; index < listed.Length; index++)
         {

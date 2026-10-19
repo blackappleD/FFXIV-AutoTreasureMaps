@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace AutoTreasureMaps.Core.Market;
 
-// What the high-value loot sells for: the lowest listing on the home world's data centre, from Universalis. One batched
+// What the rare loot sells for: the lowest listing on the home world's data centre, from Universalis. One batched
 // request prices every listed item, refreshed every half hour and retried a minute after a failure. Tick runs on the
 // framework thread; the request itself runs off it, and the windows only read the last prices it brought back.
 internal static class LootPrices
@@ -60,7 +60,7 @@ internal static class LootPrices
         pricedHomeWorld = home;
         DataCenter = dataCenter;
         nextRequestAtMs = Environment.TickCount64 + RetryMs;
-        var ids = string.Join(',', HighValueLoot.AllItems.ToArray());
+        var ids = string.Join(',', RareLoot.AllItems.ToArray());
         pending = Task.Run(() => Fetch(dataCenter, ids));
     }
 
