@@ -22,6 +22,7 @@ internal static partial class L
         public static readonly LocString LastMapNone = new("mapRun.lastMapNone", "None yet");
         public static readonly LocString Gil = new("mapRun.gil", "{0} gil");
         public static readonly LocPlural Items = new("mapRun.items", "{0} item", "{0} items");
+        public static readonly LocPlural Tomestones = new("mapRun.tomestones", "{0} tomestone", "{0} tomestones");
         public static readonly LocString PortalSeen = new("mapRun.portalSeen", "Portal seen");
 
         public static readonly LocString OutcomeLooted = new("mapRun.outcome.looted", "Looted");

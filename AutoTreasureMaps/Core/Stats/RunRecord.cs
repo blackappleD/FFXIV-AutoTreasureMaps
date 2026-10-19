@@ -27,7 +27,10 @@ internal sealed class RunRecord
     public int DungeonsRun { get; set; }
     public int DungeonsCleared { get; set; }
     public int Gil { get; set; }
+    // Crystals and tomestones left out, though records from before then counted crystals.
     public int ItemsGained { get; set; }
+
+    public int Tomestones { get; set; }
     public int MapsGathered { get; set; }
     public Dictionary<uint, int>? NotableItems { get; set; }
 

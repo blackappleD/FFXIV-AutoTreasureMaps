@@ -18,20 +18,9 @@ internal readonly record struct MapResult(
 {
     public bool HasTier => Tier.Rank != 0;
 
-    public int ItemCount
-    {
-        get
-        {
-            var total = 0;
-            ReadOnlySpan<ItemGain> items = Items.IsDefault ? [] : Items.AsSpan();
-            for (var index = 0; index < items.Length; index++)
-            {
-                total += items[index].Quantity;
-            }
+    public int ItemCount => LootKinds.ItemCount(Items);
 
-            return total;
-        }
-    }
+    public int Tomestones => LootKinds.TomestoneCount(Items);
 
     public static MapResult Refused(in TreasureTier tier, MapRefusal refusal)
         => new(tier, MapOutcome.Refused, refusal, PortalSeen: false, Gil: 0, ImmutableArray<ItemGain>.Empty, TimeSpan.Zero);

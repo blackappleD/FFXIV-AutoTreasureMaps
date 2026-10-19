@@ -15,7 +15,7 @@ namespace AutoTreasureMaps.Windows.Pages;
 internal sealed class HistoryPage
 {
     private const int ChartRuns = 24;
-    private const int TileCount = 3;
+    private const int TileCount = 4;
     private const float PadX = 14f;
     private const float MetricWidth = 64f;
     private const float IconColumn = 18f;
@@ -37,6 +37,7 @@ internal sealed class HistoryPage
     private CachedText mapsText;
     private CachedText gilText;
     private CachedText portalsText;
+    private CachedText tomestonesText;
     private CachedText runsText;
     private CachedText perMapText;
 
@@ -130,12 +131,15 @@ internal sealed class HistoryPage
         var maps = mapsText.Get(totals.Maps, static key => key.ToString("N0", Loc.Culture));
         var gil = gilText.Get(totalGil, static key => key.ToString("N0", Loc.Culture));
         var portals = portalsText.Get(totals.Portals, static key => key.ToString("N0", Loc.Culture));
+        var tomestones = tomestonesText.Get(totals.Tomestones, static key => key.ToString("N0", Loc.Culture));
 
         StatTile.Draw(Loc.T(L.History.TileMaps), maps, runs, Styling.AccentBlue, tileWidth);
         ImGui.SameLine(0, gap);
         StatTile.Draw(Loc.T(L.History.TileGil), gil, perMap, Styling.AccentAmber, tileWidth);
         ImGui.SameLine(0, gap);
         StatTile.Draw(Loc.T(L.History.TilePortals), portals, null, Styling.AccentNebula, tileWidth);
+        ImGui.SameLine(0, gap);
+        StatTile.Draw(Loc.T(L.History.TileTomestones), tomestones, null, Styling.AccentMint, tileWidth);
     }
 
     private static void DrawEmptyState()
@@ -335,6 +339,7 @@ internal sealed class HistoryPage
         CountLine(Loc.T(L.Gather.MapsGathered), record.MapsGathered);
         CountLine(Loc.T(L.History.TilePortals), record.PortalsSeen);
         CountLine(Loc.T(L.History.Items), record.ItemsGained);
+        CountLine(Loc.T(L.History.TileTomestones), record.Tomestones);
         var lootValue = LootPrices.ValueOf(record.Tallies);
         if (record.MapsBought > 0 || lootValue > 0)
         {

@@ -57,7 +57,10 @@ public sealed class TreasureSession
 
     public int Gil { get; private set; }
 
+    // Crystals and tomestones left out.
     public int ItemsGained { get; private set; }
+
+    public int Tomestones { get; private set; }
 
     public int MapsBought { get; private set; }
 
@@ -134,6 +137,7 @@ public sealed class TreasureSession
         MapsRun++;
         Gil += result.Gil;
         ItemsGained += result.ItemCount;
+        Tomestones += result.Tomestones;
         var portal = result.PortalSeen || result.Refusal == MapRefusal.PortalDug;
         if (portal)
         {
@@ -170,6 +174,7 @@ public sealed class TreasureSession
 
         Gil += result.Gil;
         ItemsGained += result.ItemCount;
+        Tomestones += result.Tomestones;
         NoteNotableItems(result.Items);
 
         // A dungeon entered by hand, or resumed after the portal's map was recorded in another run, goes to the map

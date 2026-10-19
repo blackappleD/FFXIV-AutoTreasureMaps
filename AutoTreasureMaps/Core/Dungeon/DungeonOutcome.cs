@@ -22,20 +22,9 @@ internal enum DungeonOutcome : byte
 
 internal readonly record struct DungeonResult(DungeonProfile Profile, DungeonOutcome Outcome, int Round, int Gil, ImmutableArray<ItemGain> Items, TimeSpan Duration)
 {
-    public int ItemCount
-    {
-        get
-        {
-            var count = 0;
-            var items = Items.IsDefault ? [] : Items.AsSpan();
-            for (var index = 0; index < items.Length; index++)
-            {
-                count += items[index].Quantity;
-            }
+    public int ItemCount => LootKinds.ItemCount(Items);
 
-            return count;
-        }
-    }
+    public int Tomestones => LootKinds.TomestoneCount(Items);
 }
 
 internal static class DungeonOutcomes

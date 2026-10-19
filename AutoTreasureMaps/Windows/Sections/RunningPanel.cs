@@ -241,7 +241,10 @@ internal static class RunningPanel
 
         ImGui.SameLine(0, gap);
         var items = session?.ItemsGained ?? 0;
-        var itemsSub = items > 0 ? itemsText.Get(items, static key => Loc.Plural(L.MapRun.Items, (int)key)) : null;
+        var tomestones = session?.Tomestones ?? 0;
+        var itemsSub = items > 0 || tomestones > 0
+            ? itemsText.Get(((long)items << 32) | (uint)tomestones, static key => LootLine((int)(key >> 32), (int)(key & uint.MaxValue)))
+            : null;
         // The rare loot counts at its market price on top of the gil looted less the gil spent on maps.
         var lootValue = session is null ? 0 : LootPrices.ValueOf(session.Tallies);
         var netGil = session is null ? 0 : session.Gil - session.GilSpentOnMaps + lootValue;
@@ -257,6 +260,18 @@ internal static class RunningPanel
         ImGui.SameLine(0, gap);
         var elapsed = session?.Elapsed ?? TimeSpan.Zero;
         StatTile.Draw(Loc.T(L.Run.TileElapsed), Formatting.Elapsed(elapsed), TimeLeft(elapsed), Styling.AccentBlue, tileWidth);
+    }
+
+    // The items and tomestones looted, either left out while none came.
+    private static string LootLine(int items, int tomestones)
+    {
+        if (tomestones == 0)
+        {
+            return Loc.Plural(L.MapRun.Items, items);
+        }
+
+        var tomestoneText = Loc.Plural(L.MapRun.Tomestones, tomestones);
+        return items == 0 ? tomestoneText : $"{Loc.Plural(L.MapRun.Items, items)} · {tomestoneText}";
     }
 
     private static string? TimeLeft(TimeSpan elapsed)

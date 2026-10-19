@@ -93,6 +93,7 @@ internal sealed class RunHistory
             totals.MapsRun += record.MapsRun;
             totals.Gil += record.NetGil;
             totals.Portals += record.PortalsSeen;
+            totals.Tomestones += record.Tomestones;
             totals.Seconds += record.DurationSeconds;
             if (record.Tallies is null)
             {
@@ -143,6 +144,7 @@ internal sealed class RunHistory
         // Looted less spent on maps.
         public long Gil;
         public int Portals;
+        public int Tomestones;
         public double Seconds;
 
         public readonly double MapsPerHour => Seconds > 0 ? Maps / (Seconds / 3600.0) : 0;

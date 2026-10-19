@@ -165,6 +165,7 @@ internal static partial class L
         public static readonly LocPlural TileRunsCount = new("history.tile.runsCount", "{0} run", "{0} runs");
         public static readonly LocString TilePerMap = new("history.tile.perMap", "{0} per map");
         public static readonly LocString Items = new("history.items", "Items gained");
+        public static readonly LocString TileTomestones = new("history.tile.tomestones", "Tomestones");
         public static readonly LocString EndedBy = new("history.endedBy", "Ended");
         public static readonly LocString NoRuns = new("history.noRuns", "No runs recorded yet. Finish (or stop) a run and it'll show up here.");
         public static readonly LocString MapsPerRun = new("history.mapsPerRun", "Maps per run");
