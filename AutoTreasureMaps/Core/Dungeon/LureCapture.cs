@@ -4,6 +4,7 @@ using Dalamud.Game.Addon.Lifecycle.AddonArgTypes;
 using Dalamud.Game.Chat;
 using Dalamud.Game.ClientState.Conditions;
 using Dalamud.Game.ClientState.Objects.Enums;
+using Dalamud.Game.ClientState.Objects.Types;
 using Dalamud.Hooking;
 using Dalamud.Plugin.Services;
 using ECommons;
@@ -14,6 +15,8 @@ using System.Globalization;
 using System.IO;
 using System.Numerics;
 using System.Text;
+using NativeEventObject = FFXIVClientStructs.FFXIV.Client.Game.Object.EventObject;
+using NativeDrawObject = FFXIVClientStructs.FFXIV.Client.Graphics.Scene.DrawObject;
 using NativeGameObject = FFXIVClientStructs.FFXIV.Client.Game.Object.GameObject;
 using NativeTreasure = FFXIVClientStructs.FFXIV.Client.Game.Object.Treasure;
 
@@ -35,11 +38,15 @@ internal sealed unsafe class LureCapture : IDisposable
     private const uint FirstLureMessage = DungeonLogMessages.LureNotDisarmed;
     private const uint LastLureMessage = DungeonLogMessages.LureSet;
     private const float FieldMeters = 20f;
+    private const float CardMeters = 4f;
+    private const int MaxCardChanges = 96;
+    private const ulong ModelKey = 1UL << 63;
 
     private static readonly AddonEvent[] snapshotEvents = [AddonEvent.PostSetup, AddonEvent.PostRefresh, AddonEvent.PostRequestedUpdate];
     private static readonly AddonEvent[] otherAddonEvents = [AddonEvent.PostSetup, AddonEvent.PostRefresh, AddonEvent.PreFinalize];
 
     private readonly Hook<AtkUnitBase.Delegates.FireCallback>? callbackHook;
+    private readonly Dictionary<ulong, byte[]> cardMemory = [];
     private readonly Dictionary<string, string> otherSnapshots = [];
     private readonly Dictionary<ulong, string> fieldObjects = [];
     private string lastSnapshot = string.Empty;
@@ -186,6 +193,7 @@ internal sealed unsafe class LureCapture : IDisposable
         lureRunning = true;
         otherSnapshots.Clear();
         fieldObjects.Clear();
+        cardMemory.Clear();
         Write("lure running");
         ScanField();
     }
@@ -265,7 +273,7 @@ internal sealed unsafe class LureCapture : IDisposable
             var native = (NativeGameObject*)candidate.Address;
             var position = candidate.Position;
             var line = string.Create(CultureInfo.InvariantCulture,
-                $"{candidate.ObjectKind} base {candidate.BaseId} '{candidate.Name.TextValue}' ({id:X}) at ({position.X:F2}, {position.Y:F2}, {position.Z:F2}) rot {candidate.Rotation:F2}, targetable {candidate.IsTargetable}, render {native->RenderFlags}");
+                $"{candidate.ObjectKind} base {candidate.BaseId} '{candidate.Name.TextValue}' ({id:X}) at ({position.X:F2}, {position.Y:F2}, {position.Z:F2}) rot {candidate.Rotation:F2}, targetable {candidate.IsTargetable}, render {native->RenderFlags}, event state {((NativeEventObject*)native)->EventState}, arg {((NativeEventObject*)native)->Arg}");
             if (fieldObjects.TryGetValue(id, out var before) && before == line)
             {
                 continue;
@@ -275,10 +283,79 @@ internal sealed unsafe class LureCapture : IDisposable
             fieldObjects[id] = line;
         }
 
+        WatchCards();
         foreach (var id in fieldObjects.Keys.Where(id => !still.Contains(id)).ToArray())
         {
             Write($"object gone: {fieldObjects[id]}");
             fieldObjects.Remove(id);
+        }
+    }
+
+    // The two cards are nameless event objects either side of the coffer, and nothing the object table reports
+    // changes when one turns over. Their memory is compared from one look to the next instead, so whatever the game
+    // writes when a card shows its face turns up as changed bytes.
+    private void WatchCards()
+    {
+        IGameObject? coffer = null;
+        foreach (var candidate in Svc.Objects)
+        {
+            if (candidate.ObjectKind == ObjectKind.Treasure && fieldObjects.ContainsKey(candidate.GameObjectId))
+            {
+                coffer = candidate;
+                break;
+            }
+        }
+
+        if (coffer is null)
+        {
+            return;
+        }
+
+        var size = sizeof(NativeEventObject);
+        foreach (var candidate in Svc.Objects)
+        {
+            if (candidate.ObjectKind != ObjectKind.EventObj || candidate.Name.TextValue.Length > 0 || candidate.Address == 0
+                || Vector3.Distance(coffer.Position, candidate.Position) > CardMeters)
+            {
+                continue;
+            }
+
+            var id = candidate.GameObjectId;
+            CompareCard(id, "object", (byte*)candidate.Address, size);
+            var model = ((NativeGameObject*)candidate.Address)->DrawObject;
+            if (model is not null)
+            {
+                CompareCard(id | ModelKey, "model", (byte*)model, sizeof(NativeDrawObject));
+            }
+        }
+    }
+
+    private void CompareCard(ulong key, string part, byte* memory, int size)
+    {
+        var now = new ReadOnlySpan<byte>(memory, size).ToArray();
+        var id = key & ~ModelKey;
+        if (!cardMemory.TryGetValue(key, out var before) || before.Length != size)
+        {
+            cardMemory[key] = now;
+            Write($"card {id:X} {part}: {Convert.ToHexString(now)}");
+            return;
+        }
+
+        var changes = new StringBuilder();
+        var shown = 0;
+        for (var offset = 0; offset < size && shown < MaxCardChanges; offset++)
+        {
+            if (now[offset] != before[offset])
+            {
+                changes.Append(string.Create(CultureInfo.InvariantCulture, $" {offset:X}:{before[offset]:X2}>{now[offset]:X2}"));
+                shown++;
+            }
+        }
+
+        if (shown > 0)
+        {
+            cardMemory[key] = now;
+            Write($"card {id:X} {part} changed:{changes}");
         }
     }
 
