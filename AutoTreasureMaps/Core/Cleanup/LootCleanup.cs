@@ -13,9 +13,10 @@ internal readonly record struct PendingLoot(uint ItemId, int Quantity);
 
 // The loot coffers and treasure dungeons gave that is not kept, and the pass that discards it from the four bags. Kept
 // means whitelisted, a timeworn map, or any map's high-value loot. Only loot that landed in the bags is listed, so gil,
-// crystals and currency never are. The game discards whole slots, so a stack of a listed item the player already had goes
-// with it. A pass discards one slot at a time, a human-like moment apart, and empties the list once no listed item is left
-// in the bags. Framework thread only.
+// crystals and currency never are. The game discards whole slots, so an item is listed only when the bags held none of it
+// before the coffer opened (or it is listed already): every copy in the bags is then loot, and nothing the player got
+// another way is ever discarded. A pass discards one slot at a time, a human-like moment apart, and empties the list once
+// no listed item is left in the bags. Framework thread only.
 internal static unsafe class LootCleanup
 {
     private const int DiscardDelayMinMs = 700;
@@ -46,10 +47,11 @@ internal static unsafe class LootCleanup
 
     public static bool Running => running;
 
-    // One call per finished map or dungeon, with what it gave.
-    public static void Note(ImmutableArray<ItemGain> gains)
+    // One call per finished map or dungeon, with what it gave and the bags as they were before its coffer opened. Without
+    // that snapshot nothing is listed, since the loot could not be told from what the player already had.
+    public static void Note(ImmutableArray<ItemGain> gains, Dictionary<uint, int>? bagsBefore)
     {
-        if (!Plugin.Instance.Configuration.AutoDiscard || gains.IsDefaultOrEmpty)
+        if (!Plugin.Instance.Configuration.AutoDiscard || gains.IsDefaultOrEmpty || bagsBefore is null)
         {
             return;
         }
@@ -64,6 +66,12 @@ internal static unsafe class LootCleanup
             }
 
             var at = IndexOf(gain.ItemId);
+            if (at < 0 && bagsBefore.GetValueOrDefault(gain.ItemId) > 0)
+            {
+                RunLog.Debug($"Cleanup: not listing item {gain.ItemId}; the bags held {bagsBefore[gain.ItemId]} before the coffer");
+                continue;
+            }
+
             if (at < 0)
             {
                 pending.Add(new PendingLoot(gain.ItemId, gain.Quantity));
@@ -178,6 +186,11 @@ internal static unsafe class LootCleanup
             return;
         }
 
+        if (!AllLoot(itemId))
+        {
+            return;
+        }
+
         if (container == lastContainer && slot == lastSlot && itemId == lastItemId)
         {
             if (++lastAttempts > MaxAttemptsPerSlot)
@@ -235,6 +248,28 @@ internal static unsafe class LootCleanup
         var name = NotableLoot.Name(itemId);
         RunLog.Warning($"Cleanup: item {itemId} ({name}) stayed in its slot after {MaxAttemptsPerSlot} discards; taken off the list");
         Svc.Chat.PrintError($"{AtmConstants.LogPrefix} {Loc.T(L.Cleanup.ChatGaveUp, name)}");
+    }
+
+    // More of the item in the bags than was looted means some came another way since; the item is dropped from the list
+    // rather than discarded, as a slot cannot be split.
+    private static bool AllLoot(uint itemId)
+    {
+        var at = IndexOf(itemId);
+        var looted = at < 0 ? 0 : pending[at].Quantity;
+        var held = CountInBags(itemId);
+        if (held <= looted)
+        {
+            return true;
+        }
+
+        if (at >= 0)
+        {
+            pending.RemoveAt(at);
+            Revision++;
+        }
+
+        RunLog.Debug($"Cleanup: not discarding item {itemId}; the bags hold {held} but only {looted} were looted");
+        return false;
     }
 
     // The first bag slot holding a listed item that is not kept; the whitelist may have changed since it was listed.
@@ -306,14 +341,17 @@ internal static unsafe class LootCleanup
         }
     }
 
-    private static bool InBags(uint itemId)
+    private static bool InBags(uint itemId) => CountInBags(itemId) > 0;
+
+    private static int CountInBags(uint itemId)
     {
         var inventory = InventoryManager.Instance();
         if (inventory is null)
         {
-            return false;
+            return 0;
         }
 
+        var count = 0;
         for (var bagIndex = 0; bagIndex < Bags.Length; bagIndex++)
         {
             var bag = inventory->GetInventoryContainer(Bags[bagIndex]);
@@ -327,12 +365,12 @@ internal static unsafe class LootCleanup
                 var item = bag->GetInventorySlot(slotIndex);
                 if (item is not null && item->ItemId == itemId)
                 {
-                    return true;
+                    count += (int)item->Quantity;
                 }
             }
         }
 
-        return false;
+        return count;
     }
 
     private static bool CharacterFree()

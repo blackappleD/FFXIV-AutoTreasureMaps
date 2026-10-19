@@ -48,6 +48,9 @@ internal static class CleanupSettings
             () => SettingsControls.DrawToggle(configuration, () => configuration.AutoDiscard, SetAutoDiscard, "##atm_cleanup_on"),
             SettingsRow.ToggleHeight);
 
+        // The one rule a player must not miss, so it stands apart from the help and in an accent colour, on or off.
+        SettingsRow.Note(Loc.T(L.Cleanup.Safety), Styling.AccentAmber);
+
         using var body = Motion.PushSwitch("##atm_cleanup_body", configuration.AutoDiscard);
         SettingsRow.Note(Loc.T(configuration.AutoDiscard ? L.Cleanup.EnableHelp : L.Cleanup.Off));
     }

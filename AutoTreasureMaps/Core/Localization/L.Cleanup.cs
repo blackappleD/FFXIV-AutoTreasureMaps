@@ -8,7 +8,8 @@ internal static partial class L
         public static readonly LocString CatSub = new("cleanup.catSub", "Discard the loot you do not keep, so the bags never fill up during a run.");
         public static readonly LocString Group = new("cleanup.group", "Auto-discard");
         public static readonly LocString Enable = new("cleanup.enable", "Auto-discard loot");
-        public static readonly LocString EnableHelp = new("cleanup.enableHelp", "Every item a coffer or a treasure dungeon gives is noted. Between maps, and once a run finishes, the noted items that are not on the whitelist are discarded from your bags. The game discards whole stacks, so any of that item you already had goes too. Maps and each map's high-value loot are never discarded.");
+        public static readonly LocString EnableHelp = new("cleanup.enableHelp", "Every item a coffer or a treasure dungeon gives is noted. Between maps, and once a run finishes, the noted items that are not on the whitelist are discarded from your bags. Maps and each map's high-value loot are never discarded.");
+        public static readonly LocString Safety = new("cleanup.safety", "Only treasure-hunt loot is ever discarded. Items you got any other way are never touched, and neither is any item you already had before the coffer opened, even if a coffer gives more of it.");
         public static readonly LocString Off = new("cleanup.off", "Auto-discard is off. Nothing is noted or discarded.");
         public static readonly LocString Whitelist = new("cleanup.whitelist", "Whitelist");
         public static readonly LocString AddItem = new("cleanup.addItem", "Add an item");
