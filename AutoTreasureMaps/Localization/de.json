@@ -777,7 +777,7 @@
   "dungeon.chat.notInDungeon": "Du bist in keinem Schatzgewölbe, das das Plugin kennt. Bisher kennt es Cenote Ja Ja Gural und Vault Oneiron.",
   "dungeon.chat.inParty": "Schatzgewölbe werden vorerst nur allein geräumt. Verlass zuerst die Gruppe.",
   "dungeon.chat.stuck": "Das Gewölbe zeigt nichts, womit das Plugin umzugehen weiß, also liegt der Rest bei dir.",
-  "dungeon.chat.lure": "Die Falle der Verlockung ist aktiv. Triff deine Wahl; der Lauf geht weiter, sobald ihr Fenster zu ist.",
+  "dungeon.chat.lure": "Die Falle der Verlockung ist aktiv. Triff deine Wahl; der Lauf geht weiter, sobald die Falle vorbei ist.",
   "dungeon.chat.bonusRound": "Eine Bonusrunde hat begonnen. Sammle die leuchtenden Beutel selbst ein; der Lauf geht weiter, sobald sie vorbei ist.",
   "dungeon.chat.enteringPortal": "Ein Portal ist erschienen. Es wird betreten, um das Schatzgewölbe zu räumen.",
   "dungeon.chat.portalInParty": "Ein Portal ist erschienen, aber du bist in einer Gruppe, daher liegt das Gewölbe bei dir.",
@@ -787,6 +787,9 @@
   "dungeon.chat.recordStopped": "Aufzeichnung in {0} gespeichert.",
   "dungeon.chat.notRecording": "Es wird nichts aufgezeichnet.",
   "dungeon.chat.lureCapture": "Das Fenster der Gierfalle wird in {0} aufgezeichnet.",
+  "dungeon.chat.lureRare": "Die Truhe enthält seltene Beute ({0}), daher wird die Falle nur einmal herausgefordert.",
+  "dungeon.chat.lureChallenge": "Falle der Verlockung: Herausforderung {0} angenommen. Rate selbst höher oder niedriger; der Lauf wartet, bis die Falle vorbei ist.",
+  "dungeon.chat.lureTake": "Falle der Verlockung: Der Schatz wird mit {0}-facher Menge genommen.",
   "dungeon.outcome.cleared": "Geräumt",
   "dungeon.outcome.expelled": "Hinausbefördert",
   "dungeon.outcome.died": "Kampfunfähig",
@@ -824,5 +827,7 @@
   "dungeon.lure.ask.name": "Selbst wählen",
   "dungeon.lure.ask.detail": "Der Lauf wartet, während du spielst oder die Truhe selbst öffnest.",
   "dungeon.lure.open.name": "Truhe öffnen",
-  "dungeon.lure.open.detail": "Den Schatz so nehmen, wie er ist, und das Spiel auslassen."
+  "dungeon.lure.open.detail": "Den Schatz so nehmen, wie er ist, und das Spiel auslassen.",
+  "dungeon.lure.auto.name": "Nach Beute herausfordern",
+  "dungeon.lure.auto.detail": "Fordert einmal heraus, wenn die Truhe seltene Beute enthält, die die Aufräumung behält, sonst zweimal, und öffnet dann die Truhe. Die Karten rätst du selbst."
 }

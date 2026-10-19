@@ -33,6 +33,12 @@ public abstract partial class AutoCommon
     private const int LureCloseWaitMs = 3_000;
     // A guess takes about 15 seconds to play out; with no lure message for this long the lure is taken as over.
     private const int LureQuietLimitMs = 60_000;
+    // Each challenge is taken before the first card shows, so it is won 7 times in 9 whatever the card turns out to
+    // be. A coffer with rare loot is challenged once: the treasure is kept 78% of the time, and a second challenge
+    // would keep it only 60% of the time. Any other coffer is challenged twice and taken at 3x: 1.82x on average with
+    // the treasure lost 40% of the time, against 1.88x and 53% for a third challenge.
+    private const int LureChallengesWithRareLoot = 1;
+    private const int LureChallengesPlain = 2;
     private const int BonusRoundCapMs = 120_000;
     private const float SackReachMeters = 0.6f;
     private const int SackWalkMs = 10_000;
@@ -691,38 +697,22 @@ public abstract partial class AutoCommon
         const string scope = "dungeon-lure";
         var dungeon = context.Dungeon;
         var policy = Plugin.Instance.Configuration.DungeonLurePolicy;
-        if (policy == LurePolicy.OpenCoffer && !LureDialog.Open())
+        if (policy != LurePolicy.AskMe && !LureDialog.Open())
         {
-            // The coffer was opened as it is; the game has yet to say so.
+            // The window is answered; the coffer is opening, or the cards are out for the player to guess.
             Status = "Gambler's Lure: waiting for it to end";
             await NextFrame(DungeonTickFrames);
             return;
         }
 
-        if (policy == LurePolicy.OpenCoffer)
+        if (policy == LurePolicy.Auto && await PlayLure(scope, dungeon))
         {
-            Status = "Opening the coffer as it is";
-            if (!await HumanDelay(HumanAction.OpenCoffer, scope))
-            {
-                return;
-            }
+            return;
+        }
 
-            for (var attempt = 1; attempt <= LureClickAttempts && LureDialog.Open(); attempt++)
-            {
-                if (LureDialog.OpenCoffer())
-                {
-                    Diag($"{scope}: the Gambler's Lure is up; opening the coffer as it is (attempt {attempt}).");
-                }
-
-                await WaitUntilTimed(() => !LureDialog.Open(), LureCloseWaitMs, "lure closed", 1);
-            }
-
-            if (!LureDialog.Open())
-            {
-                return;
-            }
-
-            Warn($"{scope}: the lure window would not take the open-the-coffer choice; leaving it to the player.");
+        if (policy == LurePolicy.OpenCoffer && await AnswerLureWindow(scope, challenge: false))
+        {
+            return;
         }
 
         if (!dungeon.LureNoticeShown)
@@ -737,6 +727,74 @@ public abstract partial class AutoCommon
         {
             await NextFrame(DungeonTickFrames);
         }
+    }
+
+    // Challenges or takes the treasure by what the coffer holds and how many challenges it has had. The cards are left
+    // to the player. False when the window could not be read or would not take the choice.
+    private async Task<bool> PlayLure(string scope, DungeonInProgress dungeon)
+    {
+        if (!LureDialog.TryReadRareLoot(out var rare, out var entries))
+        {
+            Warn($"{scope}: the lure window's treasure could not be read; taking the treasure as it is.");
+            return await AnswerLureWindow(scope, challenge: false);
+        }
+
+        rare.RemoveAll(static itemId => !LootCleanup.KeepsRare(itemId));
+        var limit = rare.Count > 0 ? LureChallengesWithRareLoot : LureChallengesPlain;
+        var next = NextLureChallenge(dungeon);
+        var challenge = next <= limit;
+        var names = string.Join(", ", rare.Select(static itemId => NotableLoot.Name(itemId)));
+        Diag($"{scope}: {entries} treasure entr(ies), rare loot kept [{names}]; challenge {next}, limit {limit}: {(challenge ? "challenging" : "taking the treasure")}.");
+        if (rare.Count > 0 && !dungeon.LureNoticeShown)
+        {
+            dungeon.LureNoticeShown = true;
+            Svc.Chat.Print($"{AtmConstants.LogPrefix} {Loc.T(L.Dungeon.ChatLureRare, names)}");
+        }
+
+        if (!await AnswerLureWindow(scope, challenge))
+        {
+            return false;
+        }
+
+        Svc.Chat.Print(challenge
+            ? $"{AtmConstants.LogPrefix} {Loc.T(L.Dungeon.ChatLureChallenge, next)}"
+            : $"{AtmConstants.LogPrefix} {Loc.T(L.Dungeon.ChatLureTake, next)}");
+        return true;
+    }
+
+    // The challenge the window offers now, counted from 1; the treasure stands at this many shares.
+    private int NextLureChallenge(DungeonInProgress dungeon)
+    {
+        var since = Messages.TryGetLatest(DungeonLogMessages.LureSprung, dungeon.RoundStartedAtMs, out var sprung) ? sprung.AtMs : dungeon.RoundStartedAtMs;
+        return Messages.TryGetLatest(DungeonLogMessages.LureRound, since, out var round) && round.TryGetParameter(0, out var taken) ? taken + 1 : 1;
+    }
+
+    // True once the window took the choice and closed, or the run was stopped before it chose.
+    private async Task<bool> AnswerLureWindow(string scope, bool challenge)
+    {
+        Status = challenge ? "Gambler's Lure: challenging" : "Opening the coffer as it is";
+        if (!await HumanDelay(HumanAction.OpenCoffer, scope))
+        {
+            return true;
+        }
+
+        for (var attempt = 1; attempt <= LureClickAttempts && LureDialog.Open(); attempt++)
+        {
+            if (challenge ? LureDialog.Challenge() : LureDialog.OpenCoffer())
+            {
+                Diag($"{scope}: {(challenge ? "challenging the lure" : "opening the coffer as it is")} (attempt {attempt}).");
+            }
+
+            await WaitUntilTimed(() => !LureDialog.Open(), LureCloseWaitMs, "lure closed", 1);
+        }
+
+        if (!LureDialog.Open())
+        {
+            return true;
+        }
+
+        Warn($"{scope}: the lure window would not take the choice; leaving it to the player.");
+        return false;
     }
 
     // Rolls whatever waits on a roll by the Loot setting, then gives the bags a moment to settle.

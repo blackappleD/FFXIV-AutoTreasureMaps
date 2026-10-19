@@ -777,7 +777,7 @@
   "dungeon.chat.notInDungeon": "プラグインが知っている宝物庫にいません。今のところ対応しているのは Cenote Ja Ja Gural と Vault Oneiron です。",
   "dungeon.chat.inParty": "宝物庫は今のところソロでのみ攻略します。先にパーティを抜けてください。",
   "dungeon.chat.stuck": "プラグインが対処できるものが宝物庫に見当たりません。続きはご自身でお願いします。",
-  "dungeon.chat.lure": "強欲の罠が仕掛けられています。選択してください。ウィンドウが閉じたら続行します。",
+  "dungeon.chat.lure": "強欲の罠が仕掛けられています。選択してください。罠が終わったら続行します。",
   "dungeon.chat.bonusRound": "ボーナスラウンドが始まりました。光る袋はご自身で拾ってください。終わったら続行します。",
   "dungeon.chat.enteringPortal": "魔紋が出現しました。宝物庫を攻略するために入ります。",
   "dungeon.chat.portalInParty": "魔紋が出現しましたが、パーティ中のため宝物庫はご自身でお願いします。",
@@ -787,6 +787,9 @@
   "dungeon.chat.recordStopped": "記録を {0} に保存しました。",
   "dungeon.chat.notRecording": "記録中ではありません。",
   "dungeon.chat.lureCapture": "欲望の罠のウィンドウを {0} に記録しています。",
+  "dungeon.chat.lureRare": "宝箱にレアアイテム（{0}）があるため、罠への挑戦は1回だけにします。",
+  "dungeon.chat.lureChallenge": "強欲の罠：{0}回目の挑戦を選びました。ハイ・ローはご自身で選んでください。罠が終わるまで待機します。",
+  "dungeon.chat.lureTake": "強欲の罠：{0}倍の財宝を受け取ります。",
   "dungeon.outcome.cleared": "踏破",
   "dungeon.outcome.expelled": "強制退出",
   "dungeon.outcome.died": "戦闘不能",
@@ -824,5 +827,7 @@
   "dungeon.lure.ask.name": "自分で選ぶ",
   "dungeon.lure.ask.detail": "自分で挑戦するか宝箱を開けるまで待ちます。",
   "dungeon.lure.open.name": "宝箱を開ける",
-  "dungeon.lure.open.detail": "罠には挑まず、そのままの財宝を受け取ります。"
+  "dungeon.lure.open.detail": "罠には挑まず、そのままの財宝を受け取ります。",
+  "dungeon.lure.auto.name": "中身で挑戦回数を決める",
+  "dungeon.lure.auto.detail": "整理で残すレアアイテムが宝箱にあれば1回、なければ2回挑戦してから宝箱を開けます。カードのハイ・ローはご自身で選んでください。"
 }

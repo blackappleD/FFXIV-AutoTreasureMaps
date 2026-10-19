@@ -28,6 +28,7 @@ internal static class DungeonSettings
     [
         new(L.Dungeon.LureAskName, L.Dungeon.LureAskDetail),
         new(L.Dungeon.LureOpenName, L.Dungeon.LureOpenDetail),
+        new(L.Dungeon.LureAutoName, L.Dungeon.LureAutoDetail),
     ];
 
     public static void Draw(Configuration configuration)

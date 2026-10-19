@@ -777,7 +777,7 @@
   "dungeon.chat.notInDungeon": "You are not in a treasure dungeon the plugin knows. It knows Cenote Ja Ja Gural and Vault Oneiron so far.",
   "dungeon.chat.inParty": "Treasure dungeons are only cleared solo for now. Leave the party first.",
   "dungeon.chat.stuck": "The dungeon shows nothing the plugin knows how to act on, so the rest is up to you.",
-  "dungeon.chat.lure": "The Gambler's Lure is up. Make your choice; the run goes on once its window closes.",
+  "dungeon.chat.lure": "The Gambler's Lure is up. Make your choice; the run goes on once the lure is over.",
   "dungeon.chat.bonusRound": "A bonus round began. Pick up the glowing sacks yourself; the run goes on once it ends.",
   "dungeon.chat.enteringPortal": "A portal appeared. Entering it to clear the treasure dungeon.",
   "dungeon.chat.portalInParty": "A portal appeared, but you are in a party, so the dungeon is left to you.",
@@ -787,6 +787,9 @@
   "dungeon.chat.recordStopped": "Recording saved to {0}.",
   "dungeon.chat.notRecording": "Nothing is being recorded.",
   "dungeon.chat.lureCapture": "The Gambler's Lure window is being written down to {0}.",
+  "dungeon.chat.lureRare": "The coffer holds rare loot ({0}), so the lure is challenged only once.",
+  "dungeon.chat.lureChallenge": "Gambler's Lure: challenge {0} taken. Guess high or low yourself; the run waits until the lure ends.",
+  "dungeon.chat.lureTake": "Gambler's Lure: taking the treasure at {0}x.",
   "dungeon.outcome.cleared": "Cleared",
   "dungeon.outcome.expelled": "Sent out",
   "dungeon.outcome.died": "Knocked out",
@@ -824,5 +827,7 @@
   "dungeon.lure.ask.name": "Let me choose",
   "dungeon.lure.ask.detail": "The run waits while you play it or open the coffer yourself.",
   "dungeon.lure.open.name": "Open the coffer",
-  "dungeon.lure.open.detail": "Take the treasure as it is and skip the game."
+  "dungeon.lure.open.detail": "Take the treasure as it is and skip the game.",
+  "dungeon.lure.auto.name": "Challenge by the loot",
+  "dungeon.lure.auto.detail": "Challenges once when the coffer holds rare loot the cleanup keeps, otherwise twice, then opens the coffer. You guess the cards yourself."
 }

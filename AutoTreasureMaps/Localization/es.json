@@ -777,7 +777,7 @@
   "dungeon.chat.notInDungeon": "No estás en una mazmorra del tesoro que el complemento conozca. Por ahora conoce Cenote Ja Ja Gural y Vault Oneiron.",
   "dungeon.chat.inParty": "Por ahora las mazmorras del tesoro solo se completan en solitario. Sal del grupo primero.",
   "dungeon.chat.stuck": "La mazmorra no muestra nada con lo que el complemento sepa actuar, así que el resto depende de ti.",
-  "dungeon.chat.lure": "Ha aparecido la trampa de la codicia. Elige tú; la ejecución sigue en cuanto se cierre su ventana.",
+  "dungeon.chat.lure": "Ha aparecido la trampa de la codicia. Elige tú; la ejecución sigue cuando termine la trampa.",
   "dungeon.chat.bonusRound": "Ha empezado una ronda extra. Recoge tú las bolsas brillantes; la ejecución sigue cuando termine.",
   "dungeon.chat.enteringPortal": "Ha aparecido un portal. Entrando para completar la mazmorra del tesoro.",
   "dungeon.chat.portalInParty": "Ha aparecido un portal, pero estás en un grupo, así que la mazmorra queda en tus manos.",
@@ -787,6 +787,9 @@
   "dungeon.chat.recordStopped": "Grabación guardada en {0}.",
   "dungeon.chat.notRecording": "No se está grabando nada.",
   "dungeon.chat.lureCapture": "La ventana de la trampa de la codicia se está registrando en {0}.",
+  "dungeon.chat.lureRare": "El cofre contiene botín raro ({0}), así que la trampa solo se desafía una vez.",
+  "dungeon.chat.lureChallenge": "Trampa de la codicia: desafío {0} aceptado. Adivina tú mayor o menor; la ejecución espera a que termine la trampa.",
+  "dungeon.chat.lureTake": "Trampa de la codicia: se toma el tesoro a x{0}.",
   "dungeon.outcome.cleared": "Completada",
   "dungeon.outcome.expelled": "Expulsado",
   "dungeon.outcome.died": "Derrotado",
@@ -824,5 +827,7 @@
   "dungeon.lure.ask.name": "Dejarme elegir",
   "dungeon.lure.ask.detail": "La ejecución espera mientras juegas o abres el cofre tú mismo.",
   "dungeon.lure.open.name": "Abrir el cofre",
-  "dungeon.lure.open.detail": "Llevarse el tesoro tal cual y saltarse el juego."
+  "dungeon.lure.open.detail": "Llevarse el tesoro tal cual y saltarse el juego.",
+  "dungeon.lure.auto.name": "Desafiar según el botín",
+  "dungeon.lure.auto.detail": "Desafía una vez si el cofre tiene botín raro que la limpieza conserva, si no dos veces, y luego abre el cofre. Las cartas las adivinas tú."
 }

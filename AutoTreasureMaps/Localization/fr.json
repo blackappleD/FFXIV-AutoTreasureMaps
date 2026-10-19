@@ -777,7 +777,7 @@
   "dungeon.chat.notInDungeon": "Vous n'êtes pas dans un donjon au trésor que le plugin connaît. Il connaît pour l'instant Cenote Ja Ja Gural et Vault Oneiron.",
   "dungeon.chat.inParty": "Pour l'instant, les donjons au trésor ne se font qu'en solo. Quittez d'abord l'équipe.",
   "dungeon.chat.stuck": "Le donjon ne montre rien que le plugin sache gérer, la suite est donc entre vos mains.",
-  "dungeon.chat.lure": "La tentation du flambeur est apparue. Faites votre choix ; la session reprend dès que sa fenêtre se ferme.",
+  "dungeon.chat.lure": "La tentation du flambeur est apparue. Faites votre choix ; la session reprend une fois le jeu terminé.",
   "dungeon.chat.bonusRound": "Une manche bonus a commencé. Ramassez vous-même les sacs lumineux ; la session reprend à la fin.",
   "dungeon.chat.enteringPortal": "Un portail est apparu. Entrée pour terminer le donjon au trésor.",
   "dungeon.chat.portalInParty": "Un portail est apparu, mais vous êtes en équipe, le donjon vous est donc laissé.",
@@ -787,6 +787,9 @@
   "dungeon.chat.recordStopped": "Enregistrement sauvegardé dans {0}.",
   "dungeon.chat.notRecording": "Aucun enregistrement en cours.",
   "dungeon.chat.lureCapture": "La fenêtre du piège de l'avarice est enregistrée dans {0}.",
+  "dungeon.chat.lureRare": "Le coffre contient un butin rare ({0}) : la tentation n'est relevée qu'une fois.",
+  "dungeon.chat.lureChallenge": "Tentation du flambeur : défi {0} relevé. Devinez vous-même plus haut ou plus bas ; la session attend la fin du jeu.",
+  "dungeon.chat.lureTake": "Tentation du flambeur : le trésor est pris à x{0}.",
   "dungeon.outcome.cleared": "Terminé",
   "dungeon.outcome.expelled": "Expulsé",
   "dungeon.outcome.died": "K.O.",
@@ -824,5 +827,7 @@
   "dungeon.lure.ask.name": "Me laisser choisir",
   "dungeon.lure.ask.detail": "La session attend que vous jouiez ou ouvriez le coffre vous-même.",
   "dungeon.lure.open.name": "Ouvrir le coffre",
-  "dungeon.lure.open.detail": "Prendre le trésor tel quel et passer le jeu."
+  "dungeon.lure.open.detail": "Prendre le trésor tel quel et passer le jeu.",
+  "dungeon.lure.auto.name": "Relever selon le butin",
+  "dungeon.lure.auto.detail": "Relève le défi une fois si le coffre contient un butin rare que le nettoyage garde, sinon deux fois, puis ouvre le coffre. Vous devinez les cartes vous-même."
 }

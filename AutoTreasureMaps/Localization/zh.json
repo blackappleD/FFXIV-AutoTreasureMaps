@@ -777,7 +777,7 @@
   "dungeon.chat.notInDungeon": "你不在插件支持的宝物库里。目前支持加加财富天坑和巡梦金库。",
   "dungeon.chat.inParty": "宝物库目前只支持单人攻略，请先退出小队。",
   "dungeon.chat.stuck": "宝物库里没有插件能处理的东西，接下来请手动操作。",
-  "dungeon.chat.lure": "宝箱被设置了强欲陷阱，请自己选择。窗口关闭后会继续运行。",
+  "dungeon.chat.lure": "宝箱被设置了强欲陷阱，请自己选择。强欲结束后会继续运行。",
   "dungeon.chat.bonusRound": "奖励回合开始了，请自己去捡“发光的袋子”。结束后会继续运行。",
   "dungeon.chat.enteringPortal": "出现了传送魔纹，进入宝物库自动攻略。",
   "dungeon.chat.portalInParty": "出现了传送魔纹，但你在小队中，宝物库请自己处理。",
@@ -787,6 +787,9 @@
   "dungeon.chat.recordStopped": "记录已保存到 {0}。",
   "dungeon.chat.notRecording": "当前没有在记录。",
   "dungeon.chat.lureCapture": "正在记录强欲陷阱窗口的数据，文件：{0}",
+  "dungeon.chat.lureRare": "宝箱里有稀有品（{0}），强欲陷阱只挑战 1 次。",
+  "dungeon.chat.lureChallenge": "强欲陷阱：已选择第 {0} 次挑战，请自己猜大小。强欲结束前插件会原地等待。",
+  "dungeon.chat.lureTake": "强欲陷阱：不再挑战，领取 {0} 倍的财宝。",
   "dungeon.outcome.cleared": "通关",
   "dungeon.outcome.expelled": "被传送出",
   "dungeon.outcome.died": "无法战斗",
@@ -824,5 +827,7 @@
   "dungeon.lure.ask.name": "我自己选",
   "dungeon.lure.ask.detail": "等你自己挑战解除陷阱或直接开箱。",
   "dungeon.lure.open.name": "直接开箱",
-  "dungeon.lure.open.detail": "不挑战解除陷阱，按当前数量领取财宝。"
+  "dungeon.lure.open.detail": "不挑战解除陷阱，按当前数量领取财宝。",
+  "dungeon.lure.auto.name": "按奖励自动挑战",
+  "dungeon.lure.auto.detail": "宝箱里有自动清理保留的稀有品（稀有品中高亮的物品）时只挑战 1 次，否则挑战 2 次（拿到 3 倍），然后开箱。猜大小需要你自己来。"
 }

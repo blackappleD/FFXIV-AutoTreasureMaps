@@ -777,7 +777,7 @@
   "dungeon.chat.notInDungeon": "Eklentinin bildiği bir hazine zindanında değilsin. Şimdilik Cenote Ja Ja Gural ve Vault Oneiron'u biliyor.",
   "dungeon.chat.inParty": "Hazine zindanları şimdilik yalnızca tek başına tamamlanıyor. Önce gruptan ayrıl.",
   "dungeon.chat.stuck": "Zindanda eklentinin ne yapacağını bildiği bir şey yok, gerisi sende.",
-  "dungeon.chat.lure": "Açgözlülük tuzağı kuruldu. Seçimini yap; penceresi kapanınca devam edilir.",
+  "dungeon.chat.lure": "Açgözlülük tuzağı kuruldu. Seçimini yap; tuzak bitince devam edilir.",
   "dungeon.chat.bonusRound": "Bir bonus turu başladı. Parlayan keseleri kendin topla; bitince devam edilir.",
   "dungeon.chat.enteringPortal": "Bir portal belirdi. Hazine zindanını tamamlamak için giriliyor.",
   "dungeon.chat.portalInParty": "Bir portal belirdi ama gruptasın, bu yüzden zindan sana kaldı.",
@@ -787,6 +787,9 @@
   "dungeon.chat.recordStopped": "Kayıt {0} dosyasına kaydedildi.",
   "dungeon.chat.notRecording": "Şu anda kayıt yapılmıyor.",
   "dungeon.chat.lureCapture": "Açgözlülük tuzağı penceresi {0} dosyasına kaydediliyor.",
+  "dungeon.chat.lureRare": "Sandıkta nadir ganimet var ({0}), bu yüzden tuzağa yalnızca bir kez meydan okunuyor.",
+  "dungeon.chat.lureChallenge": "Açgözlülük tuzağı: {0}. meydan okuma alındı. Büyük mü küçük mü kendin tahmin et; tuzak bitene kadar beklenir.",
+  "dungeon.chat.lureTake": "Açgözlülük tuzağı: hazine {0} katıyla alınıyor.",
   "dungeon.outcome.cleared": "Tamamlandı",
   "dungeon.outcome.expelled": "Dışarı atıldı",
   "dungeon.outcome.died": "Bayıldı",
@@ -824,5 +827,7 @@
   "dungeon.lure.ask.name": "Ben seçeyim",
   "dungeon.lure.ask.detail": "Sen oynarken ya da sandığı kendin açarken bekler.",
   "dungeon.lure.open.name": "Sandığı aç",
-  "dungeon.lure.open.detail": "Hazineyi olduğu gibi al ve oyunu atla."
+  "dungeon.lure.open.detail": "Hazineyi olduğu gibi al ve oyunu atla.",
+  "dungeon.lure.auto.name": "Ganimete göre meydan oku",
+  "dungeon.lure.auto.detail": "Sandıkta temizliğin sakladığı nadir ganimet varsa bir kez, yoksa iki kez meydan okur, sonra sandığı açar. Kartları sen tahmin edersin."
 }

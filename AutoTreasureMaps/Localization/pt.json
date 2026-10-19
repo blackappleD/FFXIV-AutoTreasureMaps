@@ -777,7 +777,7 @@
   "dungeon.chat.notInDungeon": "Você não está numa masmorra do tesouro que o plugin conheça. Por enquanto ele conhece Cenote Ja Ja Gural e Vault Oneiron.",
   "dungeon.chat.inParty": "Por enquanto as masmorras do tesouro só são concluídas sozinho. Saia do grupo primeiro.",
   "dungeon.chat.stuck": "A masmorra não mostra nada com que o plugin saiba lidar, então o resto é com você.",
-  "dungeon.chat.lure": "A armadilha da cobiça apareceu. Faça sua escolha; a execução continua quando a janela fechar.",
+  "dungeon.chat.lure": "A armadilha da cobiça apareceu. Faça sua escolha; a execução continua quando a armadilha acabar.",
   "dungeon.chat.bonusRound": "Começou uma rodada bônus. Pegue você mesmo os sacos brilhantes; a execução continua quando acabar.",
   "dungeon.chat.enteringPortal": "Um portal apareceu. Entrando para concluir a masmorra do tesouro.",
   "dungeon.chat.portalInParty": "Um portal apareceu, mas você está em grupo, então a masmorra fica com você.",
@@ -787,6 +787,9 @@
   "dungeon.chat.recordStopped": "Gravação salva em {0}.",
   "dungeon.chat.notRecording": "Nada está sendo gravado.",
   "dungeon.chat.lureCapture": "A janela da armadilha da ganância está sendo registrada em {0}.",
+  "dungeon.chat.lureRare": "O baú tem saque raro ({0}), então a armadilha é desafiada só uma vez.",
+  "dungeon.chat.lureChallenge": "Armadilha da cobiça: desafio {0} aceito. Adivinhe maior ou menor você mesmo; a execução espera a armadilha acabar.",
+  "dungeon.chat.lureTake": "Armadilha da cobiça: levando o tesouro em {0}x.",
   "dungeon.outcome.cleared": "Concluída",
   "dungeon.outcome.expelled": "Expulso",
   "dungeon.outcome.died": "Nocauteado",
@@ -824,5 +827,7 @@
   "dungeon.lure.ask.name": "Deixar eu escolher",
   "dungeon.lure.ask.detail": "A execução espera enquanto você joga ou abre o baú.",
   "dungeon.lure.open.name": "Abrir o baú",
-  "dungeon.lure.open.detail": "Levar o tesouro como está e pular o jogo."
+  "dungeon.lure.open.detail": "Levar o tesouro como está e pular o jogo.",
+  "dungeon.lure.auto.name": "Desafiar conforme o saque",
+  "dungeon.lure.auto.detail": "Desafia uma vez se o baú tiver saque raro que a limpeza mantém, senão duas vezes, e depois abre o baú. Você adivinha as cartas."
 }
