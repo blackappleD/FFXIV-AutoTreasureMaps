@@ -57,7 +57,7 @@ internal static partial class L
         public static readonly LocString ChatNotRunning = new("gather.chat.notRunning", "No gather is under way.");
         public static readonly LocString ChatStopped = new("gather.chat.stopped", "Gather stopped.");
 
-        public static readonly LocString CommandHelp = new("gather.commandHelp", "/atm gather gathers today's timeworn map once as a Miner or Botanist, and /atm gather stop ends it.");
+        public static readonly LocString CommandHelp = new("gather.commandHelp", "/atm gather - gather today's timeworn map once as a Miner or Botanist\n/atm gather stop - stop the gathering");
         public static readonly LocString PhaseGathering = new("gather.phase", "Gathering");
         public static readonly LocString MapsGathered = new("gather.mapsGathered", "Maps gathered");
         public static readonly LocString ReasonNoReturnGearset = new("gather.reason.noReturnGearset", "No gearset holds the class you are on, so the gather could not switch you back. Save one in the gearset list first.");

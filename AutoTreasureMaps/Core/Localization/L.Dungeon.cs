@@ -4,7 +4,7 @@ internal static partial class L
 {
     internal static class Dungeon
     {
-        public static readonly LocString CommandHelp = new("dungeon.commandHelp", "/atm dungeon clears the treasure dungeon you stand in (solo only), /atm dungeon record starts writing what the dungeon shows to a file and /atm dungeon record stop ends it, and /atm dungeon nearby lists the objects around you in the console.");
+        public static readonly LocString CommandHelp = new("dungeon.commandHelp", "/atm dungeon - clear the treasure dungeon you stand in (solo only)\n/atm dungeon record - start writing what the dungeon shows to a file\n/atm dungeon record stop - stop the recording\n/atm dungeon nearby - list the objects around you in the console");
 
         public static readonly LocString ChatStarted = new("dungeon.chat.started", "Clearing {0}.");
         public static readonly LocString ChatUnverified = new("dungeon.chat.unverified", "This dungeon has not been checked in game yet. Stay close, and if it goes wrong, /atm dungeon record while you clear it by hand helps fix it.");
