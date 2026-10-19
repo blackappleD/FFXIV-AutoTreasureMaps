@@ -14,7 +14,9 @@ internal enum DungeonKind : byte { Gate, Slot }
 // duty be left from the duty list. MapItemId is the timeworn map whose portal usually leads here, which the stats
 // credit a dungeon to when the run did not see the portal itself. BonusNameIds are the BNpcName rows of the rare
 // enemies that drop extra loot and leave if not killed in time; MandragoraNameIds are the mandragora party's, in the
-// order their markers ask them to be killed.
+// order their markers ask them to be killed. GoldSackBaseIds and SilverSackBaseIds are the event objects a bonus round
+// scatters for the character to walk onto, a gold one worth three silver; both are empty where the run does not know
+// them, and such a bonus round is left to the player.
 internal sealed record DungeonProfile(
     string Key,
     uint MapItemId,
@@ -28,6 +30,8 @@ internal sealed record DungeonProfile(
     uint[] ExitBaseIds,
     uint[] BonusNameIds,
     uint[] MandragoraNameIds,
+    uint[] GoldSackBaseIds,
+    uint[] SilverSackBaseIds,
     bool Verified)
 {
     public bool IsCoffer(uint baseId) => Array.IndexOf(CofferBaseIds, baseId) >= 0;
@@ -39,6 +43,12 @@ internal sealed record DungeonProfile(
     public bool IsExit(uint baseId) => Array.IndexOf(ExitBaseIds, baseId) >= 0;
 
     public bool IsBonus(uint nameId) => Array.IndexOf(BonusNameIds, nameId) >= 0;
+
+    public bool HasSacks => GoldSackBaseIds.Length > 0 || SilverSackBaseIds.Length > 0;
+
+    public bool IsGoldSack(uint baseId) => Array.IndexOf(GoldSackBaseIds, baseId) >= 0;
+
+    public bool IsSilverSack(uint baseId) => Array.IndexOf(SilverSackBaseIds, baseId) >= 0;
 
     // The mandragora's place in the kill order, or -1 for any other enemy.
     public int MandragoraOrder(uint nameId) => Array.IndexOf(MandragoraNameIds, nameId);

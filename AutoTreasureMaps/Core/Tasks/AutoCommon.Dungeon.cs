@@ -31,6 +31,10 @@ public abstract partial class AutoCommon
     private const int LureClickAttempts = 3;
     private const int LureCloseWaitMs = 3_000;
     private const int BonusRoundCapMs = 120_000;
+    private const float SackReachMeters = 0.6f;
+    private const int SackWalkMs = 10_000;
+    // Standing on a sack picks it up at once; one still there after this is asked by interacting instead.
+    private const int SackPickupMs = 1_200;
     private const int LootPendingWaitMs = 60_000;
     private const int LootRetryMs = 20_000;
     private const int LeaveZoneWaitMs = 15_000;
@@ -166,7 +170,15 @@ public abstract partial class AutoCommon
                     await handler.AnswerLure(context);
                     break;
                 case DungeonStep.Bonus:
-                    await WaitOutBonusRound(context);
+                    if (profile.HasSacks)
+                    {
+                        await CollectBonusSacks(context);
+                    }
+                    else
+                    {
+                        await WaitOutBonusRound(context);
+                    }
+
                     break;
                 case DungeonStep.Fight:
                     await handler.Fight(context);
@@ -326,7 +338,78 @@ public abstract partial class AutoCommon
         && !Messages.ArrivedSince(DungeonLogMessages.BonusRoundEnded, started.AtMs)
         && !Messages.ArrivedSince(DungeonLogMessages.BonusRoundCoffer, started.AtMs);
 
-    // The bonus round wants the glowing sacks picked up by hand, which the run does not do yet.
+    // The bonus round scatters sacks over the room for ninety seconds, each picked up by walking onto it. The run walks
+    // from sack to sack until the round ends; one the character stood on without picking it up is asked once by
+    // interacting, and one it cannot reach or pick up is left alone.
+    private async Task CollectBonusSacks(DungeonContext context)
+    {
+        const string scope = "dungeon-sacks";
+        var dungeon = context.Dungeon;
+        if (!dungeon.BonusNoticeShown)
+        {
+            dungeon.BonusNoticeShown = true;
+            Diag("Dungeon: a bonus round began; picking up its sacks.");
+        }
+
+        EnterStep(TreasurePhase.Fighting);
+        Status = "Bonus round: picking up sacks";
+        HoldCombatMovement(scope);
+        var skipped = new HashSet<ulong>();
+        var picked = 0;
+        var deadline = Environment.TickCount64 + BonusRoundCapMs;
+        while (!CancelToken.IsCancellationRequested && Environment.TickCount64 < deadline && context.InDungeon && !context.Zoning && !IsKnockedOut() && BonusRoundOn(dungeon))
+        {
+            // The sacks come a little after the round's message, and in waves.
+            var sack = DungeonField.NextSack(dungeon.Profile, skipped);
+            if (sack is null)
+            {
+                await NextFrame(DungeonTickFrames);
+                continue;
+            }
+
+            var sackId = sack.GameObjectId;
+            var position = sack.Position;
+            bool Gone() => Svc.Objects.SearchById(sackId) is null;
+            await context.WalkTo(position, SackReachMeters, Gone, SackWalkMs, scope);
+            if (Gone())
+            {
+                picked++;
+                continue;
+            }
+
+            if (!WithinReach(position, SackReachMeters * 2f))
+            {
+                Diag($"{scope}: could not reach sack {sackId:X} at ({position.X:F1}, {position.Y:F1}, {position.Z:F1}); leaving it.");
+                skipped.Add(sackId);
+                continue;
+            }
+
+            if (await WaitUntilTimed(Gone, SackPickupMs, "sack picked up"))
+            {
+                picked++;
+                continue;
+            }
+
+            Diag($"{scope}: standing on sack {sackId:X} did not pick it up; interacting with it.");
+            if (Svc.Objects.SearchById(sackId) is { } still)
+            {
+                await InteractWithObject(still, Gone, scope);
+            }
+
+            if (Gone())
+            {
+                picked++;
+            }
+            else
+            {
+                skipped.Add(sackId);
+            }
+        }
+
+        Diag($"{scope}: the bonus round is over; {picked} sack(s) picked up, {skipped.Count} left.");
+    }
+
+    // A bonus round whose sacks the run does not know is left to the player.
     private async Task WaitOutBonusRound(DungeonContext context)
     {
         var dungeon = context.Dungeon;
@@ -398,6 +481,13 @@ public abstract partial class AutoCommon
             {
                 if (IsKnockedOut() || context.Zoning || !context.InDungeon || LureDialog.Open())
                 {
+                    return;
+                }
+
+                // The bonus round's enemies only get in the way; its sacks are what it pays out.
+                if (context.Profile.HasSacks && BonusRoundOn(context.Dungeon))
+                {
+                    Diag($"{scope}: a bonus round began; leaving the fight for its sacks.");
                     return;
                 }
 

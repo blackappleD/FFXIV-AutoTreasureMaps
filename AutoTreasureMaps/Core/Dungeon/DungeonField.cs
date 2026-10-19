@@ -16,6 +16,8 @@ internal static unsafe class DungeonField
     // Gates of one wall stand a few metres apart; a gate farther than this from the nearest one is another wall's.
     private const float GateWallMeters = 30f;
     private const float EnemyMeters = 45f;
+    // Squared distances are compared, so a gold sack three times as far as a silver one weighs the same.
+    private const float SilverSackWeight = 9f;
 
     public static Vector3 PlayerPosition => Svc.Objects.LocalPlayer?.Position ?? Vector3.Zero;
 
@@ -44,6 +46,43 @@ internal static unsafe class DungeonField
         }
 
         return nearest;
+    }
+
+    // The bonus round's sack to walk to next: the nearest, with a gold sack counted as near as a silver one three times
+    // closer, since it is worth three. Null when the profile knows no sacks or none is on the field.
+    public static IGameObject? NextSack(DungeonProfile profile, IReadOnlySet<ulong>? skipped = null)
+    {
+        if (!profile.HasSacks)
+        {
+            return null;
+        }
+
+        var from = PlayerPosition;
+        IGameObject? next = null;
+        var best = float.MaxValue;
+        var objects = Svc.Objects;
+        for (var index = 0; index < objects.Length; index++)
+        {
+            if (objects[index] is not { ObjectKind: ObjectKind.EventObj } candidate || skipped?.Contains(candidate.GameObjectId) == true)
+            {
+                continue;
+            }
+
+            var weight = profile.IsGoldSack(candidate.BaseId) ? 1f : profile.IsSilverSack(candidate.BaseId) ? SilverSackWeight : 0f;
+            var distance = Vector3.DistanceSquared(from, candidate.Position);
+            if (weight == 0f || distance > RoomMeters * RoomMeters)
+            {
+                continue;
+            }
+
+            if (distance * weight < best)
+            {
+                best = distance * weight;
+                next = candidate;
+            }
+        }
+
+        return next;
     }
 
     public static bool IsCoffer(DungeonProfile profile, IGameObject candidate)

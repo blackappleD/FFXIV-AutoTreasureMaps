@@ -22,6 +22,8 @@ internal static class DungeonProfiles
         // Alpaca of fortune, uolon of fortune; Turali onion, eggplant, garlic, tomato, Tuligora queen.
         BonusNameIds: [13240, 13241],
         MandragoraNameIds: [13242, 13243, 13244, 13245, 13246],
+        GoldSackBaseIds: [],
+        SilverSackBaseIds: [],
         Verified: false);
 
     // G18, Timeworn Gargantuaskin Map: one room, five draws of the hypnoslot machine, each paying out a gold, silver or
@@ -40,5 +42,8 @@ internal static class DungeonProfiles
         // Goldy cat, vaultkeeper; vault onion, eggplant, garlic, tomato, queen.
         BonusNameIds: [14014, 14015],
         MandragoraNameIds: [14016, 14017, 14018, 14019, 14020],
+        // The bonus round's gold and silver sacks; it asks for a hundred glowing sacks in ninety seconds.
+        GoldSackBaseIds: [2014791],
+        SilverSackBaseIds: [2014792],
         Verified: false);
 }
