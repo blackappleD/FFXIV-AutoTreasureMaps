@@ -149,7 +149,7 @@ public sealed class TreasureSession
             tally.Maps++;
             NoteRareItems(tally, mapItemId, result.Items);
             portalMapItemId = portal ? mapItemId : 0;
-            var entry = Plugin.Instance.MapLog.Add(mapItemId, portal, result.Outcome == MapOutcome.Died ? 1 : 0, result.Items);
+            var entry = Plugin.Instance.MapLog.Add(mapItemId, portal, result.Outcome == MapOutcome.Died ? 1 : 0, result.Duration, result.Items);
             portalLogEntry = portal ? entry : null;
         }
     }
@@ -182,7 +182,7 @@ public sealed class TreasureSession
 
         // A dungeon without its map's line in this run gets a line of its own.
         var mapLog = Plugin.Instance.MapLog;
-        var entry = portalLogEntry ?? mapLog.Add(mapItemId, portal: true, deaths: 0, ImmutableArray<ItemGain>.Empty);
+        var entry = portalLogEntry ?? mapLog.Add(mapItemId, portal: true, deaths: 0, result.Duration, ImmutableArray<ItemGain>.Empty);
         portalLogEntry = null;
         mapLog.NoteDungeon(entry, result.Round, result.Profile.Rounds, result.Outcome == DungeonOutcome.Died, result.Items);
     }

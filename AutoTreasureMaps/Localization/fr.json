@@ -171,6 +171,7 @@
   "history.log.portal": "Portail",
   "history.log.floor": "Étage",
   "history.log.deaths": "Morts",
+  "history.log.duration": "Durée",
   "history.log.loot": "Butin rare",
   "history.log.yes": "Oui",
   "history.log.lootItem": "{0}×{1}",

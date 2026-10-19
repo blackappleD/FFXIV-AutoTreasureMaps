@@ -171,6 +171,7 @@
   "history.log.portal": "Portal",
   "history.log.floor": "Kat",
   "history.log.deaths": "Ölüm",
+  "history.log.duration": "Süre",
   "history.log.loot": "Nadir ganimet",
   "history.log.yes": "Evet",
   "history.log.lootItem": "{0}×{1}",

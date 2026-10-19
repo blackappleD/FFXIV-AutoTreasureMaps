@@ -171,6 +171,7 @@
   "history.log.portal": "魔紋",
   "history.log.floor": "階層",
   "history.log.deaths": "戦闘不能",
+  "history.log.duration": "所要時間",
   "history.log.loot": "レアアイテム",
   "history.log.yes": "あり",
   "history.log.lootItem": "{0}×{1}",

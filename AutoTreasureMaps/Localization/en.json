@@ -171,6 +171,7 @@
   "history.log.portal": "Portal",
   "history.log.floor": "Floor",
   "history.log.deaths": "Deaths",
+  "history.log.duration": "Time",
   "history.log.loot": "Rare loot",
   "history.log.yes": "Yes",
   "history.log.lootItem": "{0}×{1}",

@@ -171,6 +171,7 @@
   "history.log.portal": "Portal",
   "history.log.floor": "Piso",
   "history.log.deaths": "Muertes",
+  "history.log.duration": "Duración",
   "history.log.loot": "Botín raro",
   "history.log.yes": "Sí",
   "history.log.lootItem": "{0}×{1}",

@@ -171,6 +171,7 @@
   "history.log.portal": "Portal",
   "history.log.floor": "Ebene",
   "history.log.deaths": "Tode",
+  "history.log.duration": "Dauer",
   "history.log.loot": "Seltene Beute",
   "history.log.yes": "Ja",
   "history.log.lootItem": "{0}×{1}",

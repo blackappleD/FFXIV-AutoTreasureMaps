@@ -171,6 +171,7 @@
   "history.log.portal": "Portal",
   "history.log.floor": "Andar",
   "history.log.deaths": "Mortes",
+  "history.log.duration": "Duração",
   "history.log.loot": "Saque raro",
   "history.log.yes": "Sim",
   "history.log.lootItem": "{0}×{1}",

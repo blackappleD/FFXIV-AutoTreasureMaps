@@ -171,6 +171,7 @@
   "history.log.portal": "Портал",
   "history.log.floor": "Этаж",
   "history.log.deaths": "Смерти",
+  "history.log.duration": "Время",
   "history.log.loot": "Редкая добыча",
   "history.log.yes": "Да",
   "history.log.lootItem": "{0}×{1}",

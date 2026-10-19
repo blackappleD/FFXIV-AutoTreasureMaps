@@ -26,6 +26,10 @@ internal sealed class MapLogEntry
 
     public int Deaths { get; set; }
 
+    // Seconds from the map's start to its end, or to the end of the dungeon its portal led to; 0 on lines written
+    // before it was kept.
+    public int Seconds { get; set; }
+
     // The rare loot of the map and its dungeon, by item id.
     public Dictionary<uint, int>? Loot { get; set; }
 }
@@ -49,7 +53,7 @@ internal sealed class MapLog
     private static string FilePath
         => Path.Combine(Plugin.PluginInterface.ConfigDirectory.FullName, FileName);
 
-    public MapLogEntry Add(uint mapItemId, bool portal, int deaths, ImmutableArray<ItemGain> gains)
+    public MapLogEntry Add(uint mapItemId, bool portal, int deaths, TimeSpan duration, ImmutableArray<ItemGain> gains)
     {
         var entry = new MapLogEntry
         {
@@ -58,6 +62,7 @@ internal sealed class MapLog
             MapItemId = mapItemId,
             Portal = portal,
             Deaths = deaths,
+            Seconds = (int)duration.TotalSeconds,
         };
         AddLoot(entry, gains);
         Entries.Add(entry);
@@ -70,8 +75,10 @@ internal sealed class MapLog
         return entry;
     }
 
+    // The time runs on from the line's map to the dungeon's end, through the walk to the portal and the load in.
     public void NoteDungeon(MapLogEntry entry, int floor, int rounds, bool died, ImmutableArray<ItemGain> gains)
     {
+        entry.Seconds += (int)(DateTime.UtcNow - entry.AtUtc).TotalSeconds;
         entry.Portal = true;
         entry.Floor = Math.Max(entry.Floor, floor);
         entry.Rounds = rounds;
