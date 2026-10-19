@@ -1,12 +1,15 @@
+using AutoTreasureMaps.Core.Ipc;
+using ECommons;
 using System.Numerics;
 using System.Threading.Tasks;
 using DungeonContext = AutoTreasureMaps.Core.Tasks.AutoCommon.DungeonContext;
 
 namespace AutoTreasureMaps.Core.Dungeon;
 
-// After a gate opens, the way on is a circle that carries the character to the next chamber. The circle is the
-// profile's when it is listed, or else the event object that showed up near the gate once it opened. With neither,
-// the character walks through the open gate. The transit is over once the character has been carried away.
+// After a gate opens, the way on is a circle that carries the character to the next chamber. The circle is placed by
+// the profile where it knows it, or else it is the listed event object, or the one that showed up near the gate once
+// it opened. With none of these, the character walks through the open gate. The transit is over once the character
+// has been carried away and has landed.
 internal sealed class WalkIntoCircleTransit : ITransitStrategy
 {
     private const string Scope = "dungeon-transit";
@@ -19,7 +22,14 @@ internal sealed class WalkIntoCircleTransit : ITransitStrategy
     private const int CarriedWaitMs = 10_000;
     // A jump this far from where the walk began is the circle's teleport.
     private const float CarriedMeters = 25f;
-    private const int ChamberSettleMs = 1_000;
+    // The character stands about 20m from a placed circle when the walk begins and only ever comes closer on foot.
+    private const float CarriedFromCircleMeters = 30f;
+    private const int FreeToWalkMs = 5_000;
+    private const int StraightWalkMs = 12_000;
+    // The circle flies the character on and it cannot act on the way; it has landed once it is free and holds still.
+    private const int LandingWaitMs = 40_000;
+    private const int LandedStillMs = 1_000;
+    private const float StillMeters = 0.05f;
 
     public static readonly WalkIntoCircleTransit Instance = new();
 
@@ -30,6 +40,11 @@ internal sealed class WalkIntoCircleTransit : ITransitStrategy
     public async Task<bool> Run(DungeonContext context, AdvanceOutcome advance)
     {
         context.Status = "Moving on to the next chamber";
+        if (context.Profile.CircleBehind(advance.BaseId) is { } placed)
+        {
+            return await WalkIntoPlacedCircle(context, advance, placed);
+        }
+
         var start = DungeonField.PlayerPosition;
         bool Carried() => context.Zoning || !context.InDungeon || Vector3.Distance(DungeonField.PlayerPosition, start) > CarriedMeters;
 
@@ -68,13 +83,70 @@ internal sealed class WalkIntoCircleTransit : ITransitStrategy
 
         if (carried)
         {
-            // The new chamber's objects arrive a moment after the jump.
-            await context.WaitUntil(() => !context.Zoning, CarriedWaitMs, "next chamber settled");
-            await context.DelayMs(ChamberSettleMs);
-            context.Diag($"{Scope}: carried to ({DungeonField.PlayerPosition.X:F1}, {DungeonField.PlayerPosition.Y:F1}, {DungeonField.PlayerPosition.Z:F1}).");
+            await WaitForLanding(context);
         }
 
         return carried;
+    }
+
+    // The gate is still a wall to the navmesh, so the walk goes straight through its middle into the circle, and only
+    // asks the navmesh for a way when that does not carry the character on.
+    private static async Task<bool> WalkIntoPlacedCircle(DungeonContext context, AdvanceOutcome advance, Vector3 circle)
+    {
+        bool Carried() => context.Zoning || !context.InDungeon || Vector3.Distance(DungeonField.PlayerPosition, circle) > CarriedFromCircleMeters;
+
+        // Opening the gate holds the character for a moment.
+        await context.WaitUntil(() => !GenericHelpers.IsOccupied(), FreeToWalkMs, "free to walk through the gate");
+        var through = advance.At with { Y = circle.Y };
+        context.Diag($"{Scope}: walking through gate {advance.BaseId} at ({through.X:F1}, {through.Z:F1}) into its circle at ({circle.X:F1}, {circle.Y:F1}, {circle.Z:F1}).");
+        var navmesh = NavmeshIPC.Instance;
+        navmesh.MoveAlong([through, circle], fly: false);
+        var carried = await context.WaitUntil(Carried, StraightWalkMs, "carried by the circle");
+        navmesh.Stop();
+        if (!carried && !context.Cancelled)
+        {
+            context.Diag($"{Scope}: the straight walk did not reach the circle ({Vector3.Distance(DungeonField.PlayerPosition, circle):F1}m off); asking the navmesh for a way.");
+            await context.WalkTo(circle, CircleArriveMeters, Carried, WalkTimeoutMs, Scope);
+            carried = await context.WaitUntil(Carried, CarriedWaitMs, "carried by the circle");
+        }
+
+        if (!carried)
+        {
+            if (!context.Cancelled)
+            {
+                context.Warn($"{Scope}: still {Vector3.Distance(DungeonField.PlayerPosition, circle):F1}m from the circle behind gate {advance.BaseId}; it did not carry the character.");
+            }
+
+            return false;
+        }
+
+        await WaitForLanding(context);
+        return true;
+    }
+
+    // The flight to the next chamber takes a while and the character cannot act until it lands; the new chamber's
+    // objects arrive with it.
+    private static async Task WaitForLanding(DungeonContext context)
+    {
+        var last = DungeonField.PlayerPosition;
+        var stillSince = Environment.TickCount64;
+        bool Landed()
+        {
+            var now = Environment.TickCount64;
+            var position = DungeonField.PlayerPosition;
+            if (context.Zoning || GenericHelpers.IsOccupied() || Vector3.DistanceSquared(position, last) > StillMeters * StillMeters)
+            {
+                last = position;
+                stillSince = now;
+                return false;
+            }
+
+            return now - stillSince >= LandedStillMs;
+        }
+
+        var landed = await context.WaitUntil(Landed, LandingWaitMs, "landed in the next chamber");
+        var at = DungeonField.PlayerPosition;
+        context.Diag($"{Scope}: {(landed ? "landed" : "still on the move")} at ({at.X:F1}, {at.Y:F1}, {at.Z:F1}).");
     }
 }
 

@@ -30,6 +30,7 @@ internal sealed class SlotAdvance : IAdvanceStrategy
 
         var machine = machines[0];
         var machineId = machine.GameObjectId;
+        var machineBaseId = machine.BaseId;
         var position = machine.Position;
         context.Status = "Drawing the next round";
         if (!await context.Delay(HumanAction.OpenCoffer, Scope))
@@ -50,7 +51,7 @@ internal sealed class SlotAdvance : IAdvanceStrategy
         {
             var round = context.Dungeon.Round + 1;
             context.Diag($"{Scope}: the machine answered {DungeonLogMessages.NameOf(spun.Id)}; draw {round} of {context.Profile.Rounds}.");
-            return new AdvanceOutcome(AdvanceResult.NextRound, round, position, DungeonField.EventObjectIds(), since);
+            return new AdvanceOutcome(AdvanceResult.NextRound, round, machineBaseId, position, DungeonField.EventObjectIds(), since);
         }
 
         if (context.Zoning || !context.InDungeon)

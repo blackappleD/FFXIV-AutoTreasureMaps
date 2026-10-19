@@ -11,10 +11,12 @@ namespace AutoTreasureMaps.Core.Dungeon;
 // past its frame. Read only on the framework thread.
 internal static unsafe class DungeonField
 {
-    // A chamber or the vault's room is well inside this; a farther object belongs to another chamber.
-    public const float RoomMeters = 60f;
-    // Gates of one wall stand a few metres apart; a gate farther than this from the nearest one is another wall's.
-    private const float GateWallMeters = 30f;
+    // A chamber or the vault's room is well inside this, the way in from the entrance included (the cenote's first
+    // coffer stands 80m from it); the next chamber is farther, 185m or more.
+    public const float RoomMeters = 100f;
+    // The gates of one wall stand on either side of the chamber, up to 50m apart; a gate farther than this from the
+    // nearest one is another wall's.
+    private const float GateWallMeters = 60f;
     private const float EnemyMeters = 45f;
     // Squared distances are compared, so a gold sack three times as far as a silver one weighs the same.
     private const float SilverSackWeight = 9f;

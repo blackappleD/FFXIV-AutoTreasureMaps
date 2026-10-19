@@ -42,6 +42,7 @@ internal sealed class GateAdvance : IAdvanceStrategy
         var index = Pick(context, gates, out var reason);
         var gate = gates[index];
         var gateId = gate.GameObjectId;
+        var gateBaseId = gate.BaseId;
         var gatePosition = gate.Position;
         context.Diag($"{Scope}: {gates.Count} gate(s) left to right {Describe(gates)}; taking #{index + 1} ({reason}).");
         context.Status = "Opening a gate";
@@ -65,7 +66,7 @@ internal sealed class GateAdvance : IAdvanceStrategy
         {
             var round = opened.TryGetParameter(0, out var chamber) && chamber > 0 ? chamber + 1 : context.Dungeon.Round + 1;
             context.Diag($"{Scope}: the gate opened ({DungeonLogMessages.NameOf(opened.Id)}), on to chamber {round}.");
-            return new AdvanceOutcome(AdvanceResult.NextRound, round, gatePosition, before, since);
+            return new AdvanceOutcome(AdvanceResult.NextRound, round, gateBaseId, gatePosition, before, since);
         }
 
         if (context.MessageSince(DungeonLogMessages.GateTrapExpelled, since) || context.Zoning || !context.InDungeon)

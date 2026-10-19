@@ -1,3 +1,5 @@
+using System.Numerics;
+
 namespace AutoTreasureMaps.Core.Dungeon;
 
 // Gate dungeons are cleared chamber by chamber through one of two (or three) gates; slot dungeons stay in one room and
@@ -10,7 +12,8 @@ internal enum DungeonKind : byte { Gate, Slot }
 // Rounds is the number of chambers (gate) or draws (slot) a full clear goes through. Coffers are the event objects
 // the chamber's treasure stands in; a coffer of the Treasure kind is found without a listed id. Advance names what
 // moves the run on (the gates, the slot machine). Transit names the circle a gate dungeon walks into after a gate
-// opens, and may be empty while it is not known yet. Exit names an exit point to use when the game will not let the
+// opens, and may be empty while it is not known yet. GateCircles places the circle behind each gate, read from the
+// dungeon's layout, so the run walks straight to it instead of looking for it. Exit names an exit point to use when the game will not let the
 // duty be left from the duty list. MapItemId is the timeworn map whose portal usually leads here, which the stats
 // credit a dungeon to when the run did not see the portal itself. BonusNameIds are the BNpcName rows of the rare
 // enemies that drop extra loot and leave if not killed in time; MandragoraNameIds are the mandragora party's, in the
@@ -18,6 +21,9 @@ internal enum DungeonKind : byte { Gate, Slot }
 // scatters for the character to walk onto, a gold one worth three silver; both are empty where the run does not know
 // them, and such a bonus round is left to the player. Where the combat plugin has a module for the sacks, the round is
 // left to it instead, and the run only walks them itself where it has none.
+// The circle a gate opens onto, by the gate's event object.
+internal readonly record struct GateCircle(uint GateBaseId, Vector3 At);
+
 internal sealed record DungeonProfile(
     string Key,
     uint MapItemId,
@@ -28,6 +34,7 @@ internal sealed record DungeonProfile(
     uint[] CofferBaseIds,
     uint[] AdvanceBaseIds,
     uint[] TransitBaseIds,
+    GateCircle[] GateCircles,
     uint[] ExitBaseIds,
     uint[] BonusNameIds,
     uint[] MandragoraNameIds,
@@ -40,6 +47,20 @@ internal sealed record DungeonProfile(
     public bool IsAdvance(uint baseId) => Array.IndexOf(AdvanceBaseIds, baseId) >= 0;
 
     public bool IsTransit(uint baseId) => Array.IndexOf(TransitBaseIds, baseId) >= 0;
+
+    // The circle behind the gate, or null where the profile does not place it.
+    public Vector3? CircleBehind(uint gateBaseId)
+    {
+        for (var index = 0; index < GateCircles.Length; index++)
+        {
+            if (GateCircles[index].GateBaseId == gateBaseId)
+            {
+                return GateCircles[index].At;
+            }
+        }
+
+        return null;
+    }
 
     public bool IsExit(uint baseId) => Array.IndexOf(ExitBaseIds, baseId) >= 0;
 

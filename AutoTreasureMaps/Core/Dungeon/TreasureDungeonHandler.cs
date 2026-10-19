@@ -18,12 +18,13 @@ internal enum AdvanceResult : byte
     Cancelled,
 }
 
-// What an advance left behind for the transit: where it happened, the event objects that stood before it, and when.
-internal readonly record struct AdvanceOutcome(AdvanceResult Result, int NextRound, Vector3 At, IReadOnlySet<ulong> ObjectsBefore, long SinceMs)
+// What an advance left behind for the transit: the object it used and where that stood, the event objects that stood
+// before it, and when.
+internal readonly record struct AdvanceOutcome(AdvanceResult Result, int NextRound, uint BaseId, Vector3 At, IReadOnlySet<ulong> ObjectsBefore, long SinceMs)
 {
     private static readonly IReadOnlySet<ulong> None = new HashSet<ulong>();
 
-    public static AdvanceOutcome Of(AdvanceResult result) => new(result, 0, Vector3.Zero, None, 0);
+    public static AdvanceOutcome Of(AdvanceResult result) => new(result, 0, 0, Vector3.Zero, None, 0);
 }
 
 // Moves the run from one round to the next: picks a gate, or draws from the machine.

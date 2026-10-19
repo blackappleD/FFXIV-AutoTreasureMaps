@@ -752,22 +752,28 @@ public abstract partial class AutoCommon
             return false;
         }
 
+        // The dungeon's own exit point is the way out a player takes; the duty list is the fallback where it has none.
+        if (DungeonField.NearestExit(dungeon.Profile) is { } exit)
+        {
+            var exitId = exit.GameObjectId;
+            Diag($"{scope}: round {dungeon.Round} of {dungeon.Profile.Rounds} done and the field is quiet; leaving through the exit {exit.BaseId}.");
+            dungeon.LeaveRequested = true;
+            await context.Interact(() => Svc.Objects.SearchById(exitId), $"exit {exitId:X}", () => NpcInteraction.SelectYesnoOpen() || context.Zoning, scope);
+            context.ConfirmPrompt(scope);
+            if (await WaitUntilTimed(() => context.Zoning || !context.InDungeon, LeaveZoneWaitMs, "leaving through the exit"))
+            {
+                return true;
+            }
+
+            Diag($"{scope}: the exit did not take the character out.");
+        }
+
         if (CanLeaveContent())
         {
             Diag($"{scope}: round {dungeon.Round} of {dungeon.Profile.Rounds} done and the field is quiet; leaving the duty.");
             dungeon.LeaveRequested = true;
             LeaveContent();
             return await WaitUntilTimed(() => context.Zoning || !context.InDungeon, LeaveZoneWaitMs, "leaving the duty");
-        }
-
-        if (DungeonField.NearestExit(dungeon.Profile) is { } exit)
-        {
-            var exitId = exit.GameObjectId;
-            Diag($"{scope}: the duty cannot be left from the duty list; using the exit {exit.BaseId}.");
-            dungeon.LeaveRequested = true;
-            await context.Interact(() => Svc.Objects.SearchById(exitId), $"exit {exitId:X}", () => NpcInteraction.SelectYesnoOpen() || context.Zoning, scope);
-            context.ConfirmPrompt(scope);
-            return await WaitUntilTimed(() => context.Zoning || !context.InDungeon, LeaveZoneWaitMs, "leaving through the exit");
         }
 
         Warn($"{scope}: the game does not let the duty be left yet and no exit is known.");
@@ -785,7 +791,8 @@ public abstract partial class AutoCommon
         var coffer = DungeonField.NearestCoffer(dungeon, int.MaxValue);
         var advance = DungeonField.AdvanceObjects(dungeon.Profile).Count;
         DungeonField.NearestEnemy(out var enemies);
-        return $"coffer {(coffer is null ? "none" : $"{coffer.BaseId} ({dungeon.CofferInteractions(coffer.GameObjectId)} interaction(s))")}, {advance} advance object(s), {enemies} enemy(ies), in combat {Svc.Condition[ConditionFlag.InCombat]}, loot waiting {LootRolls.Pending(static _ => true)}";
+        var at = DungeonField.PlayerPosition;
+        return $"at ({at.X:F1}, {at.Y:F1}, {at.Z:F1}), coffer {(coffer is null ? "none" : $"{coffer.BaseId} ({dungeon.CofferInteractions(coffer.GameObjectId)} interaction(s))")}, {advance} advance object(s), {enemies} enemy(ies), in combat {Svc.Condition[ConditionFlag.InCombat]}, loot waiting {LootRolls.Pending(static _ => true)}";
     }
 
     private static void AnnounceDungeon(in DungeonResult result)
