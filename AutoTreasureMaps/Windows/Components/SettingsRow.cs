@@ -23,13 +23,20 @@ internal static class SettingsRow
         public float Width => RightEdge - Origin.X;
     }
 
-    public static void Draw(string label, string? help, float controlWidth, Action drawControl, float controlHeight = 0f)
+    // A row named after an item passes its id: the label then shows the game's item tooltip, and the help stays on the icon.
+    public static void Draw(string label, string? help, float controlWidth, Action drawControl, float controlHeight = 0f, uint itemId = 0)
     {
         var area = BeginRow();
 
         DrawTopDivider(area);
         var labelHovered = DrawLabel(area, label);
         var iconHovered = DrawHelpIcon(area, label, help);
+
+        if (labelHovered && itemId != 0)
+        {
+            ItemTooltip.Hover(itemId);
+            labelHovered = false;
+        }
 
         if (!string.IsNullOrEmpty(help) && (labelHovered || iconHovered))
         {
