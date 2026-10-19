@@ -1,0 +1,336 @@
+using AutoTreasureMaps.Core.Localization;
+using Dalamud.Game.Addon.Lifecycle;
+using Dalamud.Game.Addon.Lifecycle.AddonArgTypes;
+using Dalamud.Game.Chat;
+using Dalamud.Game.ClientState.Objects.Enums;
+using Dalamud.Hooking;
+using Dalamud.Plugin.Services;
+using ECommons;
+using ECommons.DalamudServices;
+using FFXIVClientStructs.FFXIV.Component.GUI;
+using Lumina.Excel.Sheets;
+using System.Globalization;
+using System.IO;
+using System.Numerics;
+using System.Text;
+using NativeTreasure = FFXIVClientStructs.FFXIV.Client.Game.Object.Treasure;
+
+namespace AutoTreasureMaps.Core.Dungeon;
+
+// Writes down everything the Gambler's Lure window shows and does, so the high-or-low game can be read and answered
+// later: the window's values and visible nodes whenever they change, the events and callbacks its buttons fire, the
+// lure's log messages, and the item ids of the coffer it sits on. Always on, and quiet until the window opens. Each
+// day is one plain text file in the plugin's config folder. Read only on the framework thread.
+internal sealed unsafe class LureCapture : IDisposable
+{
+    private const string AddonName = "TreasureHighLow";
+    private const string CapturesFolder = "lure-captures";
+    private const int PollIntervalFrames = 5;
+    private const int NodeDepth = 4;
+    private const float CofferMeters = 8f;
+    private const uint FirstLureMessage = DungeonLogMessages.LureNotDisarmed;
+    private const uint LastLureMessage = DungeonLogMessages.LureSet;
+
+    private static readonly AddonEvent[] snapshotEvents = [AddonEvent.PostSetup, AddonEvent.PostRefresh, AddonEvent.PostRequestedUpdate];
+
+    private readonly Hook<AtkUnitBase.Delegates.FireCallback>? callbackHook;
+    private string lastSnapshot = string.Empty;
+    private int framesUntilPoll;
+    private bool open;
+    private bool noticeShown;
+
+    public LureCapture()
+    {
+        foreach (var snapshotEvent in snapshotEvents)
+        {
+            Svc.AddonLifecycle.RegisterListener(snapshotEvent, AddonName, OnSnapshotEvent);
+        }
+
+        Svc.AddonLifecycle.RegisterListener(AddonEvent.PreReceiveEvent, AddonName, OnReceiveEvent);
+        Svc.AddonLifecycle.RegisterListener(AddonEvent.PreFinalize, AddonName, OnFinalize);
+        Svc.Chat.LogMessage += OnLogMessage;
+        Svc.Framework.Update += OnUpdate;
+        try
+        {
+            callbackHook = Svc.Hook.HookFromAddress<AtkUnitBase.Delegates.FireCallback>(AtkUnitBase.MemberFunctionPointers.FireCallback, OnFireCallback);
+            callbackHook.Enable();
+        }
+        catch (Exception exception)
+        {
+            RunLog.Warning(exception, "Lure capture: the callback hook could not be placed; button callbacks are not written down.");
+        }
+    }
+
+    public static string Folder => Path.Combine(Plugin.PluginInterface.GetPluginConfigDirectory(), CapturesFolder);
+
+    public void Dispose()
+    {
+        callbackHook?.Dispose();
+        Svc.Framework.Update -= OnUpdate;
+        Svc.Chat.LogMessage -= OnLogMessage;
+        foreach (var snapshotEvent in snapshotEvents)
+        {
+            Svc.AddonLifecycle.UnregisterListener(snapshotEvent, AddonName, OnSnapshotEvent);
+        }
+
+        Svc.AddonLifecycle.UnregisterListener(AddonEvent.PreReceiveEvent, AddonName, OnReceiveEvent);
+        Svc.AddonLifecycle.UnregisterListener(AddonEvent.PreFinalize, AddonName, OnFinalize);
+    }
+
+    private void OnSnapshotEvent(AddonEvent type, AddonArgs args)
+    {
+        var addon = (AtkUnitBase*)args.Addon.Address;
+        if (type == AddonEvent.PostSetup)
+        {
+            open = true;
+            lastSnapshot = string.Empty;
+            Write("open");
+            WriteCoffers();
+            if (!noticeShown)
+            {
+                noticeShown = true;
+                Svc.Chat.Print($"{AtmConstants.LogPrefix} {Loc.T(L.Dungeon.ChatLureCapture, FilePath())}");
+            }
+        }
+
+        Snapshot(addon, type.ToString());
+    }
+
+    private void OnReceiveEvent(AddonEvent type, AddonArgs args)
+    {
+        if (args is AddonReceiveEventArgs receive)
+        {
+            Write($"event: type {receive.AtkEventType}, param {receive.EventParam}");
+        }
+    }
+
+    private void OnFinalize(AddonEvent type, AddonArgs args)
+    {
+        Snapshot((AtkUnitBase*)args.Addon.Address, "final");
+        Write("close");
+        open = false;
+    }
+
+    private bool OnFireCallback(AtkUnitBase* addon, uint valueCount, AtkValue* values, bool close)
+    {
+        try
+        {
+            if (addon is not null && addon->NameString == AddonName)
+            {
+                var line = new StringBuilder("callback: close ").Append(close).Append(", values [");
+                for (var index = 0; index < valueCount; index++)
+                {
+                    line.Append(index > 0 ? ", " : string.Empty).Append(DescribeValue(values[index]));
+                }
+
+                Write(line.Append(']').ToString());
+            }
+        }
+        catch (Exception exception)
+        {
+            RunLog.Warning(exception, "Lure capture: a callback could not be written down.");
+        }
+
+        return callbackHook!.Original(addon, valueCount, values, close);
+    }
+
+    // Catches what changes without a refresh, such as the second card turning over.
+    private void OnUpdate(IFramework framework)
+    {
+        if (!open || --framesUntilPoll > 0)
+        {
+            return;
+        }
+
+        framesUntilPoll = PollIntervalFrames;
+        if (GenericHelpers.TryGetAddonByName<AtkUnitBase>(AddonName, out var addon))
+        {
+            Snapshot(addon, "poll");
+        }
+    }
+
+    private void OnLogMessage(ILogMessage message)
+    {
+        if (message.LogMessageId is < FirstLureMessage or > LastLureMessage)
+        {
+            return;
+        }
+
+        var line = new StringBuilder("log ").Append(message.LogMessageId).Append(": params [");
+        for (var index = 0; index < message.ParameterCount; index++)
+        {
+            line.Append(index > 0 ? ", " : string.Empty);
+            line.Append(message.TryGetIntParameter(index, out var number) ? number.ToString(CultureInfo.InvariantCulture) : "?");
+        }
+
+        Write(line.Append("] \"").Append(Flatten(message.FormatLogMessageForDebugging().ExtractText())).Append('"').ToString());
+        if (message.LogMessageId is DungeonLogMessages.LureSet or DungeonLogMessages.LureRound)
+        {
+            WriteCoffers();
+        }
+    }
+
+    private void Snapshot(AtkUnitBase* addon, string reason)
+    {
+        if (addon is null)
+        {
+            return;
+        }
+
+        var body = new StringBuilder();
+        body.Append("  visible ").Append(addon->IsVisible).Append(", values ").Append(addon->AtkValuesCount).AppendLine();
+        for (var index = 0; index < addon->AtkValuesCount; index++)
+        {
+            var value = addon->AtkValues[index];
+            if (value.Type != 0)
+            {
+                body.Append("  value[").Append(index).Append("] ").AppendLine(DescribeValue(value));
+            }
+        }
+
+        DescribeNodes(&addon->UldManager, body, "  ", NodeDepth);
+        var text = body.ToString();
+        if (text == lastSnapshot)
+        {
+            return;
+        }
+
+        lastSnapshot = text;
+        Write($"snapshot ({reason}):\n{text.TrimEnd()}");
+    }
+
+    private static void DescribeNodes(AtkUldManager* manager, StringBuilder body, string indent, int depth)
+    {
+        for (var index = 0; index < manager->NodeListCount; index++)
+        {
+            var node = manager->NodeList[index];
+            if (node is null || !node->IsVisible())
+            {
+                continue;
+            }
+
+            switch (node->Type)
+            {
+                case NodeType.Text:
+                    var textNode = node->GetAsAtkTextNode();
+                    body.Append(indent).Append("node ").Append(node->NodeId).Append(" text \"").Append(Flatten(textNode->NodeText.ToString())).AppendLine("\"");
+                    break;
+                case NodeType.Counter:
+                    var counterNode = (AtkCounterNode*)node;
+                    body.Append(indent).Append("node ").Append(node->NodeId).Append(" counter \"").Append(counterNode->NodeText.ToString()).AppendLine("\"");
+                    break;
+                case NodeType.Image:
+                    body.Append(indent).Append("node ").Append(node->NodeId).Append(" image ").AppendLine(DescribeImage((AtkImageNode*)node));
+                    break;
+                default:
+                    var componentNode = node->GetAsAtkComponentNode();
+                    if (componentNode is not null && componentNode->Component is not null)
+                    {
+                        body.Append(indent).Append("node ").Append(node->NodeId).Append(" component ").Append(componentNode->Component->GetComponentType()).AppendLine();
+                        if (depth > 0)
+                        {
+                            DescribeNodes(&componentNode->Component->UldManager, body, indent + "  ", depth - 1);
+                        }
+                    }
+
+                    break;
+            }
+        }
+    }
+
+    private static string DescribeImage(AtkImageNode* image)
+    {
+        var builder = new StringBuilder("part ").Append(image->PartId);
+        if (image->PartsList is null || image->PartId >= image->PartsList->PartCount)
+        {
+            return builder.ToString();
+        }
+
+        var part = &image->PartsList->Parts[image->PartId];
+        builder.Append(" uv (").Append(part->U).Append(", ").Append(part->V).Append(") size ").Append(part->Width).Append('x').Append(part->Height);
+        if (part->UldAsset is null)
+        {
+            return builder.ToString();
+        }
+
+        var texture = &part->UldAsset->AtkTexture;
+        if (texture->TextureType == TextureType.Resource && texture->Resource is not null)
+        {
+            var resource = texture->Resource;
+            builder.Append(" icon ").Append(resource->IconId);
+            if (resource->TexFileResourceHandle is not null)
+            {
+                builder.Append(" tex ").Append(resource->TexFileResourceHandle->ResourceHandle.FileName.ToString());
+            }
+        }
+
+        return builder.ToString();
+    }
+
+    private void WriteCoffers()
+    {
+        if (Svc.Objects.LocalPlayer is not { } player)
+        {
+            return;
+        }
+
+        foreach (var candidate in Svc.Objects)
+        {
+            if (candidate.ObjectKind != ObjectKind.Treasure || candidate.Address == 0
+                || Vector3.Distance(player.Position, candidate.Position) > CofferMeters)
+            {
+                continue;
+            }
+
+            var treasure = (NativeTreasure*)candidate.Address;
+            var line = new StringBuilder("coffer: base ").Append(candidate.BaseId).Append(" (").Append(candidate.GameObjectId.ToString("X", CultureInfo.InvariantCulture))
+                .Append("), state ").Append(treasure->State).Append(", flags ").Append(treasure->Flags).Append(", items ").Append(treasure->ItemCount).Append(", ids [");
+            var first = true;
+            foreach (var itemId in treasure->LootableItemIds)
+            {
+                if (itemId == 0)
+                {
+                    continue;
+                }
+
+                var name = Svc.Data.GetExcelSheet<Item>().GetRowOrDefault(itemId)?.Name.ExtractText() ?? "?";
+                line.Append(first ? string.Empty : ", ").Append(itemId).Append(" '").Append(name).Append('\'');
+                first = false;
+            }
+
+            Write(line.Append(']').ToString());
+        }
+    }
+
+    private static string DescribeValue(AtkValue value)
+        => value.Type switch
+        {
+            AtkValueType.Int => $"int {value.Int}",
+            AtkValueType.UInt => $"uint {value.UInt}",
+            AtkValueType.Bool => $"bool {value.Byte != 0}",
+            AtkValueType.Float => $"float {value.Float.ToString(CultureInfo.InvariantCulture)}",
+            AtkValueType.String or AtkValueType.ManagedString or AtkValueType.ConstString
+                => $"string \"{(value.String.HasValue ? Flatten(value.String.ToString()) : string.Empty)}\"",
+            _ => $"{value.Type}",
+        };
+
+    private static string FilePath()
+        => Path.Combine(Folder, $"{DateTime.Now.ToString("yyyyMMdd", CultureInfo.InvariantCulture)}.txt");
+
+    private static void Write(string text)
+    {
+        try
+        {
+            Directory.CreateDirectory(Folder);
+            File.AppendAllText(FilePath(), $"[{DateTime.Now.ToString("HH:mm:ss.fff", CultureInfo.InvariantCulture)}] {text}\n", Encoding.UTF8);
+        }
+        catch (Exception exception)
+        {
+            RunLog.Warning(exception, "Lure capture: the file could not be written.");
+        }
+
+        RunLog.Info($"Lure: {text.Split('\n')[0]}");
+    }
+
+    private static string Flatten(string text) => text.Replace('\n', ' ').Replace('\r', ' ');
+}

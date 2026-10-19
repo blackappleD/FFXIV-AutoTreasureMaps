@@ -782,6 +782,7 @@
   "dungeon.chat.recording": "已经在记录到 {0}。",
   "dungeon.chat.recordStopped": "记录已保存到 {0}。",
   "dungeon.chat.notRecording": "当前没有在记录。",
+  "dungeon.chat.lureCapture": "正在记录强欲陷阱窗口的数据，文件：{0}",
   "dungeon.outcome.cleared": "通关",
   "dungeon.outcome.expelled": "被传送出",
   "dungeon.outcome.died": "无法战斗",

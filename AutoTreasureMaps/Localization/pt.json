@@ -782,6 +782,7 @@
   "dungeon.chat.recording": "Já está gravando em {0}.",
   "dungeon.chat.recordStopped": "Gravação salva em {0}.",
   "dungeon.chat.notRecording": "Nada está sendo gravado.",
+  "dungeon.chat.lureCapture": "A janela da armadilha da ganância está sendo registrada em {0}.",
   "dungeon.outcome.cleared": "Concluída",
   "dungeon.outcome.expelled": "Expulso",
   "dungeon.outcome.died": "Nocauteado",

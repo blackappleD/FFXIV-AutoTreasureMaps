@@ -782,6 +782,7 @@
   "dungeon.chat.recording": "Zaten {0} dosyasına kaydediliyor.",
   "dungeon.chat.recordStopped": "Kayıt {0} dosyasına kaydedildi.",
   "dungeon.chat.notRecording": "Şu anda kayıt yapılmıyor.",
+  "dungeon.chat.lureCapture": "Açgözlülük tuzağı penceresi {0} dosyasına kaydediliyor.",
   "dungeon.outcome.cleared": "Tamamlandı",
   "dungeon.outcome.expelled": "Dışarı atıldı",
   "dungeon.outcome.died": "Bayıldı",

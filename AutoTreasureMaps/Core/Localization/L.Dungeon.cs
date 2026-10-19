@@ -21,6 +21,7 @@ internal static partial class L
         public static readonly LocString ChatRecordStarted = new("dungeon.chat.recordStarted", "Recording the dungeon to {0}. Clear it by hand, then /atm dungeon record stop.");
         public static readonly LocString ChatRecording = new("dungeon.chat.recording", "Already recording to {0}.");
         public static readonly LocString ChatRecordStopped = new("dungeon.chat.recordStopped", "Recording saved to {0}.");
+        public static readonly LocString ChatLureCapture = new("dungeon.chat.lureCapture", "The Gambler's Lure window is being written down to {0}.");
         public static readonly LocString ChatNotRecording = new("dungeon.chat.notRecording", "Nothing is being recorded.");
 
         public static readonly LocString OutcomeCleared = new("dungeon.outcome.cleared", "Cleared");

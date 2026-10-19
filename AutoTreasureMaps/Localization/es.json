@@ -782,6 +782,7 @@
   "dungeon.chat.recording": "Ya se está grabando en {0}.",
   "dungeon.chat.recordStopped": "Grabación guardada en {0}.",
   "dungeon.chat.notRecording": "No se está grabando nada.",
+  "dungeon.chat.lureCapture": "La ventana de la trampa de la codicia se está registrando en {0}.",
   "dungeon.outcome.cleared": "Completada",
   "dungeon.outcome.expelled": "Expulsado",
   "dungeon.outcome.died": "Derrotado",

@@ -782,6 +782,7 @@
   "dungeon.chat.recording": "すでに {0} に記録中です。",
   "dungeon.chat.recordStopped": "記録を {0} に保存しました。",
   "dungeon.chat.notRecording": "記録中ではありません。",
+  "dungeon.chat.lureCapture": "欲望の罠のウィンドウを {0} に記録しています。",
   "dungeon.outcome.cleared": "踏破",
   "dungeon.outcome.expelled": "強制退出",
   "dungeon.outcome.died": "戦闘不能",

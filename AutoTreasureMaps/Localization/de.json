@@ -782,6 +782,7 @@
   "dungeon.chat.recording": "Es wird bereits in {0} aufgezeichnet.",
   "dungeon.chat.recordStopped": "Aufzeichnung in {0} gespeichert.",
   "dungeon.chat.notRecording": "Es wird nichts aufgezeichnet.",
+  "dungeon.chat.lureCapture": "Das Fenster der Gierfalle wird in {0} aufgezeichnet.",
   "dungeon.outcome.cleared": "Geräumt",
   "dungeon.outcome.expelled": "Hinausbefördert",
   "dungeon.outcome.died": "Kampfunfähig",

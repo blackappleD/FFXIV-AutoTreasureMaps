@@ -782,6 +782,7 @@
   "dungeon.chat.recording": "Запись уже идёт в {0}.",
   "dungeon.chat.recordStopped": "Запись сохранена в {0}.",
   "dungeon.chat.notRecording": "Сейчас ничего не записывается.",
+  "dungeon.chat.lureCapture": "Окно ловушки алчности записывается в {0}.",
   "dungeon.outcome.cleared": "Пройдена",
   "dungeon.outcome.expelled": "Выброшен",
   "dungeon.outcome.died": "Без сознания",

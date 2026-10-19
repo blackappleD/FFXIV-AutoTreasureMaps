@@ -782,6 +782,7 @@
   "dungeon.chat.recording": "Enregistrement déjà en cours dans {0}.",
   "dungeon.chat.recordStopped": "Enregistrement sauvegardé dans {0}.",
   "dungeon.chat.notRecording": "Aucun enregistrement en cours.",
+  "dungeon.chat.lureCapture": "La fenêtre du piège de l'avarice est enregistrée dans {0}.",
   "dungeon.outcome.cleared": "Terminé",
   "dungeon.outcome.expelled": "Expulsé",
   "dungeon.outcome.died": "K.O.",

@@ -782,6 +782,7 @@
   "dungeon.chat.recording": "Already recording to {0}.",
   "dungeon.chat.recordStopped": "Recording saved to {0}.",
   "dungeon.chat.notRecording": "Nothing is being recorded.",
+  "dungeon.chat.lureCapture": "The Gambler's Lure window is being written down to {0}.",
   "dungeon.outcome.cleared": "Cleared",
   "dungeon.outcome.expelled": "Sent out",
   "dungeon.outcome.died": "Knocked out",
