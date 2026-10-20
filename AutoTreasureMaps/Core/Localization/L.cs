@@ -165,6 +165,9 @@ internal static partial class L
         public static readonly LocString TilePortals = new("history.tile.portals", "Portals seen");
         public static readonly LocPlural TileRunsCount = new("history.tile.runsCount", "{0} run", "{0} runs");
         public static readonly LocString TilePerMap = new("history.tile.perMap", "{0} per map");
+        public static readonly LocString TileCost = new("history.tile.cost", "Cost");
+        public static readonly LocString TileRevenue = new("history.tile.revenue", "Revenue");
+        public static readonly LocString TileNet = new("history.tile.net", "Net {0}");
         public static readonly LocString Items = new("history.items", "Items gained");
         public static readonly LocString TileTomestones = new("history.tile.tomestones", "Tomestones");
         public static readonly LocString EndedBy = new("history.endedBy", "Ended");
