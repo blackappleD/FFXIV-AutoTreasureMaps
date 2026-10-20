@@ -157,9 +157,10 @@ internal sealed unsafe class TankbusterWatcher : IDisposable
                 continue;
             }
 
+            // Not marked handled: a cast still going when the window ends is looked at again then, and the already-up
+            // check keeps it from doubling a mitigation that still covers it.
             if (inWindow)
             {
-                stillCasting.Add(key);
                 continue;
             }
 
