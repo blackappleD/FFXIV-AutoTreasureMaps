@@ -18,7 +18,7 @@ TreasureHelper 是 [blackappleD](https://github.com/blackappleD) 维护的国服
 - 按上游 [TRADEMARK.md](TRADEMARK.md) 的要求使用独立身份：名称“TreasureHelper”、InternalName `TreasureHelper`
   （程序集改名，项目路径与命名空间保持不变以便合并上游）、独立图标，可与原版并存且不共享设置。
 - 内置 BossMod 战斗预设改名为“TreasureHelper”；关于页面改为指向本 fork，并保留原作者署名。
-- 坦克死刑减伤（设置 → 通用 → 行为，默认关闭）：运行中个人减伤由插件接管，战斗插件不再按血量开减伤。敌人对自己读条时在读条最后 6 秒、血量低于 80% 时放职业的短减伤；铁壁等大减伤只留给宝物库 boss 的死刑
+- 坦克死刑减伤（设置 → 通用 → 行为，默认关闭）：运行中个人减伤由插件接管，战斗插件不再按血量开减伤。敌人对自己读条时在读条最后 6 秒、血量低于 80% 时放职业的短减伤；宝物库 boss 读死刑时，短减伤和一个铁壁等大减伤按冷却立即使用，大减伤不用在别处
   （原初的血气、圣盾阵、至黑之夜、刚玉之心）；已有减伤生效时不重复开，大减伤交给战斗插件。
 - 宝物库奖励怪物：设置 → 宝物库 → 奖励怪物，可优先攻击黄金猫、金库守卫、财富羊驼等奖励怪物，
   以及按头顶标记顺序击杀蔓德拉战队（单人不建议开启）；两项都开时奖励怪物优先。
@@ -61,7 +61,7 @@ Works through the timeworn maps in your bags for you. Press **Start** and the pl
 
 - **Decipher and dig**: reads each timeworn map you carry, works out where it points, and digs at the spot.
 - **Travel**: teleports to the nearest aetheryte, then flies, rides or walks to the dig spot, and lands where it can dig.
-- **Hands-off combat**: fights off every wave that guards a coffer with a bundled combat preset, then opens the coffer. As a tank, it can also use your short mitigation in the last seconds of an enemy cast aimed at you, and keep Rampart and the other bigger cooldowns for a treasure dungeon boss's tankbuster (off by default).
+- **Hands-off combat**: fights off every wave that guards a coffer with a bundled combat preset, then opens the coffer. As a tank, it can also use your short mitigation in the last seconds of an enemy cast aimed at you, and answer a treasure dungeon boss's tankbuster with the short mitigation plus one bigger cooldown such as Rampart, which nothing else uses (off by default).
 - **Treasure dungeons** (solo, off by default): walks into the portal a coffer leaves and clears the dungeon behind it: coffers, guards, the gates or slot draws and the bonus round, then goes on with the next map. Cenote Ja Ja Gural (G17) and Vault Oneiron (G18) are supported; any other dungeon, and any you enter by hand, is left to you. Pick the gate, how to answer the Gambler's Lure and which enemies go first under Settings, Dungeons.
 - **Map choice**: pick which map tiers to run and whether the highest or the lowest goes first.
 - **Loot rolls**: answers the Need or Greed window for the coffer's items the way you choose, or leaves it to you.

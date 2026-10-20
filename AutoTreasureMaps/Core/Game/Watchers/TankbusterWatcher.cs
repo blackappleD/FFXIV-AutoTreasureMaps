@@ -17,15 +17,18 @@ namespace AutoTreasureMaps.Core.Game.Watchers;
 // treasure hunt modules do not mark.
 //
 // A cast aimed at the character gets the job's short mitigation (Bloodwhetting, Holy Sheltron, The Blackest Night, Heart
-// of Corundum) once the cast is close enough to its end for the buff to cover it. Only a boss's tankbuster, one of the
-// casts listed here, falls back to a bigger cooldown when the short one is down; nothing else ever spends one. One
-// mitigation covers a window, so a volley from several casters spends one cooldown, and nothing is used while one of the
-// job's mitigations is already up. Some bosses cast their tankbuster through an invisible helper, which has no nameplate
+// of Corundum) once the cast is close enough to its end for the buff to cover it, unless one of the job's mitigations is
+// already up. A boss's tankbuster, one of the casts listed here, gets the short mitigation and one bigger cooldown, each
+// as soon as its cooldown allows; nothing else ever spends a bigger one. One answer covers a window, so a volley from
+// several casters spends it once. Some bosses cast their tankbuster through an invisible helper, which has no nameplate
 // and so never reads as hostile; a helper's cast counts only when it is listed.
 //
 // What the tank module did by the HP is done here without the bigger cooldowns: the short mitigation under 80%, a
 // warrior's Thrill of Battle and Equilibrium under 50%, a gunbreaker's Aurora under 80%. Its invulnerability stays with
 // the combat plugin.
+//
+// One press per frame, and only while the character is free to act: a press made during an animation lock is queued by
+// the game, and that queue was seen to hold Damnation for 4 s, past the hit. A cast being answered comes before the HP.
 internal sealed unsafe class TankbusterWatcher : IDisposable
 {
     private const byte SingleTargetCastType = 1;
@@ -98,7 +101,11 @@ internal sealed unsafe class TankbusterWatcher : IDisposable
     private bool bossModMitigationHeld;
     private long bossModNextApplyMs;
 
-    private enum MitigationResult : byte { Used, Refused, NotReady, AlreadyUp }
+    // The cast being answered and what has been pressed for it.
+    private (uint Caster, uint Action) answering;
+    private readonly List<uint> pressed = [];
+
+    private enum Press : byte { Now, Done }
 
     public TankbusterWatcher()
     {
@@ -126,6 +133,7 @@ internal sealed unsafe class TankbusterWatcher : IDisposable
         }
 
         stillCasting.Clear();
+        var busy = false;
         var inWindow = Environment.TickCount64 < windowEndsAtMs;
         var objects = Svc.Objects;
         for (var index = 0; index < objects.Length; index++)
@@ -158,36 +166,62 @@ internal sealed unsafe class TankbusterWatcher : IDisposable
             }
 
             // Not marked handled: a cast still going when the window ends is looked at again then, and the already-up
-            // check keeps it from doubling a mitigation that still covers it.
-            if (inWindow)
+            // check keeps it from doubling a mitigation that still covers it. A boss's tankbuster is never left to a
+            // window, so a mob's cast just before it does not keep its bigger cooldown away.
+            if (inWindow && !tankbuster)
+            {
+                continue;
+            }
+
+            // One cast is answered at a time; another waits for the next frame.
+            if (busy)
+            {
+                continue;
+            }
+
+            if (answering != key)
+            {
+                answering = key;
+                pressed.Clear();
+            }
+
+            busy = true;
+            if (!FreeToAct())
             {
                 continue;
             }
 
             var cast = $"{caster.Name} casts {ActionName(caster.CastActionId)} on the character ({caster.TotalCastTime:F1}s{(tankbuster ? ", a boss's tankbuster" : string.Empty)})";
-            switch (Mitigate(mitigations, tankbuster, player, out var used))
+            if (NextPress(mitigations, tankbuster, player, pressed, out var actionId) == Press.Now)
             {
-                case MitigationResult.Used:
-                    RunLog.Info($"Tankbuster: {cast}; used {ActionName(used)}.");
-                    windowEndsAtMs = Environment.TickCount64 + MitigationWindowMs;
-                    inWindow = true;
-                    stillCasting.Add(key);
-                    break;
-                case MitigationResult.AlreadyUp:
-                    RunLog.Info($"Tankbuster: {cast}; {ActionName(used)} is already up.");
-                    stillCasting.Add(key);
-                    break;
-                case MitigationResult.NotReady:
-                    RunLog.Info(tankbuster
-                        ? $"Tankbuster: {cast}, but no mitigation is ready."
-                        : $"Tankbuster: {cast}, but {ActionName(used)} is not ready.");
-                    stillCasting.Add(key);
-                    break;
+                if (ActionManager.Instance()->UseAction(ActionType.Action, actionId, player.GameObjectId))
+                {
+                    pressed.Add(actionId);
+                    RunLog.Info($"Tankbuster: {cast}; used {ActionName(actionId)}.");
+                }
+
+                continue;
+            }
+
+            stillCasting.Add(key);
+            if (pressed.Count > 0)
+            {
+                windowEndsAtMs = Environment.TickCount64 + MitigationWindowMs;
+                inWindow = true;
+            }
+            else
+            {
+                RunLog.Info(actionId != 0
+                    ? $"Tankbuster: {cast}; {ActionName(actionId)} is already up."
+                    : $"Tankbuster: {cast}, but no mitigation is ready.");
             }
         }
 
         (handled, stillCasting) = (stillCasting, handled);
-        MitigateByHp(mitigations, player);
+        if (!busy)
+        {
+            MitigateByHp(mitigations, player);
+        }
     }
 
     // Tells the combat plugin's tank module to use no personal mitigation while this watcher owns them, and hands them
@@ -238,59 +272,77 @@ internal sealed unsafe class TankbusterWatcher : IDisposable
         => Svc.Data.GetExcelSheet<LuminaAction>().TryGetRow(actionId, out var action)
         && action.CastType is SingleTargetCastType or CircleCastType;
 
-    // Uses the job's short mitigation unless any of its mitigations is already on the character; against a boss's
-    // tankbuster, the first bigger one that is ready when the short one is not. A press the game refuses (an animation
-    // lock) is pressed again next frame.
-    private static MitigationResult Mitigate(uint[] mitigations, bool tankbuster, IPlayerCharacter player, out uint used)
+    // What to press next for a cast: the short mitigation unless a mitigation covers the hit already (against a boss's
+    // tankbuster only the short one's own buff counts), then, against a boss's tankbuster, the first bigger one that is
+    // ready unless one is up. Done once nothing is left to press; actionId then names a mitigation that is up, or 0.
+    private static Press NextPress(uint[] mitigations, bool tankbuster, IPlayerCharacter player, List<uint> pressed, out uint actionId)
     {
-        used = 0;
+        actionId = 0;
         var actions = ActionManager.Instance();
         if (actions is null)
         {
-            return MitigationResult.Refused;
+            return Press.Done;
         }
 
-        if (MitigationUp(actions, mitigations, player) is var up and not 0)
+        var shortId = actions->GetAdjustedActionId(mitigations[0]);
+        var up = MitigationUp(actions, mitigations, player);
+        var shortCovered = tankbuster ? BuffUp(player, shortId) : up != 0;
+        if (!shortCovered && !pressed.Contains(shortId) && Ready(actions, shortId, player))
         {
-            used = up;
-            return MitigationResult.AlreadyUp;
+            actionId = shortId;
+            return Press.Now;
         }
 
-        var tried = tankbuster ? mitigations.Length : 1;
-        for (var mitigationIndex = 0; mitigationIndex < tried; mitigationIndex++)
+        var bigUp = up != 0 && up != shortId;
+        for (var mitigationIndex = 1; tankbuster && !bigUp && mitigationIndex < mitigations.Length; mitigationIndex++)
         {
-            var actionId = actions->GetAdjustedActionId(mitigations[mitigationIndex]);
-            if (Ready(actions, actionId, player))
+            var bigId = actions->GetAdjustedActionId(mitigations[mitigationIndex]);
+            if (pressed.Contains(bigId))
             {
-                used = actionId;
-                return actions->UseAction(ActionType.Action, actionId, player.GameObjectId) ? MitigationResult.Used : MitigationResult.Refused;
+                break;
+            }
+
+            if (Ready(actions, bigId, player))
+            {
+                actionId = bigId;
+                return Press.Now;
             }
         }
 
-        used = actions->GetAdjustedActionId(mitigations[0]);
-        return MitigationResult.NotReady;
+        actionId = up;
+        return Press.Done;
     }
 
-    // The short mitigation once the HP falls under 80% with none of the job's mitigations up, and the warrior's and the
-    // gunbreaker's heals; never a bigger cooldown.
+    // A press now runs at once instead of waiting in the game's queue: no animation lock, nothing queued.
+    private static bool FreeToAct()
+    {
+        var actions = ActionManager.Instance();
+        return actions is not null && actions->AnimationLock <= 0 && !actions->ActionQueued;
+    }
+
+    // The short mitigation once the HP falls under 80% without its own buff up, and the warrior's and the gunbreaker's
+    // heals; never a bigger cooldown. At most one press, and only while the character is free to act.
     private static void MitigateByHp(uint[] mitigations, IPlayerCharacter player)
     {
         var actions = ActionManager.Instance();
-        if (actions is null || player.MaxHp == 0)
+        if (actions is null || player.MaxHp == 0 || !FreeToAct())
         {
             return;
         }
 
         var ratio = (float)player.CurrentHp / player.MaxHp;
-        if (ratio < ShortMitigationHpRatio && MitigationUp(actions, mitigations, player) == 0)
+        var shortId = actions->GetAdjustedActionId(mitigations[0]);
+        if (ratio < ShortMitigationHpRatio && !BuffUp(player, shortId) && UseByHp(actions, shortId, player, ratio))
         {
-            UseByHp(actions, actions->GetAdjustedActionId(mitigations[0]), player, ratio);
+            return;
         }
 
         if (mitigations == warriorMitigations && ratio < WarriorHealHpRatio)
         {
-            UseByHp(actions, ThrillOfBattle, player, ratio);
-            UseByHp(actions, Equilibrium, player, ratio);
+            if (!UseByHp(actions, ThrillOfBattle, player, ratio))
+            {
+                UseByHp(actions, Equilibrium, player, ratio);
+            }
         }
         else if (mitigations == gunbreakerMitigations && ratio < AuroraHpRatio && !StatusUp(player, AuroraStatus))
         {
@@ -298,12 +350,15 @@ internal sealed unsafe class TankbusterWatcher : IDisposable
         }
     }
 
-    private static void UseByHp(ActionManager* actions, uint actionId, IPlayerCharacter player, float ratio)
+    private static bool UseByHp(ActionManager* actions, uint actionId, IPlayerCharacter player, float ratio)
     {
-        if (Ready(actions, actionId, player) && actions->UseAction(ActionType.Action, actionId, player.GameObjectId))
+        if (!Ready(actions, actionId, player) || !actions->UseAction(ActionType.Action, actionId, player.GameObjectId))
         {
-            RunLog.Debug($"Tankbuster: HP at {ratio:P0}; used {ActionName(actionId)}.");
+            return false;
         }
+
+        RunLog.Info($"Tankbuster: HP at {ratio:P0}; used {ActionName(actionId)}.");
+        return true;
     }
 
     private static bool Ready(ActionManager* actions, uint actionId, IPlayerCharacter player)
