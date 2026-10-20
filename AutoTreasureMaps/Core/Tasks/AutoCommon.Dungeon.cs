@@ -789,12 +789,7 @@ public abstract partial class AutoCommon
     {
         Status = "Gambler's Lure: waiting for the guess";
         var dealtAt = Environment.TickCount64;
-        var shown = await WaitForShownCard(context);
-        var raw = 0;
-        if (shown is null)
-        {
-            DungeonField.LureShownCard(out raw);
-        }
+        var (shown, raw) = await WaitForShownCard(context);
 
         Diag($"{scope}: the card dealt face up reads {(shown?.ToString(CultureInfo.InvariantCulture) ?? "unreadable")} (mask 0x{raw:X}).");
         if (shown is { } card)
@@ -834,20 +829,20 @@ public abstract partial class AutoCommon
     }
 
     // The card turns over a moment before the choices can be targeted, so it is read for a short while.
-    private async Task<int?> WaitForShownCard(DungeonContext context)
+    private async Task<(int? Card, int Raw)> WaitForShownCard(DungeonContext context)
     {
         var deadline = Environment.TickCount64 + LureCardReadMs;
         while (Environment.TickCount64 < deadline && DungeonField.LureGuessPending() && !CancelToken.IsCancellationRequested && context.InDungeon)
         {
-            if (DungeonField.LureShownCard(out _) is { } card)
+            if (DungeonField.LureShownCard(out var raw) is { } card)
             {
-                return card;
+                return (card, raw);
             }
 
             await NextFrame(DungeonTickFrames);
         }
 
-        return null;
+        return (null, 0);
     }
 
     private async Task GuessLure(string scope, DungeonContext context, bool high, string reason)
