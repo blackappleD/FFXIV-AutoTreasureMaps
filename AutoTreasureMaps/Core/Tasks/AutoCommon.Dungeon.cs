@@ -320,7 +320,7 @@ public abstract partial class AutoCommon
             return DungeonStep.Bonus;
         }
 
-        if (Svc.Condition[ConditionFlag.InCombat] || DungeonField.NearestEnemy(out _) is not null)
+        if (Svc.Condition[ConditionFlag.InCombat] || context.NearestEnemy(out _) is not null)
         {
             return DungeonStep.Fight;
         }
@@ -623,7 +623,7 @@ public abstract partial class AutoCommon
                     return;
                 }
 
-                var enemy = DungeonField.NearestEnemy(out var enemies);
+                var enemy = context.NearestEnemy(out var enemies);
                 var inCombat = Svc.Condition[ConditionFlag.InCombat];
                 ShowFight(context.Dungeon.Round, enemies);
                 if (enemies == 0 && !inCombat)
@@ -1089,7 +1089,7 @@ public abstract partial class AutoCommon
         var dungeon = context.Dungeon;
         var coffer = DungeonField.NearestCoffer(dungeon, int.MaxValue);
         var advance = DungeonField.AdvanceObjects(dungeon.Profile).Count;
-        DungeonField.NearestEnemy(out var enemies);
+        context.NearestEnemy(out var enemies);
         var at = DungeonField.PlayerPosition;
         return $"at ({at.X:F1}, {at.Y:F1}, {at.Z:F1}), coffer {(coffer is null ? "none" : $"{coffer.BaseId} ({dungeon.CofferInteractions(coffer.GameObjectId)} interaction(s))")}, {advance} advance object(s), {enemies} enemy(ies), in combat {Svc.Condition[ConditionFlag.InCombat]}, loot waiting {LootRolls.Pending(static _ => true)}";
     }
@@ -1147,7 +1147,10 @@ public abstract partial class AutoCommon
 
         // Something on the field that answers what the run just did: a fight, or the lure.
         public bool FieldBusy()
-            => Svc.Condition[ConditionFlag.InCombat] || owner.LureOngoing(Dungeon) || DungeonField.NearestEnemy(out _) is not null;
+            => Svc.Condition[ConditionFlag.InCombat] || owner.LureOngoing(Dungeon) || NearestEnemy(out _) is not null;
+
+        // The room's nearest enemy the run fights; the mandragora party only counts when the settings want it killed.
+        public IBattleNpc? NearestEnemy(out int count) => DungeonField.NearestEnemy(Profile, Config.DungeonMandragorasInOrder, out count);
 
         public bool PromptOpen() => NpcInteraction.SelectYesnoOpen();
 

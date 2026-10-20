@@ -355,8 +355,9 @@ internal static unsafe class DungeonField
         return nearest;
     }
 
-    // Live, targetable, hostile combatants close enough to be this room's.
-    public static IBattleNpc? NearestEnemy(out int count)
+    // Live, targetable, hostile combatants close enough to be this room's. The mandragora party is left out unless the
+    // settings want it killed: it leaves on its own before long, so pulling it unasked only loses the run time.
+    public static IBattleNpc? NearestEnemy(DungeonProfile profile, bool mandragoras, out int count)
     {
         count = 0;
         var from = PlayerPosition;
@@ -366,6 +367,11 @@ internal static unsafe class DungeonField
         for (var index = 0; index < objects.Length; index++)
         {
             if (objects[index] is not IBattleNpc { BattleNpcKind: BattleNpcSubKind.Combatant, IsTargetable: true, IsDead: false } npc || npc.CurrentHp == 0 || !npc.IsHostile())
+            {
+                continue;
+            }
+
+            if (!mandragoras && profile.MandragoraOrder(npc.NameId) >= 0)
             {
                 continue;
             }
