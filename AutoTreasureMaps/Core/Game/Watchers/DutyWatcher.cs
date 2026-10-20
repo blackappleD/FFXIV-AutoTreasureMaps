@@ -15,6 +15,9 @@ internal sealed class DutyWatcher : IDisposable
 
     private static long dungeonEntryHeldUntilMs;
 
+    // Counts zone changes, so a dungeon kept for a resume can tell its own instance from a later one of the same kind.
+    internal static int ZoneEntry { get; private set; } = 1;
+
     private long leftContentAtMs;
     private HuntDuty loggedHuntDuty;
 
@@ -23,12 +26,16 @@ internal sealed class DutyWatcher : IDisposable
     public DutyWatcher()
     {
         Svc.Framework.Update += OnUpdate;
+        Svc.ClientState.TerritoryChanged += OnTerritoryChanged;
     }
 
     public void Dispose()
     {
         Svc.Framework.Update -= OnUpdate;
+        Svc.ClientState.TerritoryChanged -= OnTerritoryChanged;
     }
+
+    private static void OnTerritoryChanged(uint _) => ZoneEntry++;
 
     private void OnUpdate(IFramework _)
     {
@@ -69,13 +76,15 @@ internal sealed class DutyWatcher : IDisposable
 
     // The game may count a dug-up coffer's hunt as a duty. That is the run's own work, not content to wait out, so the
     // pause is skipped while the map run is at the coffer in the map's zone or the hunt's director runs; a duty that
-    // takes the character to another zone still pauses. A treasure dungeon the run knows is its own work too. Which of
+    // takes the character to another zone still pauses. A treasure dungeon the run entered itself is its own work too;
+    // one the player walked into by hand is content like any other. Which of
     // them held it is logged once per stretch, so a test run shows whether the flag is set at all.
     private bool HuntHoldsTheDuty(TreasureController controller)
     {
         var progress = controller.Progress;
         var inMapZone = progress.HasMap && Svc.ClientState.TerritoryType == progress.Spot.TerritoryId;
-        var reason = DungeonRegistry.IsDungeon(Svc.ClientState.TerritoryType) || Environment.TickCount64 < dungeonEntryHeldUntilMs
+        var ownDungeon = controller.SessionSnapshot is { InOwnDungeon: true } && DungeonRegistry.IsDungeon(Svc.ClientState.TerritoryType);
+        var reason = ownDungeon || Environment.TickCount64 < dungeonEntryHeldUntilMs
             ? HuntDuty.Dungeon
             : inMapZone && controller.Phase is TreasurePhase.Digging or TreasurePhase.Opening or TreasurePhase.Fighting or TreasurePhase.Looting
                 ? HuntDuty.MapStep
@@ -96,6 +105,8 @@ internal sealed class DutyWatcher : IDisposable
 
     // The run is about to walk into a portal: the duty that starts on the way in is its own work, not content to wait out.
     internal static void HoldForDungeonEntry() => dungeonEntryHeldUntilMs = Environment.TickCount64 + DungeonEntryHoldMs;
+
+    internal static void ReleaseDungeonEntryHold() => dungeonEntryHeldUntilMs = 0;
 
     internal static bool InContent()
         => Svc.Condition[ConditionFlag.BoundByDuty]

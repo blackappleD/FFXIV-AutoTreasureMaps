@@ -32,7 +32,7 @@ internal sealed class CleanupContextMenu : IDisposable
         }
 
         var itemId = item.BaseItemId;
-        if (itemId == 0 || LootCleanup.IsAlwaysKept(itemId) || RareLoot.IsRare(itemId))
+        if (itemId == 0 || LootCleanup.IsAlwaysKept(itemId) || LootCleanup.KeepsRare(itemId))
         {
             return;
         }

@@ -1,6 +1,7 @@
 using Dalamud.Game.ClientState.Conditions;
 using Dalamud.Game.ClientState.Objects.Enums;
 using Dalamud.Game.ClientState.Objects.Types;
+using Dalamud.Game.ClientState.Objects.SubKinds;
 using Dalamud.Plugin.Services;
 using ECommons.DalamudServices;
 using ECommons.GameFunctions;
@@ -9,10 +10,12 @@ using LuminaAction = Lumina.Excel.Sheets.Action;
 
 namespace AutoTreasureMaps.Core.Game.Watchers;
 
-// The combat plugin's tank module only mitigates a tankbuster its boss module has marked, and treasure dungeon bosses
-// have none, so its short mitigation waited for the HP to drop under 75% and the hit landed bare. While a run is on and
-// the character tanks, an enemy's cast aimed at the character is mitigated as soon as it starts: the job's short
-// cooldown first (Bloodwhetting, Holy Sheltron, The Blackest Night, Heart of Corundum), a bigger one when that is down.
+// The combat plugin's tank module only mitigates a tankbuster its boss module has marked, and treasure hunt enemies have
+// none, so its short mitigation waited for the HP to drop under 75% and the hit landed bare. With the setting on, while
+// a run is on and the character tanks, a heavy cast aimed at the character gets the job's short mitigation (Bloodwhetting,
+// Holy Sheltron, The Blackest Night, Heart of Corundum) once the cast is close enough to its end for the buff to cover
+// it. One mitigation covers a window, so a volley from several casters spends one cooldown, and nothing is used while
+// one of the job's mitigations is already up. The long cooldowns stay with the combat plugin's tank module.
 internal sealed unsafe class TankbusterWatcher : IDisposable
 {
     private const byte TankRole = 1;
@@ -22,6 +25,8 @@ internal sealed unsafe class TankbusterWatcher : IDisposable
     private const float MinCastSeconds = 1.5f;
     // The shortest of the short mitigations lasts 7 s, so a longer cast waits until it would still cover the hit.
     private const float MitigateWithinSeconds = 6f;
+    // A mitigation used covers every cast that lands within this window.
+    private const long MitigationWindowMs = 7_000;
     private const uint ActionKind = 1;
 
     private const uint Rampart = 7531;
@@ -38,16 +43,18 @@ internal sealed unsafe class TankbusterWatcher : IDisposable
     private const uint Camouflage = 16140;
     private const uint Nebula = 16148; // Great Nebula from level 92
 
-    private static readonly uint[] WarriorMits = [RawIntuition, Rampart, Vengeance];
-    private static readonly uint[] PaladinMits = [Sheltron, Rampart, Sentinel, Bulwark];
-    private static readonly uint[] DarkKnightMits = [TheBlackestNight, Oblation, Rampart, ShadowWall, DarkMind];
-    private static readonly uint[] GunbreakerMits = [HeartOfStone, Camouflage, Rampart, Nebula];
+    // The short mitigation comes first; the rest are only looked at for a buff that is already up.
+    private static readonly uint[] warriorMitigations = [RawIntuition, Rampart, Vengeance];
+    private static readonly uint[] paladinMitigations = [Sheltron, Rampart, Sentinel, Bulwark];
+    private static readonly uint[] darkKnightMitigations = [TheBlackestNight, Oblation, Rampart, ShadowWall, DarkMind];
+    private static readonly uint[] gunbreakerMitigations = [HeartOfStone, Camouflage, Rampart, Nebula];
 
     // Casts already answered, keyed by caster and action, kept only while the caster is still casting them.
     private HashSet<(uint Caster, uint Action)> handled = [];
     private HashSet<(uint Caster, uint Action)> stillCasting = [];
+    private long windowEndsAtMs;
 
-    private enum MitResult : byte { Used, Refused, NoneReady }
+    private enum MitigationResult : byte { Used, Refused, NotReady, AlreadyUp }
 
     public TankbusterWatcher()
     {
@@ -61,16 +68,23 @@ internal sealed unsafe class TankbusterWatcher : IDisposable
 
     private void OnUpdate(IFramework _)
     {
-        var controller = Plugin.Instance.Controller;
+        var plugin = Plugin.Instance;
+        if (!plugin.Configuration.TankbusterMitigation)
+        {
+            return;
+        }
+
+        var controller = plugin.Controller;
         if (!controller.Running || controller.Paused || !Svc.Condition[ConditionFlag.InCombat]
             || Svc.Objects.LocalPlayer is not { IsDead: false } player || player.ClassJob.ValueNullable?.Role != TankRole
-            || MitsFor(player.ClassJob.RowId) is not { } mits)
+            || MitigationsFor(player.ClassJob.RowId) is not { } mitigations)
         {
             handled.Clear();
             return;
         }
 
         stillCasting.Clear();
+        var inWindow = Environment.TickCount64 < windowEndsAtMs;
         var objects = Svc.Objects;
         for (var index = 0; index < objects.Length; index++)
         {
@@ -93,14 +107,26 @@ internal sealed unsafe class TankbusterWatcher : IDisposable
                 continue;
             }
 
-            switch (Mitigate(mits, player.GameObjectId, out var used))
+            if (inWindow)
             {
-                case MitResult.Used:
+                stillCasting.Add(key);
+                continue;
+            }
+
+            switch (Mitigate(mitigations, player, out var used))
+            {
+                case MitigationResult.Used:
                     RunLog.Info($"Tankbuster: {caster.Name} casts {ActionName(caster.CastActionId)} on the character ({caster.TotalCastTime:F1}s); used {ActionName(used)}.");
+                    windowEndsAtMs = Environment.TickCount64 + MitigationWindowMs;
+                    inWindow = true;
                     stillCasting.Add(key);
                     break;
-                case MitResult.NoneReady:
-                    RunLog.Info($"Tankbuster: {caster.Name} casts {ActionName(caster.CastActionId)} on the character, but every mitigation is on cooldown.");
+                case MitigationResult.AlreadyUp:
+                    RunLog.Info($"Tankbuster: {caster.Name} casts {ActionName(caster.CastActionId)} on the character; {ActionName(used)} is already up.");
+                    stillCasting.Add(key);
+                    break;
+                case MitigationResult.NotReady:
+                    RunLog.Info($"Tankbuster: {caster.Name} casts {ActionName(caster.CastActionId)} on the character, but {ActionName(used)} is not ready.");
                     stillCasting.Add(key);
                     break;
             }
@@ -109,12 +135,12 @@ internal sealed unsafe class TankbusterWatcher : IDisposable
         (handled, stillCasting) = (stillCasting, handled);
     }
 
-    private static uint[]? MitsFor(uint classJobId) => classJobId switch
+    private static uint[]? MitigationsFor(uint classJobId) => classJobId switch
     {
-        1 or 19 => PaladinMits,
-        3 or 21 => WarriorMits,
-        32 => DarkKnightMits,
-        37 => GunbreakerMits,
+        1 or 19 => paladinMitigations,
+        3 or 21 => warriorMitigations,
+        32 => darkKnightMitigations,
+        37 => gunbreakerMitigations,
         _ => null,
     };
 
@@ -123,30 +149,55 @@ internal sealed unsafe class TankbusterWatcher : IDisposable
         => Svc.Data.GetExcelSheet<LuminaAction>().TryGetRow(actionId, out var action)
         && action.CastType is SingleTargetCastType or CircleCastType;
 
-    // Takes the first mitigation the game would accept now; the list puts the short ones first. A press the game refuses
-    // (an animation lock) is pressed again next frame.
-    private static MitResult Mitigate(uint[] mits, ulong selfId, out uint used)
+    // Uses the job's short mitigation unless any of its mitigations is already on the character. A press the game
+    // refuses (an animation lock) is pressed again next frame.
+    private static MitigationResult Mitigate(uint[] mitigations, IPlayerCharacter player, out uint used)
     {
         used = 0;
         var actions = ActionManager.Instance();
         if (actions is null)
         {
-            return MitResult.Refused;
+            return MitigationResult.Refused;
         }
 
-        foreach (var mit in mits)
+        for (var mitigationIndex = 0; mitigationIndex < mitigations.Length; mitigationIndex++)
         {
-            var actionId = actions->GetAdjustedActionId(mit);
-            if (actions->GetActionStatus(ActionType.Action, actionId, selfId) != 0)
+            var actionId = actions->GetAdjustedActionId(mitigations[mitigationIndex]);
+            if (BuffUp(player, actionId))
             {
-                continue;
+                used = actionId;
+                return MitigationResult.AlreadyUp;
             }
-
-            used = actionId;
-            return actions->UseAction(ActionType.Action, actionId, selfId) ? MitResult.Used : MitResult.Refused;
         }
 
-        return MitResult.NoneReady;
+        used = actions->GetAdjustedActionId(mitigations[0]);
+        if (actions->GetActionStatus(ActionType.Action, used, player.GameObjectId) != 0)
+        {
+            return MitigationResult.NotReady;
+        }
+
+        return actions->UseAction(ActionType.Action, used, player.GameObjectId) ? MitigationResult.Used : MitigationResult.Refused;
+    }
+
+    // The buff an action puts on its user is read from the Action sheet, so no status ids are kept here.
+    private static bool BuffUp(IPlayerCharacter player, uint actionId)
+    {
+        if (!Svc.Data.GetExcelSheet<LuminaAction>().TryGetRow(actionId, out var action) || action.StatusGainSelf.RowId == 0)
+        {
+            return false;
+        }
+
+        var statusId = action.StatusGainSelf.RowId;
+        var statuses = player.StatusList;
+        for (var statusIndex = 0; statusIndex < statuses.Length; statusIndex++)
+        {
+            if (statuses[statusIndex] is { } status && status.StatusId == statusId)
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private static string ActionName(uint actionId)

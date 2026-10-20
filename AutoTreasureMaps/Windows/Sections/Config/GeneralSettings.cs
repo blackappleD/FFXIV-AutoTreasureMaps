@@ -97,6 +97,12 @@ internal static class GeneralSettings
             SettingsControls.ToggleWidth,
             () => SettingsControls.DrawToggle(configuration, () => configuration.AutoResumeOnFault, value => configuration.AutoResumeOnFault = value, "##atm_general_autoresume"),
             SettingsRow.ToggleHeight);
+
+        SettingsRow.Draw(Loc.T(L.Settings.Tankbuster),
+            Loc.T(L.Settings.TankbusterHelp),
+            SettingsControls.ToggleWidth,
+            () => SettingsControls.DrawToggle(configuration, () => configuration.TankbusterMitigation, value => configuration.TankbusterMitigation = value, "##atm_general_tankbuster"),
+            SettingsRow.ToggleHeight);
     }
 
     private static void DrawAfterRunGroup(Configuration configuration)

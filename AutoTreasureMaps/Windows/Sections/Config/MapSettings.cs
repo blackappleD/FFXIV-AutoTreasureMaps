@@ -118,7 +118,7 @@ internal static class MapSettings
 
             rowTier = tier;
             var controlWidth = tier.Undersea ? TextDraw.IconSize(FontAwesomeIcon.Lock).X / ImGuiHelpers.GlobalScale : SettingsControls.ToggleWidth;
-            SettingsRow.Draw(tier.Name, Loc.T(HelpFor(tier)), controlWidth, drawTierControl, SettingsRow.ToggleHeight, tier.TimewornItemId, tier.Patch);
+            SettingsRow.Draw(tier.Name, Loc.T(HelpFor(tier)), controlWidth, drawTierControl, SettingsRow.ToggleHeight, tier.TimewornItemId, PatchBadge.Label(tier.Patch));
         }
 
         rowConfiguration = null;

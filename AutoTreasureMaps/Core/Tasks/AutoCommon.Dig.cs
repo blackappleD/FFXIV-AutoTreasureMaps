@@ -1,8 +1,8 @@
-using Dalamud.Game.ClientState.Conditions;
 using AutoTreasureMaps.Core.Game.Ops;
 using AutoTreasureMaps.Core.Ipc;
 using AutoTreasureMaps.Core.Travel;
 using AutoTreasureMaps.Core.Treasure;
+using Dalamud.Game.ClientState.Conditions;
 using ECommons.DalamudServices;
 using System.Numerics;
 using System.Threading.Tasks;
@@ -48,6 +48,11 @@ public abstract partial class AutoCommon
     private async Task<DigResult> DigUp(MapInProgress map)
     {
         coffersBeforeDigCount = TreasureCoffers.Collect(map.Spot.Position, CofferSearchMeters, coffersBeforeDig);
+        if (!map.CofferOpened)
+        {
+            Span<ulong> portals = stackalloc ulong[TreasurePortals.MaxRemembered];
+            map.PortalsBefore = portals[..TreasurePortals.Collect(map.Spot.Position, PortalSearchMeters, portals)].ToArray();
+        }
         var nearMisses = 0;
         var unanswered = 0;
         while (!CancelToken.IsCancellationRequested)

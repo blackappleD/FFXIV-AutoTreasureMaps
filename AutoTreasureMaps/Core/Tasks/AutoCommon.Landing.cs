@@ -152,7 +152,7 @@ public abstract partial class AutoCommon
 
     // True once the character is off the mount, out of the air and has stopped dropping, so an action used next is not
     // refused as used mid-air. Gives up after a few seconds; the caller's own retries cover a ledge it never leaves.
-    private protected async Task<bool> SettleOnGround(string scope)
+    private async Task<bool> SettleOnGround(string scope)
     {
         var stableSince = 0L;
         var lastHeight = float.NaN;
@@ -161,6 +161,7 @@ public abstract partial class AutoCommon
             if (Svc.Objects.LocalPlayer is not { } player || Airborne())
             {
                 stableSince = 0;
+                lastHeight = float.NaN;
                 return false;
             }
 

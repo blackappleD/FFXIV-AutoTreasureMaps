@@ -17,6 +17,8 @@ internal enum RunEnd : byte
     Faulted,
     SingleMap,
     Dungeon,
+    // The dungeon was handed back to the player, who is still inside, so no after-run action follows.
+    DungeonHandedBack,
 }
 
 internal static class RunEnds
@@ -38,6 +40,7 @@ internal static class RunEnds
         RunEnd.Faulted => L.Run.EndFaulted,
         RunEnd.SingleMap => L.Run.EndSingleMap,
         RunEnd.Dungeon => L.Run.EndDungeon,
+        RunEnd.DungeonHandedBack => L.Run.EndDungeonHandedBack,
         _ => L.Run.EndStopped,
     };
 }

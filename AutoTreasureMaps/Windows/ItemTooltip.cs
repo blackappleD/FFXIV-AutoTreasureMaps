@@ -4,9 +4,9 @@ using FFXIVClientStructs.FFXIV.Component.GUI;
 
 namespace AutoTreasureMaps.Windows;
 
-// The game's own item detail tooltip for an item the mouse rests on in our window, as ReMakePlace and GatherBuddy show
-// it: hung on _ScreenText every frame while the item is hovered, placed by the game, and open to other plugins that add
-// lines to it (market prices and the like). Draw code calls Hover; the window calls Update once per frame before it
+// The game's own item detail tooltip for an item the mouse rests on in our window: hung on _ScreenText every frame while
+// the item is hovered, placed by the game, and open to other plugins that add lines to it (market prices and the like).
+// Written against FFXIVClientStructs' AgentItemDetail and AtkUnitBase. Draw code calls Hover; the window calls Update once per frame before it
 // draws, so the tooltip follows last frame's hover and goes away a frame after the mouse leaves.
 internal static unsafe class ItemTooltip
 {

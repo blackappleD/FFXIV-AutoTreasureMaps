@@ -1,6 +1,9 @@
 using AutoTreasureMaps.Core.Cleanup;
 using AutoTreasureMaps.Core.Dungeon;
+using AutoTreasureMaps.Core.Game;
 using AutoTreasureMaps.Core.Game.Ops;
+using AutoTreasureMaps.Core.Game.Player;
+using AutoTreasureMaps.Core.Game.Watchers;
 using AutoTreasureMaps.Core.Ipc;
 using AutoTreasureMaps.Core.Localization;
 using AutoTreasureMaps.Core.Travel;
@@ -59,6 +62,10 @@ public abstract partial class AutoCommon
     private const int LeaveZoneWaitMs = 15_000;
     private const int AdvanceRetryLimit = 3;
     private const int AdvanceRetryDelayMs = 5_000;
+    // A gate that stays locked this many tries in a row (about a minute) is not waited on any longer.
+    private const int NotReadyAdvanceLimit = 12;
+    // A pending transit whose gate is this far behind already carried the character on before the pause.
+    private const float TransitResumeMeters = 30f;
 
     private enum DungeonStep : byte { Lure, Bonus, Fight, Loot, Coffer, Advance, Leave, Idle }
 
@@ -78,7 +85,10 @@ public abstract partial class AutoCommon
     private protected async Task<DungeonResult> RunDungeon(TreasureSession session, TreasureProgress progress, TreasureDungeonHandler handler)
     {
         DungeonFault = null;
-        var dungeon = session.ActiveDungeon is { } kept && kept.Profile.Key == handler.Profile.Key ? kept : new DungeonInProgress(handler.Profile);
+        // A dungeon kept for a resume is picked up only in the same instance; a later one of the same kind starts afresh.
+        var dungeon = session.ActiveDungeon is { } kept && kept.Profile.Key == handler.Profile.Key && kept.ZoneEntry == DutyWatcher.ZoneEntry
+            ? kept
+            : new DungeonInProgress(handler.Profile);
         session.ActiveDungeon = dungeon;
         dungeon.BagsBefore ??= BagSnapshot.Capture();
         mapProgress = progress;
@@ -113,7 +123,7 @@ public abstract partial class AutoCommon
 
         session.ActiveDungeon = null;
         session.RecordDungeon(result);
-        LootCleanup.Note(dungeon.BagsBefore);
+        LootCleanup.Note(dungeon.CleanupBlocked ? null : dungeon.BagsBefore);
         Diag($"Dungeon: {dungeon.Profile.Key} ended {outcome} in round {dungeon.Round} of {dungeon.Profile.Rounds} (reached {dungeon.RoundReached}), {gil} gil, {result.ItemCount} items in {items.Length} stacks, {result.Duration.TotalSeconds:F0}s.");
         AnnounceDungeon(result);
         return result;
@@ -131,8 +141,10 @@ public abstract partial class AutoCommon
         }
 
         await HoldCombatMovementAndSettle("dungeon");
+        await ResumeTransit(handler, context);
         var idleSince = 0L;
         var advanceFailures = 0;
+        var notReadyAdvances = 0;
         var lastStep = DungeonStep.Idle;
         var lootFingerprint = 0L;
         while (true)
@@ -155,7 +167,7 @@ public abstract partial class AutoCommon
 
             lootFingerprint = PreviewDungeonLoot(dungeon, lootFingerprint);
 
-            if (Svc.Party.Length > 0)
+            if (PartyPresence.InParty())
             {
                 Warn("Dungeon: the character is in a party; the run only clears dungeons solo.");
                 return DungeonOutcome.InParty;
@@ -237,6 +249,15 @@ public abstract partial class AutoCommon
                         return DungeonOutcome.Stuck;
                     }
 
+                    // A locked gate answers NotReady, which keeps the idle limit away, so it is bounded on its own.
+                    notReadyAdvances = advanced is AdvanceResult.NotReady ? notReadyAdvances + 1 : 0;
+                    if (notReadyAdvances >= NotReadyAdvanceLimit)
+                    {
+                        Warn($"Dungeon: the way on stayed locked through {notReadyAdvances} tries in round {dungeon.Round}.");
+                        Svc.Chat.PrintError($"{AtmConstants.LogPrefix} {Loc.T(L.Dungeon.ChatStuck)}");
+                        return DungeonOutcome.Stuck;
+                    }
+
                     break;
                 case DungeonStep.Leave:
                     if (await handler.Leave(context))
@@ -269,7 +290,7 @@ public abstract partial class AutoCommon
     // The loot so far shows in the cleanup list while the dungeon goes on; the bags are compared only when they changed.
     private static long PreviewDungeonLoot(DungeonInProgress dungeon, long seen)
     {
-        if (dungeon.BagsBefore is not { } before || !Plugin.Instance.Configuration.AutoDiscard)
+        if (dungeon.BagsBefore is not { } before || dungeon.CleanupBlocked || !Plugin.Instance.Configuration.AutoDiscard)
         {
             return seen;
         }
@@ -318,7 +339,7 @@ public abstract partial class AutoCommon
 
         if (handler.MoreRounds(dungeon))
         {
-            return handler.ReadyToAdvance(dungeon) && DungeonField.AdvanceObjects(dungeon.Profile).Count > 0 ? DungeonStep.Advance : DungeonStep.Idle;
+            return handler.ReadyToAdvance(dungeon) && DungeonField.AnyAdvanceObject(dungeon.Profile) ? DungeonStep.Advance : DungeonStep.Idle;
         }
 
         // A last round whose coffer was never opened is left to the idle limit, which hands the dungeon back to the player
@@ -341,9 +362,41 @@ public abstract partial class AutoCommon
             return advance.Result;
         }
 
+        // The transit is kept on the dungeon until it is done, so a pause between the gate opening and the teleport resumes
+        // with the walk into the circle rather than in the old chamber under the new round's number.
+        context.Dungeon.PendingTransit = advance;
         context.Dungeon.BeginRound(advance.NextRound);
         await handler.TransitRound(context, advance);
+        if (!CancelToken.IsCancellationRequested)
+        {
+            context.Dungeon.PendingTransit = null;
+        }
+
         return AdvanceResult.NextRound;
+    }
+
+    private async Task ResumeTransit(TreasureDungeonHandler handler, DungeonContext context)
+    {
+        var dungeon = context.Dungeon;
+        if (dungeon.PendingTransit is not { } pending)
+        {
+            return;
+        }
+
+        if (dungeon.Profile.Kind == DungeonKind.Gate && Vector3.Distance(DungeonField.PlayerPosition, pending.At) > TransitResumeMeters)
+        {
+            Diag($"Dungeon: the transit to round {dungeon.Round} was cut short, but the character is past the gate already.");
+        }
+        else
+        {
+            Diag($"Dungeon: picking up the transit to round {dungeon.Round} that a pause cut short.");
+            await handler.TransitRound(context, pending);
+        }
+
+        if (!CancelToken.IsCancellationRequested)
+        {
+            dungeon.PendingTransit = null;
+        }
     }
 
     private DungeonOutcome HowItEnded(DungeonInProgress dungeon)
@@ -507,7 +560,7 @@ public abstract partial class AutoCommon
         EnterStep(TreasurePhase.Opening);
         Status = "Opening the coffer";
         var cofferId = coffer.GameObjectId;
-        // The dungeon's own coffers ask their own question (要打开宝箱吗？ rather than the dug-up coffer's), which no
+        // The dungeon's own coffers ask their own question ("Open the coffer?" rather than the dug-up coffer's), which no
         // sheet row gives; a question that opens right after asking one of them is that coffer's.
         var listedCoffer = coffer.ObjectKind == ObjectKind.EventObj && context.Profile.IsCoffer(coffer.BaseId);
         Diag($"{scope}: {coffer.ObjectKind} base {coffer.BaseId} '{coffer.Name}' ({cofferId:X}), interaction {context.Dungeon.CofferInteractions(cofferId)}.");
@@ -525,7 +578,7 @@ public abstract partial class AutoCommon
             var prompt = NpcInteraction.SelectYesnoText();
             if (listedCoffer || DigOps.IsCofferPrompt(prompt))
             {
-                context.ConfirmPrompt(scope);
+                context.ConfirmPrompt(scope, interacted: true, openBefore: false);
             }
             else
             {
@@ -534,7 +587,7 @@ public abstract partial class AutoCommon
         }
 
         await WaitUntilTimed(() => context.FieldBusy() || Svc.Objects.SearchById(cofferId) is not { IsTargetable: true }, CofferAnswerMs, "coffer answer");
-        var lure = Messages.TryGetLatest(DungeonLogMessages.LureSet, since, out _) ? ", the lure is set" : string.Empty;
+        var lure = Messages.TryGetLatest(DungeonLogMessages.LureSprung, since, out _) ? ", the lure is set" : string.Empty;
         Diag($"{scope}: after the interaction the coffer is {(Svc.Objects.SearchById(cofferId) is { IsTargetable: true } ? "still targetable" : "gone or untargetable")}{lure}; {DescribeField(context)}.");
     }
 
@@ -891,10 +944,11 @@ public abstract partial class AutoCommon
         var name = high ? "high" : "low";
         Diag($"{scope}: guessing {name} ({reason}).");
         Status = "Gambler's Lure: guessing";
-        await context.Interact(() => Svc.Objects.SearchById(choiceId), $"lure choice {name}", NpcInteraction.SelectYesnoOpen, scope);
+        var promptBefore = context.PromptOpen();
+        var interacted = await context.Interact(() => Svc.Objects.SearchById(choiceId), $"lure choice {name}", NpcInteraction.SelectYesnoOpen, scope);
         if (await WaitUntilTimed(NpcInteraction.SelectYesnoOpen, LureGuessAnswerMs, "lure guess question"))
         {
-            context.ConfirmPrompt(scope);
+            context.ConfirmPrompt(scope, interacted || NpcInteraction.SelectYesnoOpen(), promptBefore);
         }
 
         await WaitUntilTimed(() => !DungeonField.LureGuessPending(), LureGuessAnswerMs, "lure guess taken");
@@ -977,11 +1031,18 @@ public abstract partial class AutoCommon
         var dungeon = context.Dungeon;
         EnterStep(TreasurePhase.Finishing);
         Status = "Leaving the dungeon";
-        // Items still waiting on a roll would be lost with the duty, so the player gets a minute to roll them by hand.
+        // Items still waiting on a roll would be lost with the duty, so the player gets a minute to roll them by hand, and
+        // if they still wait after that, the dungeon is handed back rather than left with them.
         if (LootRolls.Pending(static _ => true) > 0)
         {
             Diag($"{scope}: items still wait on a roll; waiting up to {LootPendingWaitMs / TimeUnits.MillisecondsPerSecond}s before leaving.");
             await WaitUntilTimed(() => LootRolls.Pending(static _ => true) == 0, LootPendingWaitMs, "loot rolled before leaving");
+            if (LootRolls.Pending(static _ => true) > 0)
+            {
+                Warn($"{scope}: {LootRolls.Pending(static _ => true)} item(s) still wait on a roll; the dungeon is left to you so they are not lost.");
+                Svc.Chat.PrintError($"{AtmConstants.LogPrefix} {Loc.T(L.Dungeon.ChatLootWaiting)}");
+                return false;
+            }
         }
 
         if (!await HumanDelay(HumanAction.MoveOff, scope))
@@ -995,8 +1056,9 @@ public abstract partial class AutoCommon
             var exitId = exit.GameObjectId;
             Diag($"{scope}: round {dungeon.Round} of {dungeon.Profile.Rounds} done and the field is quiet; leaving through the exit {exit.BaseId}.");
             dungeon.LeaveRequested = true;
-            await context.Interact(() => Svc.Objects.SearchById(exitId), $"exit {exitId:X}", () => NpcInteraction.SelectYesnoOpen() || context.Zoning, scope);
-            context.ConfirmPrompt(scope);
+            var promptBefore = context.PromptOpen();
+            var interacted = await context.Interact(() => Svc.Objects.SearchById(exitId), $"exit {exitId:X}", () => NpcInteraction.SelectYesnoOpen() || context.Zoning, scope);
+            context.ConfirmPrompt(scope, interacted, promptBefore);
             if (await WaitUntilTimed(() => context.Zoning || !context.InDungeon, LeaveZoneWaitMs, "leaving through the exit"))
             {
                 return true;
@@ -1089,29 +1151,44 @@ public abstract partial class AutoCommon
 
         public bool PromptOpen() => NpcInteraction.SelectYesnoOpen();
 
-        // A yes-or-no that opens right after the run asked a gate, the machine or the exit is that object's own question
-        // (use the key, draw, leave), so it is answered Yes; its text is logged so a recording shows which it was.
-        public void ConfirmPrompt(string scope)
+        // A yes-or-no that opens during a successful interaction with a gate, the machine or the exit is that object's own
+        // question (use the key, draw, leave), so it is answered Yes; its text is logged so a recording shows which it was.
+        // Those questions have no Addon row to match, so one that was already open, one after a failed interaction, and
+        // anything that reads as another player's invitation are left to the player.
+        public void ConfirmPrompt(string scope, bool interacted, bool openBefore)
         {
             if (!NpcInteraction.SelectYesnoOpen())
             {
                 return;
             }
 
-            Diag($"{scope}: the game asks '{NpcInteraction.SelectYesnoText()}'; answering Yes.");
+            var prompt = NpcInteraction.SelectYesnoText();
+            if (!interacted || openBefore)
+            {
+                Warn($"{scope}: '{prompt}' did not come from the run's interaction; leaving it to you.");
+                return;
+            }
+
+            if (ForeignPrompts.Matches(prompt))
+            {
+                Warn($"{scope}: '{prompt}' is another player's invitation; leaving it to you.");
+                return;
+            }
+
+            Diag($"{scope}: the game asks '{prompt}'; answering Yes.");
             DialogDriver.Confirm();
         }
 
         // Walks into reach of the object find returns and interacts with it. True once doneWhen holds.
-        public async Task<bool> Interact(Func<IGameObject?> find, string name, Func<bool> doneWhen, string scope)
+        public async Task<bool> Interact(Func<IGameObject?> find, string name, Func<bool> doneWhen, string scope, bool raised = false)
         {
-            var target = await owner.ApproachObject(find, name, scope);
+            var target = await owner.ApproachObject(find, name, scope, raised);
             if (target is null || !await owner.ReadyToInteract(scope))
             {
                 return false;
             }
 
-            return await owner.InteractWithObject(target, doneWhen, scope);
+            return await owner.InteractWithObject(target, doneWhen, scope, raised);
         }
 
         // A walk inside the dungeon, as its own cancellable operation. True once the character is within reach of the

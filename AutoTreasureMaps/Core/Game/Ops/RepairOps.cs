@@ -1,5 +1,5 @@
-using AutoTreasureMaps.Core.Localization;
 using AutoTreasureMaps.Core.Game.Player;
+using AutoTreasureMaps.Core.Localization;
 using Dalamud.Game.ClientState.Objects.Types;
 using ECommons;
 using ECommons.DalamudServices;

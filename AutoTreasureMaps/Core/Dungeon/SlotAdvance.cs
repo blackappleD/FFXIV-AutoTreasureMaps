@@ -39,8 +39,9 @@ internal sealed class SlotAdvance : IAdvanceStrategy
         }
 
         var since = TreasureMessageWatcher.Now;
+        var promptBefore = context.PromptOpen();
         var interacted = await context.Interact(() => Svc.Objects.SearchById(machineId), $"machine {machineId:X}", () => context.TryGetMessage(Spun, since, out _) || context.PromptOpen(), Scope);
-        context.ConfirmPrompt(Scope);
+        context.ConfirmPrompt(Scope, interacted, promptBefore);
         await context.WaitUntil(() => context.TryGetMessage(Spun, since, out _) || context.Zoning || !context.InDungeon, SpinAnswerMs, "slot spin");
         if (context.Cancelled)
         {

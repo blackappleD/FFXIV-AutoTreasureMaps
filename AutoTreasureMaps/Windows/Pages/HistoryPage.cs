@@ -123,7 +123,7 @@ internal sealed class HistoryPage
         var scale = ImGuiHelpers.GlobalScale;
         var gap = 8f * scale;
         var tileWidth = (ImGui.GetContentRegionAvail().X - gap * (TileCount - 1)) / TileCount;
-        var totalGil = totals.Gil + lootValue;
+        var totalGil = totals.Gil;
         var runs = totals.Runs > 0 ? runsText.Get(revision, static _ => Loc.Plural(L.History.TileRunsCount, Plugin.Instance.History.Lifetime.Runs)) : null;
         var perMap = totals.MapsRun > 0
             ? perMapText.Get(totalGil / totals.MapsRun, static key => Loc.T(L.History.TilePerMap, key.ToString("N0", Loc.Culture)))
@@ -136,6 +136,11 @@ internal sealed class HistoryPage
         StatTile.Draw(Loc.T(L.History.TileMaps), maps, runs, Styling.AccentBlue, tileWidth);
         ImGui.SameLine(0, gap);
         StatTile.Draw(Loc.T(L.History.TileGil), gil, perMap, Styling.AccentAmber, tileWidth);
+        if (lootValue > 0 && ImGui.IsItemHovered())
+        {
+            Tooltip.Show(Loc.T(L.Run.TooltipCount, Loc.T(L.Stats.LootValue), lootValue.ToString("N0", Loc.Culture)));
+        }
+
         ImGui.SameLine(0, gap);
         StatTile.Draw(Loc.T(L.History.TilePortals), portals, null, Styling.AccentNebula, tileWidth);
         ImGui.SameLine(0, gap);
@@ -275,7 +280,7 @@ internal sealed class HistoryPage
         var x = end.X - padX - metricWidth;
         DrawMetric(x, midY, metricWidth, NumberText.Of(record.MapsCompleted), Loc.T(L.History.TileMaps), Styling.AccentBlue);
         x -= metricWidth;
-        var netGil = record.NetGil + LootPrices.ValueOf(record.Tallies);
+        var netGil = record.NetGil;
         DrawMetric(x, midY, metricWidth, netGil != 0 ? netGil.ToString("N0", Loc.Culture) : NoValue, Loc.T(L.History.TileGil), GilColor(netGil));
 
         if (hit.Hovered)

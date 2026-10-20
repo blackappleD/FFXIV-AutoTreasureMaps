@@ -30,12 +30,20 @@ public abstract partial class AutoCommon
             return false;
         }
 
+        if (lifestream.IsBusy())
+        {
+            Warn($"{scope}: Lifestream is busy with something else, so the run does not travel to {name}.");
+            return false;
+        }
+
         await PrepareForTeleport(scope);
         if (!await HumanDelay(HumanAction.Teleport, scope))
         {
             return false;
         }
 
+        // The waits below end on a stop by throwing, which would skip the Abort after them, so the stop aborts the visit.
+        using var stopRegistration = CancelToken.Register(lifestream.Abort);
         Status = $"Travelling to {name}";
         Diag($"{scope}: asking Lifestream to visit {name} ({worldId}) from {Worlds.NameOf(Worlds.Current)}, gateway aetheryte {(LifestreamIPC.IsGateway(gatewayAetheryteId) ? gatewayAetheryteId.ToString() : "Lifestream default")}.");
         lifestream.ChangeWorld(name, gatewayAetheryteId);

@@ -26,6 +26,13 @@ internal sealed class MapInProgress(TreasureTier tier, DigSpot spot)
 
     public bool PortalSeen { get; set; }
 
+    // Set when the run was paused after the coffer opened: what the player did meanwhile would read as loot, so the
+    // cleanup leaves this map's loot alone.
+    public bool CleanupBlocked { get; set; }
+
+    // The portals that stood near the spot before the dig, which belong to someone else.
+    public ulong[] PortalsBefore { get; set; } = [];
+
     public int Wave { get; set; }
 
     // The reinforcement message the wave count last took, so a later fight round or a resume does not count it again.
@@ -33,3 +40,6 @@ internal sealed class MapInProgress(TreasureTier tier, DigSpot spot)
 
     public bool CofferOpened => CofferOpenedAtMs != 0;
 }
+
+// Where the portal the last map left should stand, and the portals that were there before it, which are someone else's.
+internal readonly record struct PortalLead(Vector3 Near, ulong[] Before);

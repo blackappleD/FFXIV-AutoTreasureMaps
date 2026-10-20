@@ -1,4 +1,5 @@
 using AutoTreasureMaps.Core.Game.Ops;
+using AutoTreasureMaps.Core.Ipc;
 using AutoTreasureMaps.Core.Travel;
 using clib.TaskSystem;
 using Dalamud.Game.ClientState.Conditions;
@@ -35,7 +36,14 @@ public sealed class AutoReturnToInn : AutoCommon
         await HoldCombatMovementAndSettle("inn");
         try
         {
-            // A visitor cannot take an inn room, and a market run may have left the character on another world.
+            // A visitor cannot take an inn room, and a market run may have left the character on another world. A home on
+            // another data centre is out of reach for a same-DC visit, so the inn is skipped then.
+            if (Worlds.AwayFromHome && !LifestreamIPC.Instance.CanVisit(Worlds.NameOf(Worlds.Home)))
+            {
+                Warn($"Return to inn: {Worlds.NameOf(Worlds.Home)} cannot be reached from here; staying where the run ended.");
+                return;
+            }
+
             if (Worlds.AwayFromHome && !await ChangeWorld(Worlds.Home, "inn-home", CityGateway(inn.CityTerritoryId)))
             {
                 if (!CancelToken.IsCancellationRequested)

@@ -58,7 +58,6 @@ public sealed class Plugin : IDalamudPlugin
     private readonly GmAlertWatcher gmAlertWatcher;
     private readonly PartyInviteWatcher partyInviteWatcher;
     private readonly TankbusterWatcher tankbusterWatcher;
-    private readonly LureCapture lureCapture;
     private readonly CleanupContextMenu cleanupContextMenu;
     private readonly AppWindow appWindow;
     private readonly CommandInfo primaryCommand;
@@ -87,7 +86,6 @@ public sealed class Plugin : IDalamudPlugin
         gmAlertWatcher = new GmAlertWatcher();
         partyInviteWatcher = new PartyInviteWatcher();
         tankbusterWatcher = new TankbusterWatcher();
-        lureCapture = new LureCapture();
         cleanupContextMenu = new CleanupContextMenu();
 
         InitializeLocalization();
@@ -106,6 +104,7 @@ public sealed class Plugin : IDalamudPlugin
 
         Svc.Framework.Update += OnFrameworkUpdate;
         Svc.ClientState.Login += OnLogin;
+        Svc.ClientState.Logout += OnLogout;
         if (Svc.ClientState.IsLoggedIn)
         {
             OnLogin();
@@ -126,6 +125,7 @@ public sealed class Plugin : IDalamudPlugin
         PluginInterface.UiBuilder.OpenMainUi -= ToggleMainUi;
         Svc.Framework.Update -= OnFrameworkUpdate;
         Svc.ClientState.Login -= OnLogin;
+        Svc.ClientState.Logout -= OnLogout;
         Configuration.SaveIfPending();
 
         WindowSystem.RemoveAllWindows();
@@ -140,7 +140,6 @@ public sealed class Plugin : IDalamudPlugin
         gmAlertWatcher.Dispose();
         partyInviteWatcher.Dispose();
         tankbusterWatcher.Dispose();
-        lureCapture.Dispose();
         cleanupContextMenu.Dispose();
         Messages.Dispose();
 
@@ -261,7 +260,7 @@ public sealed class Plugin : IDalamudPlugin
             return;
         }
 
-        Controller.Stop();
+        Controller.Stop(travelBack: true);
         Svc.Chat.Print($"{AtmConstants.LogPrefix} {Loc.T(L.Run.ChatStopped)}");
     }
 
@@ -280,7 +279,6 @@ public sealed class Plugin : IDalamudPlugin
         LootCleanup.Tick();
     }
 
-    // One command per line, as the plugin installer lists it.
     private static string CommandHelp() => string.Join("\n", Loc.T(L.Plugin.CommandHelp), Loc.T(L.Gather.CommandHelp), Loc.T(L.Dungeon.CommandHelp));
 
     private void HandleGoto(string arguments)
@@ -346,6 +344,9 @@ public sealed class Plugin : IDalamudPlugin
         var osLanguage = CultureInfo.InstalledUICulture.TwoLetterISOLanguageName;
         return Languages.IsKnown(osLanguage) ? Languages.Resolve(osLanguage).Code : Languages.English.Code;
     }
+
+    // The noted loot belongs to the character that looted it, so it never carries over to the next login.
+    private static void OnLogout(int type, int code) => LootCleanup.Clear();
 
     private void OnLogin()
     {

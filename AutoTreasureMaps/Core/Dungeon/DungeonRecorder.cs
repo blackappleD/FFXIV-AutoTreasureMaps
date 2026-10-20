@@ -1,3 +1,4 @@
+using AutoTreasureMaps.Core.Localization;
 using AutoTreasureMaps.Core.Travel;
 using Dalamud.Game.Addon.Lifecycle;
 using Dalamud.Game.Addon.Lifecycle.AddonArgTypes;
@@ -106,7 +107,7 @@ internal sealed unsafe class DungeonRecorder : IDisposable
             RunLog.Info($"{LinePrefix} dump: {lines[index]}");
         }
 
-        Svc.Chat.Print($"{AtmConstants.LogPrefix} {lines.Count - 1} object(s) nearby written to the console (/atm log).");
+        Svc.Chat.Print($"{AtmConstants.LogPrefix} {Loc.T(L.Dungeon.ChatNearbyWritten, lines.Count - 1)}");
     }
 
     private void OnUpdate(IFramework framework)

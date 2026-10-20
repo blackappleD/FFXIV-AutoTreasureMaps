@@ -1,3 +1,4 @@
+using AutoTreasureMaps.Core.Game.Player;
 using AutoTreasureMaps.Core.Ipc;
 using AutoTreasureMaps.Core.Localization;
 using AutoTreasureMaps.Core.Market;
@@ -19,16 +20,32 @@ internal sealed partial class MarketBuyTask
 
     private readonly HashSet<uint> excludedWorlds = [];
 
+    // Whether this purchase may visit other worlds at all. A purchase outside a run has nothing to travel back after it,
+    // and in a party a visit would leave the party behind while the dig waits on members who are on another world.
+    private bool CanVisitWorlds(Configuration configuration, bool log = false)
+    {
+        if (!configuration.MarketCrossWorld)
+        {
+            return false;
+        }
+
+        var reason = session is null ? "a purchase outside a run stays on this world"
+            : !LifestreamIPC.Instance.IsAvailable ? "cross-world buying is on but Lifestream is not loaded; buying on this world"
+            : PartyPresence.InParty() ? "in a party, so buying on this world instead of visiting another"
+            : null;
+        if (reason is not null && log)
+        {
+            Diag($"Market: {reason}.");
+        }
+
+        return reason is null;
+    }
+
     // The world travelled to for this visit, or 0 when the run stayed where it was.
     private async Task<uint> MoveToCheapestWorld(Configuration configuration, List<TreasureTier> tiers)
     {
-        if (!configuration.MarketCrossWorld || !LifestreamIPC.Instance.IsAvailable)
+        if (!CanVisitWorlds(configuration, log: true))
         {
-            if (configuration.MarketCrossWorld)
-            {
-                Diag("Market: cross-world buying is on but Lifestream is not loaded; buying on this world.");
-            }
-
             return 0;
         }
 
@@ -72,8 +89,9 @@ internal sealed partial class MarketBuyTask
             }
 
             var cheapest = Cheapest(listings, cap, spendable, Elsewhere);
-            // A world left because its board kept asking to wait does not hold the run there.
-            var cheapestHere = Cheapest(listings, cap, spendable, worldId => worldId == here && !excludedWorlds.Contains(here));
+            // A world whose board was already read empty, or that kept asking to wait, has nothing to buy, whatever
+            // Universalis still lists for it.
+            var cheapestHere = excludedWorlds.Contains(here) ? null : Cheapest(listings, cap, spendable, worldId => worldId == here);
             if (cheapest is null && cheapestHere is null)
             {
                 var lowest = listings.Count == 0 ? "none" : $"{listings.Min(listing => listing.UnitPrice)} gil";

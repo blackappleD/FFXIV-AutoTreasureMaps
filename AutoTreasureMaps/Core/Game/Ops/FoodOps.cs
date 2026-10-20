@@ -1,4 +1,5 @@
 using AutoTreasureMaps.Core.Localization;
+using AutoTreasureMaps.Core.Treasure;
 using ECommons.DalamudServices;
 using ECommons.Throttlers;
 using FFXIVClientStructs.FFXIV.Client.Game;
@@ -12,7 +13,6 @@ internal static unsafe class FoodOps
     public const uint WellFedStatusId = 48;
     public const uint MedicatedStatusId = 49;
 
-    private const uint HighQualityItemIdOffset = 1_000_000;
     // Lets the game take the item from whichever inventory slot holds it.
     private const uint UseFromAnySlot = 65535;
     private const string UseThrottleKey = "AutoTreasureMaps.Food.Use";
@@ -97,7 +97,7 @@ internal static unsafe class FoodOps
             return false;
         }
 
-        var actionId = useHighQuality ? entry.ItemId + HighQualityItemIdOffset : entry.ItemId;
+        var actionId = useHighQuality ? entry.ItemId + BagSnapshot.HighQualityOffset : entry.ItemId;
         actions->UseAction(ActionType.Item, actionId, extraParam: UseFromAnySlot);
         return true;
     }

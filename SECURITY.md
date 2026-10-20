@@ -16,7 +16,7 @@ What counts:
 
 - Code execution or crashes triggerable by crafted game state.
 - The plugin teleporting, engaging mobs, or persisting something it shouldn't (beyond the documented treasure map automation, which is the feature).
-- Data exfiltration: this plugin makes no network calls by design; any network traffic would be a bug.
+- Data exfiltration: the plugin makes one kind of network call, and only when you turn on **Buy on the cheapest world** under Market: before a purchase it asks [Universalis](https://universalis.app) for the map's listings, sending the data centre's name and the map's item id. Any other network traffic would be a bug.
 
 What doesn't:
 

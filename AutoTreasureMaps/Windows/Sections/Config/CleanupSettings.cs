@@ -38,6 +38,13 @@ internal static class CleanupSettings
     private static readonly HashSet<int> openSources = [];
     private static LanguageInfo? rareLanguage;
     private static string[] sourceTitles = [];
+    // Built with the names, so nothing is formatted while the rows are drawn: the ImGui ids, and each source's caption
+    // with the kept count it was built for (rebuilt when that count or the language changes).
+    private static string[] sourceHeadIds = [];
+    private static string[] sourceBodyIds = [];
+    private static string[][] sourceChipIds = [];
+    private static string[] sourceCaptions = [];
+    private static int[] sourceCaptionKept = [];
     private static string[][] sourceItemNames = [];
     private static uint[][] sourceItemIcons = [];
 
@@ -72,6 +79,12 @@ internal static class CleanupSettings
         {
             return;
         }
+
+        SettingsRow.Draw(Loc.T(L.Cleanup.KeepNotable),
+            Loc.T(L.Cleanup.KeepNotableHelp),
+            SettingsControls.ToggleWidth,
+            () => SettingsControls.DrawToggle(configuration, () => configuration.AutoDiscardKeepNotable, value => configuration.AutoDiscardKeepNotable = value, "##atm_cleanup_notable"),
+            SettingsRow.ToggleHeight);
 
         SettingsRow.Draw(Loc.T(L.Cleanup.MaxQuantity),
             Loc.T(L.Cleanup.MaxQuantityHelp),
@@ -243,16 +256,22 @@ internal static class CleanupSettings
         {
             var items = sources[index].Items;
             var kept = 0;
-            for (var item = 0; item < items.Length; item++)
+            for (var itemIndex = 0; itemIndex < items.Length; itemIndex++)
             {
-                if (LootCleanup.KeepsRare(items[item]))
+                if (KeptChip(items[itemIndex]))
                 {
                     kept++;
                 }
             }
 
+            if (sourceCaptionKept[index] != kept)
+            {
+                sourceCaptionKept[index] = kept;
+                sourceCaptions[index] = Loc.T(L.Cleanup.RareKept, kept, items.Length);
+            }
+
             var open = openSources.Contains(index);
-            if (DrawSourceHeader(index, sourceTitles[index], Loc.T(L.Cleanup.RareKept, kept, items.Length), open))
+            if (DrawSourceHeader(sourceHeadIds[index], sourceTitles[index], sourceCaptions[index], open))
             {
                 open = !open;
                 if (open)
@@ -265,7 +284,7 @@ internal static class CleanupSettings
                 }
             }
 
-            using var body = Motion.PushSection($"{RareListId}_body{index}", open);
+            using var body = Motion.PushSection(sourceBodyIds[index], open);
             if (body is null)
             {
                 continue;
@@ -284,18 +303,17 @@ internal static class CleanupSettings
         }
     }
 
-    private static bool DrawSourceHeader(int index, string title, string count, bool open)
+    private static bool DrawSourceHeader(string id, string title, string count, bool open)
     {
         var scale = ImGuiHelpers.GlobalScale;
         var origin = ImGui.GetCursorScreenPos();
         var size = new Vector2(SettingsGroup.InnerRightLocalX() - ImGui.GetCursorPosX(), RareHeaderHeight * scale);
-        var id = $"{RareListId}_head{index}";
         var hit = Hit.Area(id, size);
         var hover = Motion.Hover(Motion.Key(id), hit.Hovered);
-        var dl = ImGui.GetWindowDrawList();
+        var drawList = ImGui.GetWindowDrawList();
         if (hover > 0f)
         {
-            Paint.Fill(dl, origin, origin + size, Styling.WithAlpha(Styling.Surface2, 0.7f * hover), 6f * scale);
+            Paint.Fill(drawList, origin, origin + size, Styling.WithAlpha(Styling.Surface2, 0.7f * hover), 6f * scale);
         }
 
         var midY = origin.Y + size.Y * 0.5f;
@@ -342,7 +360,7 @@ internal static class CleanupSettings
                     x = left + width;
                 }
 
-                if (FilterChip.Draw($"{RareListId}_{sourceIndex}_{index}", names[index], null, Styling.AccentMint, LootCleanup.KeepsRare(items[index]), height, iconId: icons[index]))
+                if (FilterChip.Draw(sourceChipIds[sourceIndex][index], names[index], null, Styling.AccentMint, KeptChip(items[index]), height, iconId: icons[index]))
                 {
                     clicked = items[index];
                 }
@@ -372,22 +390,36 @@ internal static class CleanupSettings
         sourceTitles = new string[sources.Length];
         sourceItemNames = new string[sources.Length][];
         sourceItemIcons = new uint[sources.Length][];
+        sourceHeadIds = new string[sources.Length];
+        sourceBodyIds = new string[sources.Length];
+        sourceChipIds = new string[sources.Length][];
+        sourceCaptions = new string[sources.Length];
+        sourceCaptionKept = new int[sources.Length];
         for (var index = 0; index < sources.Length; index++)
         {
             var source = sources[index];
             sourceTitles[index] = source.IsDungeon ? DutyName(source.ContentFinderConditionId) : NotableLoot.Name(source.MapItemId);
+            sourceHeadIds[index] = $"{RareListId}_head{index}";
+            sourceBodyIds[index] = $"{RareListId}_body{index}";
+            sourceCaptionKept[index] = -1;
             var names = new string[source.Items.Length];
             var icons = new uint[source.Items.Length];
-            for (var item = 0; item < names.Length; item++)
+            var chipIds = new string[source.Items.Length];
+            for (var itemIndex = 0; itemIndex < names.Length; itemIndex++)
             {
-                names[item] = NotableLoot.Name(source.Items[item]);
-                icons[item] = ItemIcon.IdOf(source.Items[item]);
+                names[itemIndex] = NotableLoot.Name(source.Items[itemIndex]);
+                icons[itemIndex] = ItemIcon.IdOf(source.Items[itemIndex]);
+                chipIds[itemIndex] = $"{RareListId}_{index}_{itemIndex}";
             }
 
             sourceItemNames[index] = names;
             sourceItemIcons[index] = icons;
+            sourceChipIds[index] = chipIds;
         }
     }
+
+    // A chip is lit while the cleanup keeps the item, which the whitelist does as well as the rare loot choice.
+    private static bool KeptChip(uint itemId) => LootCleanup.KeepsRare(itemId) || LootCleanup.OnWhitelist(itemId);
 
     private static string DutyName(uint contentFinderConditionId)
     {

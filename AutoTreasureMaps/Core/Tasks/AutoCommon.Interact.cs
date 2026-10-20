@@ -31,7 +31,9 @@ public abstract partial class AutoCommon
         => ApproachObject(() => NpcInteraction.FindNearest(baseId), $"object {baseId}", scope);
 
     // find is asked afresh each time, so an object that respawns or changes is never held past its frame.
-    private protected async Task<IGameObject?> ApproachObject(Func<IGameObject?> find, string name, string scope)
+    // raised is for an object set high on a wall, such as a treasure vault gate, which the game lets be used from the
+    // floor below it.
+    private protected async Task<IGameObject?> ApproachObject(Func<IGameObject?> find, string name, string scope, bool raised = false)
     {
         if (!await WaitUntilTimed(() => find() is not null, InteractObjectWaitMs, $"{scope}-object"))
         {
@@ -44,7 +46,7 @@ public abstract partial class AutoCommon
             return null;
         }
 
-        if (WithinInteractRange(target))
+        if (WithinInteractRange(target, raised))
         {
             return target;
         }
@@ -56,14 +58,14 @@ public abstract partial class AutoCommon
         var approach = new MoveOp(move => move.MoveInZone(
             standPoint,
             MovementConfig.InteractRange.WithTolerance(InteractApproachToleranceMeters),
-            () => WithinInteractRange(target)));
+            () => WithinInteractRange(target, raised)));
         await RunCancellable(approach, InteractApproachWatchdogMs, approachScope, StuckDetector.MoveStallAbort(approachScope));
         if (approach.Fault is { } fault)
         {
             Diag($"{approachScope}: faulted: {fault.Message}");
         }
 
-        if (!CancelToken.IsCancellationRequested && WithinInteractRange(target))
+        if (!CancelToken.IsCancellationRequested && WithinInteractRange(target, raised))
         {
             return target;
         }
@@ -72,12 +74,13 @@ public abstract partial class AutoCommon
         return null;
     }
 
-    // Measured across the floor: an object set into a wall or a gate stands a few metres above the floor in front of
-    // it, and the game lets it be used from there.
-    private static bool WithinInteractRange(IGameObject target)
+    // A raised object is measured across the floor, since it stands a few metres above the floor in front of it and the
+    // game lets it be used from there; anything else is measured straight, as before.
+    private static bool WithinInteractRange(IGameObject target, bool raised)
         => Svc.Objects.LocalPlayer is { } player
-            && GroundDistance.Between(player.Position, target.Position) <= InteractRangeMeters
-            && MathF.Abs(player.Position.Y - target.Position.Y) <= InteractHeightMeters
+            && (raised
+                ? GroundDistance.Between(player.Position, target.Position) <= InteractRangeMeters && MathF.Abs(player.Position.Y - target.Position.Y) <= InteractHeightMeters
+                : Vector3.DistanceSquared(player.Position, target.Position) <= InteractRangeMeters * InteractRangeMeters)
             && target.IsInInteractRange();
 
     private protected async Task<bool> ReadyToInteract(string scope)
@@ -98,11 +101,11 @@ public abstract partial class AutoCommon
     }
 
     // True once doneWhen holds after the interaction; a message the object shows first is moved past.
-    private protected async Task<bool> InteractWithObject(IGameObject target, Func<bool> doneWhen, string scope)
+    private protected async Task<bool> InteractWithObject(IGameObject target, Func<bool> doneWhen, string scope, bool raised = false)
     {
         NpcInteraction.Target(target);
         await WaitUntilTimed(() => NpcInteraction.IsTargeted(target), InteractTargetSettleMs, $"{scope}-target", checkFrames: 1);
-        if (CancelToken.IsCancellationRequested || !WithinInteractRange(target))
+        if (CancelToken.IsCancellationRequested || !WithinInteractRange(target, raised))
         {
             Diag($"{scope}: not interacting, {DistanceTo(target.Position):F1}m away; approach will be retried");
             return false;

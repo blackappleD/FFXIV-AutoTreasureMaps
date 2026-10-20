@@ -31,6 +31,21 @@ internal static class GameGlyphs
         return text;
     }
 
+    // Every build bakes these blocks whatever the language, so a name first spelling them needs no rebuild.
+    public static void SeedBaked(bool[] baked)
+    {
+        lock (Gate)
+        {
+            for (var codepoint = GlyphRanges.FirstNonAsciiCodepoint; codepoint < GlyphRanges.CodepointCount; codepoint++)
+            {
+                if (baked[codepoint])
+                {
+                    Present[codepoint] = true;
+                }
+            }
+        }
+    }
+
     public static void MarkInto(bool[] target)
     {
         lock (Gate)

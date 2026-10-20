@@ -33,9 +33,10 @@ internal sealed class LifestreamIPC
 
     public bool IsBusy() => IpcGate.Invoke(isBusy.HasFunction, isBusy.InvokeFunc, false, IsBusyFailed);
 
-    // A Lifestream without this check is not asked; the visit itself then says whether the world could be reached.
+    // A Lifestream without this check is not asked; the visit itself then says whether the world could be reached. A check
+    // that throws counts as a refusal.
     public bool CanVisit(string worldName)
-        => !canVisitSameDc.HasFunction || IpcGate.Invoke(true, () => canVisitSameDc.InvokeFunc(worldName), true, CanVisitFailed);
+        => !canVisitSameDc.HasFunction || IpcGate.Invoke(true, () => canVisitSameDc.InvokeFunc(worldName), false, CanVisitFailed);
 
     // Lifestream's gateways are the three city aetherytes, numbered by their aetheryte ids: Gridania 2, Limsa 8, Ul'dah 9.
     public static bool IsGateway(uint aetheryteId) => aetheryteId is 2 or 8 or 9;

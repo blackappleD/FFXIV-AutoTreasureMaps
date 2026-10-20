@@ -8,10 +8,13 @@ internal static partial class L
         public static readonly LocString CatSub = new("cleanup.catSub", "Discard the loot you do not keep, so the bags never fill up during a run.");
         public static readonly LocString Group = new("cleanup.group", "Auto-discard");
         public static readonly LocString Enable = new("cleanup.enable", "Auto-discard loot");
-        public static readonly LocString EnableHelp = new("cleanup.enableHelp", "Every item a coffer or a treasure dungeon gives is noted. Between maps, before walking into a portal, and once a run finishes, the noted items that are not on the whitelist are discarded from your bags. Maps are never discarded, and rare loot is kept unless you pick it below.");
-        public static readonly LocString Safety = new("cleanup.safety", "Only treasure-hunt loot is ever discarded. Items you got any other way are never touched, and neither is any item you already had before the coffer opened, even if a coffer gives more of it.");
+        public static readonly LocString EnableHelp = new("cleanup.enableHelp", "Every item a coffer or a treasure dungeon gives is noted. Between maps, before walking into a portal, and once a run finishes, the noted items that are not kept are discarded from your bags. Maps and anything on the whitelist are never discarded, rare loot is kept unless you pick it below, and notable items are kept unless you turn that off. The noted list belongs to the run and the character: it is forgotten when the run stops or ends and when you log out.");
+        public static readonly LocString Safety = new("cleanup.safety", "Only an item the bags held none of before the coffer opened can be discarded, and never more copies than the coffer or dungeon gave. A map or dungeon you paused the run in after its coffer opened is left alone, since what you did meanwhile would look like its loot.");
         public static readonly LocString Off = new("cleanup.off", "Auto-discard is off. Nothing is noted or discarded.");
         public static readonly LocString MaxQuantity = new("cleanup.maxQuantity", "Keep large stacks");
+        public static readonly LocString HighQualityName = new("cleanup.highQualityName", "{0} (HQ)");
+        public static readonly LocString KeepNotable = new("cleanup.keepNotable", "Keep notable items");
+        public static readonly LocString KeepNotableHelp = new("cleanup.keepNotableHelp", "Never discard an item of green rarity or above, a unique item, equipment, a furnishing, or an item with a use other than a meal or a medicine (minions, mounts, orchestrion rolls, cards, hairstyles and the like). This keeps the rare loot of the maps the list below does not cover. On by default.");
         public static readonly LocString MaxQuantityHelp = new("cleanup.maxQuantityHelp", "An item looted in a larger quantity than this is kept instead of discarded, such as a big stack of whetstones from a treasure dungeon. 0 sets no limit.");
         public static readonly LocString MaxQuantityFormat = new("cleanup.maxQuantityFormat", "over %d");
         public static readonly LocString Whitelist = new("cleanup.whitelist", "Whitelist");
@@ -26,7 +29,7 @@ internal static partial class L
         public static readonly LocString NoKept = new("cleanup.noKept", "The whitelist is empty, so all noted loot is discarded.");
         public static readonly LocString Rare = new("cleanup.rare", "Rare loot");
         public static readonly LocString RareHelp = new("cleanup.rareHelp", "Click an item to switch it: lit up is kept, dimmed is discarded. An item listed under more than one map or dungeon switches under all of them.");
-        public static readonly LocString RareWarning = new("cleanup.rareWarning", "Rare loot is kept by default. Some rare items do not stack, so each one takes a bag slot of its own, and keeping them all can fill up your bags.");
+        public static readonly LocString RareWarning = new("cleanup.rareWarning", "Rare loot is kept by default. The lists below cover only the maps and dungeons shown; on any other map, Keep notable items is what keeps its minions, orchestrion rolls and furnishings, so leave it on unless you whitelist them. Some rare items do not stack, so each one takes a bag slot of its own, and keeping them all can fill up your bags.");
         public static readonly LocString RareKept = new("cleanup.rareKept", "{0}/{1} kept");
         public static readonly LocString MenuAdd = new("cleanup.menuAdd", "Add to cleanup whitelist");
         public static readonly LocString MenuRemove = new("cleanup.menuRemove", "Remove from cleanup whitelist");

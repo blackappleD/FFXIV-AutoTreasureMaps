@@ -32,6 +32,7 @@ internal sealed class MapTallyCards
             return;
         }
 
+        LootPrices.Want();
         if (revision != builtRevision || LootPrices.Revision != builtPriceRevision || !ReferenceEquals(builtLanguage, Loc.Current))
         {
             Build(tallies);

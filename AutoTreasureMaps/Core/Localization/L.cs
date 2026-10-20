@@ -152,6 +152,7 @@ internal static partial class L
         public static readonly LocString EndFaulted = new("run.end.faulted", "Error");
         public static readonly LocString EndSingleMap = new("run.end.singleMap", "One map");
         public static readonly LocString EndDungeon = new("run.end.dungeon", "Treasure dungeon");
+        public static readonly LocString EndDungeonHandedBack = new("run.end.dungeonHandedBack", "Dungeon left to you");
     }
 
     internal static class History
@@ -374,6 +375,8 @@ internal static partial class L
         public static readonly LocString GeneralBehavior = new("settings.general.behavior", "Behavior");
         public static readonly LocString AutoPause = new("settings.general.autoPause", "Auto-pause in content");
         public static readonly LocString AutoPauseHelp = new("settings.general.autoPauseHelp", "Pause the run while you are inside a duty, trial, raid, or any other instanced content, then resume it once you are back outside. Your run and session stats are kept.");
+        public static readonly LocString Tankbuster = new("settings.general.tankbuster", "Mitigate tankbusters");
+        public static readonly LocString TankbusterHelp = new("settings.general.tankbusterHelp", "While a run is on and you play a tank, a heavy enemy cast aimed at you gets your job's short mitigation (Bloodwhetting, Holy Sheltron, The Blackest Night or Heart of Corundum) in the last 6 seconds of the cast, unless one of your mitigations is already up. The bigger cooldowns stay with the combat plugin. Off by default.");
     }
 
     internal static class Plugin

@@ -79,7 +79,7 @@ internal static class MiniPlayer
         ImGui.SetCursorScreenPos(new Vector2(end.X - padX - buttonSize, midY - buttonSize * 0.5f));
         if (IconButton.Draw(FontAwesomeIcon.Stop, "##atm_mini_stop", buttonSize, Styling.AccentRose, Loc.T(L.Common.StopRun)))
         {
-            controller.Stop();
+            controller.Stop(travelBack: true);
         }
 
         ImGui.SetCursorScreenPos(origin);

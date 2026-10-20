@@ -142,7 +142,16 @@ internal sealed class MapLog
         }
         catch (Exception exception)
         {
-            RunLog.Warning(exception, "MapLog load failed; starting empty");
+            // The unreadable file is kept as a .bak, so the next save does not overwrite the only copy of the log.
+            RunLog.Warning(exception, "MapLog load failed; starting empty and keeping the file as map-log.json.bak");
+            try
+            {
+                File.Copy(FilePath, FilePath + ".bak", overwrite: true);
+            }
+            catch (Exception copyException)
+            {
+                RunLog.Warning(copyException, "MapLog: could not keep the unreadable file");
+            }
         }
     }
 
@@ -156,7 +165,10 @@ internal sealed class MapLog
                 directory.Create();
             }
 
-            File.WriteAllText(FilePath, JsonConvert.SerializeObject(Entries, Formatting.Indented));
+            // Written beside the log and moved over it, so a crash mid-write cannot leave half a file behind.
+            var temporary = FilePath + ".tmp";
+            File.WriteAllText(temporary, JsonConvert.SerializeObject(Entries, Formatting.Indented));
+            File.Move(temporary, FilePath, overwrite: true);
         }
         catch (Exception exception)
         {

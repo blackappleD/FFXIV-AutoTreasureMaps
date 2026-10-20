@@ -133,9 +133,11 @@ internal sealed partial class MarketBuyTask(TreasureSession? session, byte onlyR
         }
     }
 
-    // A world Universalis named whose board turns out to hold nothing under the cap is left for the next cheapest.
+    // A world Universalis named whose board turns out to hold nothing under the cap is left for the next cheapest. Any
+    // other empty answer (the budget or the gil to keep) would be the same on every world, so it ends the visit.
     private async Task<MapSupplyAnswer> VisitCheapestWorld(Configuration configuration, List<TreasureTier> tiers)
     {
+        MapSupplyAnswer? previous = null;
         for (var hop = 0; ; hop++)
         {
             var travelledTo = await MoveToCheapestWorld(configuration, tiers);
@@ -144,7 +146,13 @@ internal sealed partial class MarketBuyTask(TreasureSession? session, byte onlyR
                 return MapSupplyAnswer.Cancelled;
             }
 
-            leaveOnThrottle = hop < MaxWorldHops && configuration.MarketCrossWorld && LifestreamIPC.Instance.IsAvailable;
+            // No other world qualifies after an empty board, so the board just read is not read again.
+            if (previous is { } empty && travelledTo == 0)
+            {
+                return empty;
+            }
+
+            leaveOnThrottle = hop < MaxWorldHops && CanVisitWorlds(configuration);
             var answer = await Visit(configuration, tiers);
             leaveOnThrottle = false;
             if (throttledOut)
@@ -158,10 +166,12 @@ internal sealed partial class MarketBuyTask(TreasureSession? session, byte onlyR
                 continue;
             }
 
-            if (answer.Outcome != MapSupplyOutcome.Empty || travelledTo == 0 || hop >= MaxWorldHops)
+            if (answer.Outcome != MapSupplyOutcome.Empty || answer.Reason.Key != L.Market.EmptyNothingUnderCap.Key || travelledTo == 0 || hop >= MaxWorldHops)
             {
                 return answer;
             }
+
+            previous = answer;
 
             Diag($"Market: {Worlds.NameOf(travelledTo)} had nothing to buy after all; trying the next cheapest world.");
             excludedWorlds.Add(travelledTo);

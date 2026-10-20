@@ -1,5 +1,6 @@
 using AutoTreasureMaps.Core.Cleanup;
 using AutoTreasureMaps.Core.Stats;
+using AutoTreasureMaps.Core.Travel;
 
 namespace AutoTreasureMaps.Core.Tasks;
 
@@ -38,25 +39,53 @@ internal sealed partial class TreasureController
             return;
         }
 
-        StartFinalCleanup(owningSession);
+        // The last maps' loot never reaches an upkeep, so a run that met its stop condition discards it before the
+        // after-run action, which may log out or close the game. The list goes with the run either way.
+        if (NeedsFinalCleanup(owningSession))
+        {
+            Diag($"Run ended by its stop condition; discarding {LootCleanup.Pending.Count} kinds of noted loot before anything else.");
+            progress.SetPhase(TreasurePhase.Finishing);
+            RunTask(new AutoFinalCleanup(), () =>
+            {
+                LootCleanup.Clear();
+                FinishEnding(owningSession);
+            });
+            return;
+        }
 
-        if (!TryRunAfterAction(owningSession))
+        LootCleanup.Clear();
+        FinishEnding(owningSession);
+    }
+
+    private void FinishEnding(TreasureSession owningSession)
+    {
+        if (!TryRunAfterAction(owningSession) && !TryTravelBack(owningSession, ClearRun))
         {
             ClearRun();
         }
     }
 
-    // The loot of the last maps never reaches an upkeep, so a run that met its stop condition discards it as it ends.
-    private void StartFinalCleanup(TreasureSession ending)
+    // Logging out or closing the game needs no trip, and the inn action travels home on its own; a run that ended any
+    // other way on a world it visited goes back to the one it started on.
+    private bool TryTravelBack(TreasureSession ending, Action onDone)
     {
-        if (!ending.CompletedByStopCondition || ending.EndedWithFault || !Plugin.Instance.Configuration.AutoDiscard || !LootCleanup.HasPending)
+        if (ending.EndedWithFault || ending.StartWorldId == 0 || Worlds.Current == 0 || Worlds.Current == ending.StartWorldId)
         {
-            return;
+            return false;
         }
 
-        Diag($"Run ended by its stop condition; discarding {LootCleanup.Pending.Count} kinds of noted loot.");
-        LootCleanup.Start();
+        Diag($"Run ended on {Worlds.NameOf(Worlds.Current)}; travelling back to {Worlds.NameOf(ending.StartWorldId)}, where it started.");
+        progress.SetPhase(TreasurePhase.Finishing);
+        RunTask(new AutoReturnToWorld(ending.StartWorldId), () =>
+        {
+            Diag("The trip back to the starting world finished.");
+            onDone();
+        });
+        return true;
     }
+
+    private static bool NeedsFinalCleanup(TreasureSession ending)
+        => ending.CompletedByStopCondition && !ending.EndedWithFault && Plugin.Instance.Configuration.AutoDiscard && LootCleanup.HasPending;
 
     // The finished run stays on screen while its after-run action runs, and is cleared once that ends.
     private bool TryRunAfterAction(TreasureSession ending)

@@ -9,15 +9,16 @@ namespace AutoTreasureMaps.Core.Supply;
 // back and the bag step deciphers it.
 internal sealed class MarketSupplyStep : IMapSupplyStep
 {
-    // A world visit, a teleport and the walk to the board, three spaced listing requests per tier and three purchase
-    // tries, each with its answer wait, then a decipher and a second purchase for the map bought ahead.
-    public const int TaskTimeoutMs = 600_000;
+    // A teleport and the walk to the board, three spaced listing requests per tier and three purchase tries, each with
+    // its answer wait. A world visit, or a decipher and a second purchase for the map bought ahead, need the longer cap.
+    public const int TaskTimeoutMs = 300_000;
+    public const int ExtendedTaskTimeoutMs = 600_000;
 
     public string Name => "market";
 
     public TreasurePhase Phase => TreasurePhase.Buying;
 
-    public int TimeoutMs => TaskTimeoutMs;
+    public int TimeoutMs => Plugin.Instance.Configuration is { MarketCrossWorld: false, MarketBuyAhead: false } ? TaskTimeoutMs : ExtendedTaskTimeoutMs;
 
     public bool SuppliesHeldMap => false;
 

@@ -80,6 +80,12 @@ internal static class MarketSettings
             () => SettingsControls.DrawToggle(configuration, () => configuration.MarketBuyAhead, value => configuration.MarketBuyAhead = value, "##atm_market_ahead"),
             SettingsRow.ToggleHeight);
 
+        SettingsRow.Draw(Loc.T(L.Market.SpareFirst),
+            Loc.T(L.Market.SpareFirstHelp),
+            SettingsControls.ToggleWidth,
+            () => SettingsControls.DrawToggle(configuration, () => configuration.MarketSpareFirst, value => configuration.MarketSpareFirst = value, "##atm_market_spare"),
+            SettingsRow.ToggleHeight);
+
         SettingsRow.Draw(Loc.T(L.Market.CrossWorld),
             Loc.T(L.Market.CrossWorldHelp),
             SettingsControls.ToggleWidth,
@@ -142,7 +148,7 @@ internal static class MarketSettings
             }
 
             rowTier = tier;
-            SettingsRow.Draw(tier.Name, help, Stepper.DefaultWidth, drawCapControl, itemId: tier.TimewornItemId, patch: tier.Patch);
+            SettingsRow.Draw(tier.Name, help, Stepper.DefaultWidth, drawCapControl, itemId: tier.TimewornItemId, badge: PatchBadge.Label(tier.Patch));
         }
 
         rowConfiguration = null;

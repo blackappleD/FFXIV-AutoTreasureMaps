@@ -1,3 +1,5 @@
+using AutoTreasureMaps.Core.Game.Watchers;
+
 namespace AutoTreasureMaps.Core.Dungeon;
 
 // The dungeon under way. It lives on the session, so a pause or a fault restart builds a fresh run task that picks
@@ -11,7 +13,14 @@ internal sealed class DungeonInProgress(DungeonProfile profile)
 
     public long StartedAtMs { get; } = Environment.TickCount64;
 
+    // The zone entry this dungeon was cleared in; a later instance of the same dungeon starts afresh.
+    public int ZoneEntry { get; } = DutyWatcher.ZoneEntry;
+
     public Dictionary<uint, int>? BagsBefore { get; set; }
+
+    // Set when the run was paused inside: what the player did meanwhile would read as loot, so the cleanup leaves this
+    // dungeon's loot alone.
+    public bool CleanupBlocked { get; set; }
 
     // A gate dungeon counts chambers from 1, read from the game's own gate message; a slot dungeon counts the draws
     // made so far, from 0.
@@ -44,6 +53,9 @@ internal sealed class DungeonInProgress(DungeonProfile profile)
 
     // Rolls the game did not take are not sent again before this, so a refused roll does not hold the run.
     public long LootNotBeforeMs { get; set; }
+
+    // The way on to the current round, from the moment the advance opened it until the character has been carried there.
+    public AdvanceOutcome? PendingTransit { get; set; }
 
     public int CofferInteractions(ulong cofferId) => cofferInteractions.GetValueOrDefault(cofferId);
 

@@ -9,6 +9,16 @@ Auto Treasure Maps ships the third-party data and assets listed here. Each entry
 - **What is used:** the primary font for Latin letters, digits and punctuation in the plugin's windows.
 - **Where:** `AutoTreasureMaps/Fonts/NotoSans-Medium-Latin.ttf`.
 
+## FF14 huijiwiki
+
+- **Source:** [ff14.huijiwiki.com](https://ff14.huijiwiki.com), the Chinese FFXIV community wiki: the item pages of 陈旧的狞豹革地图 (Timeworn Br'aaxskin Map) and 陈旧的卡冈图亚革地图 (Timeworn Gargantuaskin Map), their 稀有物品 (rare items) section, and the duty pages of 加加财富天坑 (Cenote Ja Ja Gural) and 巡梦金库 (Vault Oneiron), their 掉落物品 (drops) section, and the 寻宝 (treasure hunt) page's table of maps.
+- **Accessed:** 2026-10-19.
+- **Copyright:** the huijiwiki contributors.
+- **License:** Creative Commons Attribution-NonCommercial-ShareAlike (CC BY-NC-SA), as the site's page footer states.
+- **What is used:** which items each of those maps and dungeons can drop as rare loot, and the patch each timeworn map arrived in. Only the item ids and patch numbers were taken; each item id was checked against the game's Item sheet.
+- **Where:** `AutoTreasureMaps/Core/Stats/RareLoot.cs` and `AutoTreasureMaps/Core/Treasure/MapPatches.cs`.
+- **Changes:** the lists are written out as item ids and version numbers in C#; no text from the wiki is included.
+
 ## GatherBuddy Reborn
 
 - **Source:** [FFXIV-CombatReborn/GatherBuddyReborn](https://github.com/FFXIV-CombatReborn/GatherBuddyReborn), a fork of [Ottermandias/GatherBuddy](https://github.com/Ottermandias/GatherBuddy).

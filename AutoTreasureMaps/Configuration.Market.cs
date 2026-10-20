@@ -18,11 +18,14 @@ public sealed partial class Configuration
     public MarketBoardChoice MarketBoard { get; set; } = MarketBoardChoice.Automatic;
 
     // Buys on the world of the data centre Universalis lists cheapest, through Lifestream, and digs there.
-    public bool MarketCrossWorld { get; set; } = true;
+    public bool MarketCrossWorld { get; set; } = false;
 
     // Gil a trip to another world must save on the map, against the cheapest listing on the current one.
     public int MarketCrossWorldMinSavings { get; set; } = 5_000;
 
     // After a purchase, decipher the map at the board and buy a second one into the bags, so the next map needs no trip.
-    public bool MarketBuyAhead { get; set; } = true;
+    public bool MarketBuyAhead { get; set; } = false;
+
+    // A run that starts with a deciphered map but no spare buys the spare before its first dig.
+    public bool MarketSpareFirst { get; set; } = false;
 }

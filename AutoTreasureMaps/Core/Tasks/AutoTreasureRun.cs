@@ -69,10 +69,11 @@ internal sealed class AutoTreasureRun(TreasureSession session, TreasureProgress 
                 return;
             }
 
-            // A resume after a pause or a fault inside a dungeon picks the dungeon up before anything else.
-            if (DungeonRegistry.IsDungeon(Svc.ClientState.TerritoryType))
+            // A resume after a pause or a fault inside a dungeon the run entered picks that dungeon up before anything else.
+            // A dungeon the player entered by hand is theirs (/atm dungeon clears it), so the run waits for them outside.
+            if (await PickUpDungeon(session, progress) is { } dungeonStep)
             {
-                if (await ClearDungeonHere(session, progress) == PortalStep.Stop)
+                if (dungeonStep == PortalStep.Stop)
                 {
                     return;
                 }
@@ -162,7 +163,7 @@ internal sealed class AutoTreasureRun(TreasureSession session, TreasureProgress 
 
         session.NoteSpareChecked();
         var configuration = plugin.Configuration;
-        if (!configuration.MarketBuyAhead)
+        if (!configuration.MarketSpareFirst)
         {
             return LoopStep.Continue;
         }
@@ -276,6 +277,13 @@ internal sealed class AutoTreasureRun(TreasureSession session, TreasureProgress 
             return LoopStep.Stop;
         }
 
+        // The wait can take minutes, so a limit that ran out meanwhile ends the run before anything is deciphered or bought.
+        if (RunLimits.Reached(session, plugin.Configuration) is { } limit)
+        {
+            Finish(limit);
+            return LoopStep.Stop;
+        }
+
         var steps = MapSupplyChain.Steps;
         LocString emptyReason = default;
         var hasReason = false;
@@ -356,7 +364,7 @@ internal sealed class AutoTreasureRun(TreasureSession session, TreasureProgress 
     // bag as the end of the run.
     private async Task WaitOutHuntDuty()
     {
-        if (!DutyWatcher.InContent())
+        if (!DutyWatcher.InContent() || !TreasureHuntDirector.IsActive())
         {
             return;
         }

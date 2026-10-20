@@ -29,7 +29,7 @@ internal static class MapPatches
         // Gliderskin, zonureskin
         [26744] = new(5, 0), [26745] = new(5, 0),
         // Special maps 1 and 2
-        [24794] = new(5, 2), [33328] = new(5, 5),
+        [24794] = new(4, 5), [33328] = new(5, 5),
         // Saigaskin, kumbhiraskin
         [36611] = new(6, 0), [36612] = new(6, 0),
         // Ophiotauroskin, special maps 3 and 4

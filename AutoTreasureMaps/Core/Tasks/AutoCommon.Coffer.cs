@@ -13,6 +13,8 @@ public abstract partial class AutoCommon
     private const int CofferRetryDelayMs = 1_500;
     private const int UnlockAttempts = 4;
     private const int UnlockAnswerTimeoutMs = 5_000;
+    // A coffer also fades when the hunt runs out, and the game's word for that can trail the fade by a moment.
+    private const int FadeExpiryGraceMs = 2_000;
     // A coffer still sealed after this many fights back has guards the run cannot find.
     private const int MaxFightRounds = 3;
     // The treasure hunt's own limit is about five minutes; a fight cleanup inside it gets the rest of that.
@@ -279,8 +281,13 @@ public abstract partial class AutoCommon
             chestsBeforeUnlockCount = LootRolls.PendingChests(chestsBeforeUnlock);
             var since = TreasureMessageWatcher.Now;
             var bagsAtInteract = BagSnapshot.Fingerprint();
-            // The coffer may open without a word: it fades, its loot waits on a roll, or the gil and items land in the bags.
-            bool OpenedQuietly() => TreasureCoffers.Gone(map.CofferId) || LootRolls.Pending(chest => chest == map.CofferEntityId) > 0 || BagSnapshot.Fingerprint() != bagsAtInteract;
+            // A bag change only speaks for this coffer when no other chest's roll could land in the meantime.
+            var bagsSpeakForCoffer = chestsBeforeUnlockCount == 0;
+            var cofferEntityId = map.CofferEntityId;
+            Func<uint, bool> fromCoffer = chest => chest == cofferEntityId;
+            bool OpenedForSure() => LootRolls.Pending(fromCoffer) > 0 || (bagsSpeakForCoffer && BagSnapshot.Fingerprint() != bagsAtInteract);
+            // The coffer may open without a word: its loot waits on a roll, the gil and items land in the bags, or it fades.
+            bool OpenedQuietly() => OpenedForSure() || TreasureCoffers.Gone(map.CofferId);
             await InteractWithObject(target, () => Messages.TryGetLatest(UnlockReplies, since, out _) || NpcInteraction.SelectYesnoOpen() || OpenedQuietly(), scope);
             AnswerUnlockPrompt(scope);
             await WaitUntilTimed(() => Messages.TryGetLatest(UnlockReplies, since, out _) || OpenedQuietly(), UnlockAnswerTimeoutMs, "coffer lock answer", MessagePollFrames);
@@ -298,9 +305,23 @@ public abstract partial class AutoCommon
                 }
             }
 
-            if (OpenedQuietly())
+            if (OpenedForSure())
             {
                 Diag($"{scope}: the coffer opened without an unlock message ({TreasureCoffers.Describe(map.CofferId)}).");
+                return UnlockStep.Unlocked;
+            }
+
+            if (TreasureCoffers.Gone(map.CofferId))
+            {
+                var openedAt = map.CofferOpenedAtMs;
+                await WaitUntilTimed(() => Messages.ArrivedSince(TreasureLogMessages.HuntTimeExpired, openedAt), FadeExpiryGraceMs, "hunt expiry after the fade", MessagePollFrames);
+                if (Messages.ArrivedSince(TreasureLogMessages.HuntTimeExpired, openedAt))
+                {
+                    Diag($"{scope}: the coffer faded because the hunt ran out.");
+                    return UnlockStep.TimedOut;
+                }
+
+                Diag($"{scope}: the coffer faded after the interaction with no word that the hunt ran out; taking it as opened.");
                 return UnlockStep.Unlocked;
             }
 

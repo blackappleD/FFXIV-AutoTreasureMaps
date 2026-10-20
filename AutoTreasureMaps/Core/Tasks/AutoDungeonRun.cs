@@ -1,4 +1,5 @@
 using AutoTreasureMaps.Core.Dungeon;
+using AutoTreasureMaps.Core.Game.Player;
 using AutoTreasureMaps.Core.Localization;
 using ECommons.DalamudServices;
 using System.Threading.Tasks;
@@ -19,7 +20,7 @@ internal sealed class AutoDungeonRun(TreasureSession session, TreasureProgress p
             return false;
         }
 
-        if (Svc.Party.Length > 0)
+        if (PartyPresence.InParty())
         {
             RunLog.Info("Dungeon run refused: the character is in a party.");
             Svc.Chat.PrintError($"{AtmConstants.LogPrefix} {Loc.T(L.Dungeon.ChatInParty)}");
@@ -37,9 +38,13 @@ internal sealed class AutoDungeonRun(TreasureSession session, TreasureProgress p
             {
                 Diag("Dungeon run: no longer in a known treasure dungeon; nothing to resume.");
                 session.ActiveDungeon = null;
-                session.Finish(RunEnd.Dungeon);
+                session.ClearOwnDungeon();
+                session.Finish(RunEnd.DungeonHandedBack);
                 return;
             }
+
+            // The player asked for this dungeon to be cleared, so it is the run's own work from here.
+            session.MarkOwnDungeon();
 
             var result = await RunDungeon(session, progress, handler);
             if (DungeonFault is { } fault)
@@ -48,9 +53,12 @@ internal sealed class AutoDungeonRun(TreasureSession session, TreasureProgress p
                 return;
             }
 
+            // Only a dungeon the run saw through ends as done; one handed back leaves the player inside, where an after-run
+            // logout or trip to the inn must not follow.
             if (DungeonOutcomes.Final(result.Outcome))
             {
-                session.Finish(RunEnd.Dungeon);
+                session.ClearOwnDungeon();
+                session.Finish(result.Outcome is DungeonOutcome.Cleared or DungeonOutcome.Expelled or DungeonOutcome.Left ? RunEnd.Dungeon : RunEnd.DungeonHandedBack);
             }
         }
         catch (Exception exception)

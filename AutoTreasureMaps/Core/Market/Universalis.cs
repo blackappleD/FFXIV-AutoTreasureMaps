@@ -18,6 +18,9 @@ internal static class Universalis
 
     private static readonly HttpClient client = CreateClient();
 
+    // One client for every Universalis request the plugin makes.
+    internal static HttpClient Client => client;
+
     public static Task<List<WorldListing>> Listings(string dataCenter, uint itemId, CancellationToken cancel)
         => Task.Run(() => Fetch(dataCenter, itemId, cancel), cancel);
 

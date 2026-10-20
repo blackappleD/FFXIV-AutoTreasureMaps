@@ -11,6 +11,9 @@ public sealed partial class Configuration
     // Null sends NPC repairs to the Grand Company mender.
     public RepairNpc? PreferredRepairNpc { get; set; }
 
+    // Off by default: the run uses a cooldown on its own only when asked to.
+    public bool TankbusterMitigation { get; set; } = false;
+
     public bool AutoConsume { get; set; } = false;
     // 0 re-eats only once the buff has fully worn off.
     public int AutoConsumeMinMinutes { get; set; } = 3;

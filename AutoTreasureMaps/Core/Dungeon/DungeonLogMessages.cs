@@ -13,7 +13,8 @@ internal static class DungeonLogMessages
     public const uint LureStopped = 6970;
     public const uint LureAllDisarmed = 6971;
     public const uint LureFailed = 6972;
-    public const uint LureSet = 6973;
+    // The lure answers that the character is already tempting another.
+    public const uint LureTemptedAnother = 6973;
 
     // The first parameter names the gate: 1 left, 2 right, 3 centre.
     public const uint GateGlowsOfThree = 6975;
@@ -56,7 +57,7 @@ internal static class DungeonLogMessages
         LureStopped => nameof(LureStopped),
         LureAllDisarmed => nameof(LureAllDisarmed),
         LureFailed => nameof(LureFailed),
-        LureSet => nameof(LureSet),
+        LureTemptedAnother => nameof(LureTemptedAnother),
         GateGlowsOfThree => nameof(GateGlowsOfThree),
         GateGlows => nameof(GateGlows),
         GateLocked => nameof(GateLocked),

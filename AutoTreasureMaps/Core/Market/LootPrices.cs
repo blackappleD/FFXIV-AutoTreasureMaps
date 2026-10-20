@@ -1,7 +1,6 @@
 using AutoTreasureMaps.Core.Stats;
 using AutoTreasureMaps.Core.Travel;
 using System.Globalization;
-using System.Net.Http;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
@@ -9,17 +8,20 @@ using System.Threading.Tasks;
 namespace AutoTreasureMaps.Core.Market;
 
 // What the rare loot sells for: the lowest listing on the home world's data centre, from Universalis. One batched
-// request prices every listed item, refreshed every half hour and retried a minute after a failure. Tick runs on the
-// framework thread; the request itself runs off it, and the windows only read the last prices it brought back.
+// request prices every listed item, and only while it is wanted: a run is going or a stat card is on screen. It is
+// refreshed every half hour, and after a failure the next try waits longer each time, up to the half hour. Tick runs on
+// the framework thread; the request itself runs off it, and the windows only read the last prices it brought back.
 internal static class LootPrices
 {
     private const string Endpoint = "https://universalis.app/api/v2/{0}/{1}?listings=0&entries=0&fields=items.itemID%2Citems.minPriceNQ%2Citems.minPrice";
     private const int RefreshMs = 30 * 60 * 1000;
     private const int RetryMs = 60 * 1000;
-    private const int RequestTimeoutSeconds = 10;
+    // A stat card drawn this recently still wants prices.
+    private const int WantedForMs = 5_000;
 
-    private static readonly HttpClient client = CreateClient();
     private static Dictionary<uint, int> prices = [];
+    private static long wantedAtMs = long.MinValue / 2;
+    private static int failures;
     private static Task<Dictionary<uint, int>>? pending;
     private static long nextRequestAtMs;
     private static uint pricedHomeWorld;
@@ -32,6 +34,9 @@ internal static class LootPrices
 
     public static bool Loaded => prices.Count > 0;
 
+    // Called by every view that shows a price, each frame it is drawn.
+    public static void Want() => wantedAtMs = Environment.TickCount64;
+
     public static void Tick()
     {
         if (pending is { } request)
@@ -41,6 +46,11 @@ internal static class LootPrices
                 Collect(request);
             }
 
+            return;
+        }
+
+        if (!Plugin.Instance.Controller.Running && Environment.TickCount64 - wantedAtMs > WantedForMs)
+        {
             return;
         }
 
@@ -59,7 +69,7 @@ internal static class LootPrices
 
         pricedHomeWorld = home;
         DataCenter = dataCenter;
-        nextRequestAtMs = Environment.TickCount64 + RetryMs;
+        nextRequestAtMs = Environment.TickCount64 + Math.Min(RefreshMs, RetryMs << Math.Min(failures, 5));
         var ids = string.Join(',', RareLoot.AllItems.ToArray());
         pending = Task.Run(() => Fetch(dataCenter, ids));
     }
@@ -104,10 +114,21 @@ internal static class LootPrices
         pending = null;
         if (!request.IsCompletedSuccessfully)
         {
-            RunLog.Warning($"Loot prices: Universalis request for {DataCenter} failed: {request.Exception?.GetBaseException().Message}");
+            // Only the first failure in a row is a warning, so a player who is offline is not told every minute.
+            var message = $"Loot prices: Universalis request for {DataCenter} failed: {request.Exception?.GetBaseException().Message}";
+            if (failures++ == 0)
+            {
+                RunLog.Warning(message);
+            }
+            else
+            {
+                RunLog.Debug(message);
+            }
+
             return;
         }
 
+        failures = 0;
         prices = request.Result;
         nextRequestAtMs = Environment.TickCount64 + RefreshMs;
         Revision++;
@@ -117,7 +138,7 @@ internal static class LootPrices
     private static async Task<Dictionary<uint, int>> Fetch(string dataCenter, string ids)
     {
         var url = string.Format(CultureInfo.InvariantCulture, Endpoint, Uri.EscapeDataString(dataCenter), ids);
-        using var response = await client.GetAsync(url).ConfigureAwait(false);
+        using var response = await Universalis.Client.GetAsync(url).ConfigureAwait(false);
         response.EnsureSuccessStatusCode();
         await using var body = await response.Content.ReadAsStreamAsync().ConfigureAwait(false);
         using var document = await JsonDocument.ParseAsync(body).ConfigureAwait(false);
@@ -149,11 +170,4 @@ internal static class LootPrices
 
     private static uint ReadUInt(JsonElement element, string name)
         => element.TryGetProperty(name, out var value) && value.TryGetUInt32(out var number) ? number : 0;
-
-    private static HttpClient CreateClient()
-    {
-        var created = new HttpClient { Timeout = TimeSpan.FromSeconds(RequestTimeoutSeconds) };
-        created.DefaultRequestHeaders.UserAgent.ParseAdd("TreasureHelper (Dalamud plugin)");
-        return created;
-    }
 }

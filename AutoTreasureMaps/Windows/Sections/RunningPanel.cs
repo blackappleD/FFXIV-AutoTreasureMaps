@@ -245,9 +245,9 @@ internal static class RunningPanel
         var itemsSub = items > 0 || tomestones > 0
             ? itemsText.Get(((long)items << 32) | (uint)tomestones, static key => LootLine((int)(key >> 32), (int)(key & uint.MaxValue)))
             : null;
-        // The rare loot counts at its market price on top of the gil looted less the gil spent on maps.
+        // Gil looted less the gil spent on maps; the rare loot's worth is an estimate, so it is only in the tooltip.
         var lootValue = session is null ? 0 : LootPrices.ValueOf(session.Tallies);
-        var netGil = session is null ? 0 : session.Gil - session.GilSpentOnMaps + lootValue;
+        var netGil = session is null ? 0 : session.Gil - session.GilSpentOnMaps;
         var gil = gilText.Get(netGil, static key => key.ToString("N0", Loc.Culture));
         StatTile.Draw(Loc.T(L.Run.TileGil), gil, itemsSub, Styling.AccentAmber, tileWidth);
         if (session is not null && (session.NotableItems.Count > 0 || session.MapsBought > 0 || lootValue > 0) && ImGui.IsItemHovered())
@@ -271,7 +271,7 @@ internal static class RunningPanel
         }
 
         var tomestoneText = Loc.Plural(L.MapRun.Tomestones, tomestones);
-        return items == 0 ? tomestoneText : $"{Loc.Plural(L.MapRun.Items, items)} · {tomestoneText}";
+        return items == 0 ? tomestoneText : string.Concat(Loc.Plural(L.MapRun.Items, items), TextDraw.Separator, tomestoneText);
     }
 
     private static string? TimeLeft(TimeSpan elapsed)

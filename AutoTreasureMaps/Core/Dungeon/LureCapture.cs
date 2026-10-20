@@ -36,7 +36,7 @@ internal sealed unsafe class LureCapture : IDisposable
     private const int NodeDepth = 4;
     private const float CofferMeters = 8f;
     private const uint FirstLureMessage = DungeonLogMessages.LureNotDisarmed;
-    private const uint LastLureMessage = DungeonLogMessages.LureSet;
+    private const uint LastLureMessage = DungeonLogMessages.LureTemptedAnother;
     private const float FieldMeters = 20f;
     private const float CardMeters = 4f;
     private const int MaxCardChanges = 96;
@@ -380,7 +380,7 @@ internal sealed unsafe class LureCapture : IDisposable
         }
 
         Write(line.Append("] \"").Append(Flatten(message.FormatLogMessageForDebugging().ExtractText())).Append('"').ToString());
-        if (message.LogMessageId is DungeonLogMessages.LureSet or DungeonLogMessages.LureRound)
+        if (message.LogMessageId is DungeonLogMessages.LureTemptedAnother or DungeonLogMessages.LureRound)
         {
             WriteCoffers();
         }

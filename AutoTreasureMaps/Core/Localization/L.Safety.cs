@@ -45,7 +45,7 @@ internal static partial class L
 
         public static readonly LocString ConsumablesGroup = new("safety.consumables.group", "Consumables");
         public static readonly LocString AutoConsume = new("safety.consumables.autoConsume", "Auto-consume food & medicine");
-        public static readonly LocString AutoConsumeHelp = new("safety.consumables.autoConsumeHelp", "Use food and medicine between maps to keep their buffs up; Well Fed alone is a free +3% EXP. Items are consumed only when out of combat, and refreshed before the buff runs out.");
+        public static readonly LocString AutoConsumeHelp = new("safety.consumables.autoConsumeHelp", "Use food and medicine between maps, at the start of each map and between treasure dungeon rounds to keep their buffs up; Well Fed alone is a free +3% EXP. Items are consumed only when out of combat, and refreshed before the buff runs out.");
         public static readonly LocString AutoConsumeOff = new("safety.consumables.autoConsumeOff", "Auto-consume is off. Enable it to pick items.");
         public static readonly LocString RefreshUnder = new("safety.consumables.refreshUnder", "Refresh when under");
         public static readonly LocString RefreshUnderHelp = new("safety.consumables.refreshUnderHelp", "Re-consume once the buff has fewer than this many minutes left. 0 only re-applies after it fully wears off. A meal lasts 30 minutes.");

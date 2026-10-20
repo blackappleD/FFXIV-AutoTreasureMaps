@@ -1,4 +1,5 @@
 using AutoTreasureMaps.Core.Cleanup;
+using AutoTreasureMaps.Core.Dungeon;
 using AutoTreasureMaps.Core.External;
 using AutoTreasureMaps.Core.Gather;
 using AutoTreasureMaps.Core.Ipc;
@@ -65,7 +66,14 @@ internal sealed partial class TreasureController
             MapAllowance.Request("run start");
         }
 
-        BeginRun(new TreasureSession(), owningSession => new AutoTreasureRun(owningSession, progress), $"maps until a stop condition, {check.Available} to go");
+        // Start pressed inside a treasure dungeon asks for that dungeon to be cleared first, so it counts as the run's own.
+        var newSession = new TreasureSession();
+        if (DungeonRegistry.IsDungeon(ECommons.DalamudServices.Svc.ClientState.TerritoryType))
+        {
+            newSession.MarkOwnDungeon();
+        }
+
+        BeginRun(newSession, owningSession => new AutoTreasureRun(owningSession, progress), $"maps until a stop condition, {check.Available} to go");
     }
 
     // One held map from travel to loot, under the same pause, stop and fault handling as any run. The caller has
@@ -103,7 +111,9 @@ internal sealed partial class TreasureController
         BeginRun(new TreasureSession(), owningSession => new AutoDungeonRun(owningSession, progress), "the treasure dungeon");
     }
 
-    public void Stop()
+    // travelBack is set when the player stops the run, so a run that bought on another world goes back to its own; an
+    // unload or a GM alert leaves the character where it stands.
+    public void Stop(bool travelBack = false)
     {
         var ending = session;
         var wasPaused = Paused;
@@ -112,8 +122,8 @@ internal sealed partial class TreasureController
         currentTask = null;
         PauseReason = PauseReason.None;
         Svc.Automation.Stop();
-        LootCleanup.Stop();
-        LootCleanup.DropPreview();
+        // The noted loot belongs to this run, so it goes with it.
+        LootCleanup.Clear();
         if (ending is not null || taskWasRunning)
         {
             ReleaseHelpers();
@@ -125,6 +135,10 @@ internal sealed partial class TreasureController
         if (ending is not null)
         {
             Diag("Stop requested; session cleared.");
+            if (travelBack)
+            {
+                TryTravelBack(ending, static () => { });
+            }
         }
     }
 

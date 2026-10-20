@@ -1,4 +1,6 @@
 using AutoTreasureMaps.Core.Dungeon;
+using AutoTreasureMaps.Core.Game.Watchers;
+using AutoTreasureMaps.Core.Travel;
 using AutoTreasureMaps.Core.Stats;
 using AutoTreasureMaps.Core.Treasure;
 using ECommons.DalamudServices;
@@ -25,7 +27,24 @@ public sealed class TreasureSession
     public TreasureSession()
     {
         JobAbbreviation = CurrentJobAbbreviation();
+        StartWorldId = Worlds.Current;
     }
+
+    // The world the run started on, which a run that bought on other worlds travels back to once it ends.
+    internal uint StartWorldId { get; }
+
+    // The portal the last map left, until the run walks into it or passes it by.
+    internal PortalLead? PendingPortal { get; set; }
+
+    // The zone entry of the dungeon the run walked into, or 0. A resume picks up only a dungeon the run entered itself,
+    // in that same instance; one the player entered by hand, or another instance later, is left to them.
+    private int ownDungeonEntry;
+
+    internal bool InOwnDungeon => ownDungeonEntry != 0 && ownDungeonEntry == DutyWatcher.ZoneEntry;
+
+    internal void MarkOwnDungeon() => ownDungeonEntry = DutyWatcher.ZoneEntry;
+
+    internal void ClearOwnDungeon() => ownDungeonEntry = 0;
 
     public DateTime StartedAt { get; } = DateTime.UtcNow;
 

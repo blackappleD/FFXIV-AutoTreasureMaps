@@ -220,6 +220,8 @@ internal static class Fonts
         var extra = new bool[GlyphRanges.CodepointCount];
         GlyphRanges.MarkRanges(latin, LatinBlocks);
         GlyphRanges.MarkRanges(merge, SymbolBlocks);
+        GameGlyphs.SeedBaked(latin);
+        GameGlyphs.SeedBaked(merge);
         GlyphRanges.MarkRanges(extra, Loc.Current.ExtraGlyphRanges);
         GlyphRanges.MarkRanges(extra, Loc.CatalogGlyphRanges);
         bakedGameGlyphs = GameGlyphs.Version;

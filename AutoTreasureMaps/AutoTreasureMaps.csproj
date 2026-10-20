@@ -22,10 +22,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <EmbeddedResource Include="Core\Ipc\TreasureCombatPreset.json" LogicalName="AutoTreasureMaps.Core.Ipc.TreasureCombatPreset.json" />
-  </ItemGroup>
-
-  <ItemGroup>
     <Content Include="Images\Icon.png" Condition="Exists('Images\Icon.png')">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>

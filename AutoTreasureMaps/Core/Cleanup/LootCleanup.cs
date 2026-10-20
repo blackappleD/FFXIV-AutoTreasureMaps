@@ -12,12 +12,17 @@ namespace AutoTreasureMaps.Core.Cleanup;
 internal readonly record struct PendingLoot(uint ItemId, int Quantity, bool HighQuality);
 
 // The loot coffers and treasure dungeons gave that is not kept, and the pass that discards it from the four bags. Kept
-// means whitelisted, a timeworn map, or rare loot the player did not pick to discard. Only loot that landed in the bags is listed, so gil,
-// crystals and currency never are. The game discards whole slots, so an item is listed only when the bags held none of it
-// before the coffer opened (or it is listed already): every copy in the bags is then loot, and nothing the player got
-// another way is ever discarded. Normal and high quality are told apart throughout, as they never share a slot: loot of
-// one quality is listed, counted against the limit and discarded whatever the bags hold of the other. A pass discards one slot at a time, a human-like moment apart, and empties the list once
-// no listed item is left in the bags. An item looted in a larger quantity than the cleanup limit is kept instead. Framework
+// means whitelisted, a timeworn map, rare loot the player did not pick to discard, an item the game will not let go
+// of, or (unless turned off) any other item of notable rarity, a unique item, equipment or an item that unlocks
+// something. Only loot that landed in the bags is listed, so gil, crystals and currency never are. The game discards
+// whole slots, so an item is listed only when the bags held none of it before the coffer opened (or it is listed
+// already): every copy in the bags is then loot. A map or dungeon that was paused after its coffer opened is not
+// listed at all, since what the player did meanwhile would read as loot. The list belongs to one character and one
+// run: it is cleared when the run stops or ends and on logout, and a pass refuses to run for another character. A
+// pass discards one slot at a time, a human-like moment apart, takes each discarded slot off the noted quantity, and
+// empties the list once no listed item is left in the bags. An item looted in a larger quantity than the cleanup
+// limit is kept instead. Normal and high quality are told apart throughout, as they never share a slot: loot of
+// one quality is listed, counted against the limit and discarded whatever the bags hold of the other. Framework
 // thread only.
 internal static unsafe class LootCleanup
 {
@@ -28,12 +33,23 @@ internal static unsafe class LootCleanup
     private const int MaxAttemptsPerSlot = 3;
     // So a pass cannot empty the bags in one go; the rest stays listed for the next pass.
     private const int MaxDiscardsPerPass = 60;
+    private const byte NotableRarity = 1;
+    private const uint MedicineCategory = 44;
+    private const uint MealCategory = 46;
+    private const uint FurnishingCategory = 57;
+    private const uint FirstHousingCategory = 65;
+    private const uint LastHousingCategory = 80;
+    private const uint MinionCategory = 81;
+    private const uint CardCategory = 86;
+    private const uint OrchestrionCategory = 94;
+    private const uint PaintingCategory = 95;
 
     private static readonly InventoryType[] Bags = [InventoryType.Inventory1, InventoryType.Inventory2, InventoryType.Inventory3, InventoryType.Inventory4];
     private static readonly List<PendingLoot> pending = [];
     private static readonly List<PendingLoot> preview = [];
 
     private static bool running;
+    private static ulong ownerContentId;
     private static long nextActionAtMs;
     private static int discardedThisPass;
     private static InventoryType lastContainer;
@@ -41,6 +57,8 @@ internal static unsafe class LootCleanup
     private static uint lastItemId;
     private static bool lastHighQuality;
     private static int lastAttempts;
+    // The slot discarded last and its quantity, taken off the noted quantity once the slot has emptied.
+    private static int lastQuantity;
 
     // Bumped whenever the list changes, so text built from it knows when to rebuild.
     public static int Revision { get; private set; }
@@ -66,6 +84,16 @@ internal static unsafe class LootCleanup
         {
             return;
         }
+
+        var contentId = Svc.PlayerState.ContentId;
+        if (pending.Count > 0 && ownerContentId != contentId)
+        {
+            RunLog.Info("Cleanup: the noted loot was another character's; it is forgotten.");
+            pending.Clear();
+            Revision++;
+        }
+
+        ownerContentId = contentId;
 
         var limit = Plugin.Instance.Configuration.AutoDiscardMaxQuantity;
         foreach (var (key, quantity) in BagSnapshot.KeyedGains(bagsBefore, BagSnapshot.Capture()))
@@ -173,12 +201,36 @@ internal static unsafe class LootCleanup
     private static bool OverLimit(int quantity, int limit) => limit > 0 && quantity > limit;
 
     public static bool IsKept(uint itemId)
-        => IsAlwaysKept(itemId) || KeepsRare(itemId) || OnWhitelist(itemId);
+        => IsAlwaysKept(itemId) || KeepsRare(itemId) || KeptAsNotable(itemId) || OnWhitelist(itemId);
 
     // Kept whatever the whitelist says: a map, or an item the game refuses to discard.
     public static bool IsAlwaysKept(uint itemId)
         => Plugin.Instance.Catalog.TryGetByTimewornItem(itemId, out _)
         || Svc.Data.GetExcelSheet<Item>().GetRowOrDefault(itemId) is not { IsIndisposable: false };
+
+    // With the setting on (the default), anything that may be worth more than a material. A listed rare item follows
+    // the player's pick instead, so one picked to discard is not kept back here.
+    private static bool KeptAsNotable(uint itemId)
+        => Plugin.Instance.Configuration.AutoDiscardKeepNotable
+        && !RareLoot.IsRare(itemId)
+        && Svc.Data.GetExcelSheet<Item>().GetRowOrDefault(itemId) is { } item
+        && KeptByKind(item);
+
+    // Notable rarity, unique, equipment, a furnishing, a minion, an orchestrion roll or a card, or an item with a use other
+    // than a meal or a medicine (a mount, a hairstyle, facewear and the like unlock something). This covers the rare loot
+    // of every map the plugin has no list for.
+    private static bool KeptByKind(in Item item)
+        => item.Rarity > NotableRarity
+        || item.IsUnique
+        || item.EquipSlotCategory.RowId != 0
+        || KeptCategory(item.ItemUICategory.RowId)
+        || (item.ItemAction.RowId != 0 && item.ItemUICategory.RowId is not (MealCategory or MedicineCategory));
+
+    // ItemUICategory rows: Furnishing 57, the housing exterior and interior parts 65 to 80, Minion 81, Triple Triad Card
+    // 86, Orchestrion Roll 94 and Painting 95.
+    private static bool KeptCategory(uint category)
+        => category is FurnishingCategory or (>= FirstHousingCategory and <= LastHousingCategory) or MinionCategory
+            or CardCategory or OrchestrionCategory or PaintingCategory;
 
     public static bool OnWhitelist(uint itemId) => Plugin.Instance.Configuration.AutoDiscardKeep.Contains(itemId);
 
@@ -245,14 +297,22 @@ internal static unsafe class LootCleanup
 
     public static void Start()
     {
-        if (running || pending.Count == 0)
+        if (running || pending.Count == 0 || !Plugin.Instance.Configuration.AutoDiscard)
         {
+            return;
+        }
+
+        if (ownerContentId != Svc.PlayerState.ContentId)
+        {
+            RunLog.Info("Cleanup: the noted loot was another character's; it is forgotten and nothing is discarded.");
+            Clear();
             return;
         }
 
         running = true;
         discardedThisPass = 0;
         lastItemId = 0;
+        lastQuantity = 0;
         nextActionAtMs = 0;
         RunLog.Debug($"Cleanup: discarding {pending.Count} kinds of loot");
     }
@@ -289,6 +349,12 @@ internal static unsafe class LootCleanup
             return;
         }
 
+        if (!Plugin.Instance.Configuration.AutoDiscard || ownerContentId != Svc.PlayerState.ContentId)
+        {
+            Clear();
+            return;
+        }
+
         var now = Environment.TickCount64;
         if (now < nextActionAtMs)
         {
@@ -301,7 +367,13 @@ internal static unsafe class LootCleanup
             return;
         }
 
-        if (!TryFindNextSlot(out var container, out var slot, out var itemId, out var highQuality))
+        var found = TryFindNextSlot(out var container, out var slot, out var itemId, out var highQuality);
+        if (!found || container != lastContainer || slot != lastSlot || itemId != lastItemId || highQuality != lastHighQuality)
+        {
+            ConsumeLastSlot();
+        }
+
+        if (!found)
         {
             Finish();
             return;
@@ -335,13 +407,49 @@ internal static unsafe class LootCleanup
             lastItemId = itemId;
             lastHighQuality = highQuality;
             lastAttempts = 1;
+            lastQuantity = SlotQuantity(container, slot);
             discardedThisPass++;
         }
 
         var inventory = InventoryManager.Instance();
         var result = inventory is null ? -1 : inventory->DiscardItem(container, slot);
-        RunLog.Debug($"Cleanup: discarding item {Describe(itemId, highQuality)} from {container} slot {slot} (attempt {lastAttempts}, result {result})");
+        RunLog.Info($"Cleanup: discarding {NotableLoot.Name(itemId)} x{lastQuantity} (item {Describe(itemId, highQuality)}) from {container} slot {slot}, attempt {lastAttempts}, result {result}.");
         nextActionAtMs = now + Random.Shared.Next(DiscardDelayMinMs, DiscardDelayMaxMs + 1);
+    }
+
+    // The slot discarded last has emptied, so its copies no longer count as looted: later copies came another way.
+    private static void ConsumeLastSlot()
+    {
+        if (lastItemId == 0 || lastQuantity <= 0)
+        {
+            return;
+        }
+
+        var at = IndexOf(lastItemId, lastHighQuality);
+        if (at >= 0)
+        {
+            var left = pending[at].Quantity - lastQuantity;
+            if (left > 0)
+            {
+                pending[at] = pending[at] with { Quantity = left };
+            }
+            else
+            {
+                pending.RemoveAt(at);
+            }
+
+            Revision++;
+        }
+
+        lastQuantity = 0;
+    }
+
+    private static int SlotQuantity(InventoryType container, ushort slot)
+    {
+        var inventory = InventoryManager.Instance();
+        var bag = inventory is null ? null : inventory->GetInventoryContainer(container);
+        var item = bag is null ? null : bag->GetInventorySlot(slot);
+        return item is null ? 0 : (int)item->Quantity;
     }
 
     private static void Finish()

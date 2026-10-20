@@ -1,4 +1,3 @@
-using AutoTreasureMaps.Core.Treasure;
 using Dalamud.Bindings.ImGui;
 using Dalamud.Interface;
 using Dalamud.Interface.Utility;
@@ -11,7 +10,7 @@ internal static class SettingsRow
 {
     private const float RowHeight = 40f;
     private const float HelpIconGap = 7f;
-    private const float PatchBadgeGap = 6f;
+    private const float BadgeGap = 6f;
     private const float CaptionPullUp = 7f;
     private const float CaptionBottomGap = 10f;
     private const float BlockBottomGap = 6f;
@@ -25,14 +24,12 @@ internal static class SettingsRow
         public float Width => RightEdge - Origin.X;
     }
 
-    // A row named after an item passes its id: the label then shows the game's item tooltip, and the help stays on the icon.
-    // A map row also passes the patch its map arrived in, shown as the wiki's patch label ahead of the name.
-    public static void Draw(string label, string? help, float controlWidth, Action drawControl, float controlHeight = 0f, uint itemId = 0, GamePatch patch = default)
+    public static void Draw(string label, string? help, float controlWidth, Action drawControl, float controlHeight = 0f, uint itemId = 0, string? badge = null)
     {
         var area = BeginRow();
 
         DrawTopDivider(area);
-        var labelX = DrawPatchBadge(area, patch);
+        var labelX = DrawBadge(area, badge);
         var labelHovered = DrawLabel(area, labelX, label);
         var iconHovered = DrawHelpIcon(area, labelX, label, help);
 
@@ -113,15 +110,15 @@ internal static class SettingsRow
         SettingsGroup.RowDrawnInGroup = true;
     }
 
-    private static float DrawPatchBadge(RowArea area, GamePatch patch)
+    private static float DrawBadge(RowArea area, string? badge)
     {
-        if (!patch.IsKnown)
+        if (badge is null)
         {
             return area.Origin.X;
         }
 
-        var width = PatchBadge.Draw(ImGui.GetWindowDrawList(), patch, area.Origin.X, area.MiddleY);
-        return area.Origin.X + width + PatchBadgeGap * ImGuiHelpers.GlobalScale;
+        var width = Badge.DrawLeft(ImGui.GetWindowDrawList(), badge, Styling.AccentNebula, area.Origin.X, area.MiddleY);
+        return area.Origin.X + width + BadgeGap * ImGuiHelpers.GlobalScale;
     }
 
     private static bool DrawLabel(RowArea area, float labelX, string label)

@@ -1,4 +1,5 @@
 using AutoTreasureMaps.Core.Cleanup;
+using AutoTreasureMaps.Core.Game.Player;
 using AutoTreasureMaps.Core.Localization;
 using AutoTreasureMaps.Core.Treasure;
 using ECommons.DalamudServices;
@@ -49,14 +50,26 @@ public abstract partial class AutoCommon
             return result with { Outcome = MapOutcome.Cancelled };
         }
 
-        var bagsBefore = session.ActiveMap?.BagsBefore;
-        if (MapOutcomes.Final(result.Outcome))
+        // The portal to enter is the one nearest the coffer, or the spot when the dig itself turned it up.
+        if ((result.PortalSeen || result.Refusal == MapRefusal.PortalDug) && session.ActiveMap is { } ended)
+        {
+            session.PendingPortal = new PortalLead(ended.CofferOpened ? ended.CofferPosition : ended.Spot.Position, ended.PortalsBefore);
+        }
+
+        // A faulted map is noted once it ends after the restart, and a map paused after its coffer opened not at all.
+        var bagsBefore = session.ActiveMap is { CleanupBlocked: false } noted ? noted.BagsBefore : null;
+        var final = MapOutcomes.Final(result.Outcome);
+        if (final)
         {
             session.ActiveMap = null;
         }
 
         session.RecordMap(result);
-        LootCleanup.Note(bagsBefore);
+        if (final)
+        {
+            LootCleanup.Note(bagsBefore);
+        }
+
         progress.FinishMap(result);
         Diag($"Map: {(result.HasTier ? result.Tier.Name : "no map")} ended {result.Outcome}{(result.Refusal == MapRefusal.None ? string.Empty : $" ({result.Refusal})")}, {result.Gil} gil, {result.ItemCount} items in {result.Items.Length} stacks, portal {(result.PortalSeen ? "seen" : "not seen")}, {result.Duration.TotalSeconds:F0}s.");
         Announce(result);
@@ -219,8 +232,10 @@ public abstract partial class AutoCommon
             return;
         }
 
+        // Only this coffer's word, or a portal that was not standing before the dig, is ours; another player's portal nearby
+        // is not.
         var announced = Messages.ArrivedSince(TreasureLogMessages.PortalAppeared, map.CofferOpenedAtMs);
-        var portal = TreasurePortals.FindNear(map.CofferPosition, PortalSearchMeters);
+        var portal = TreasurePortals.FindNew(map.CofferPosition, PortalSearchMeters, map.PortalsBefore);
         if (!announced && portal is null)
         {
             return;
@@ -228,7 +243,7 @@ public abstract partial class AutoCommon
 
         map.PortalSeen = true;
         var found = portal is null ? "no portal object nearby" : $"portal object {portal.BaseId} at {FormatPosition(portal.Position)}";
-        var entering = Plugin.Instance.Configuration.DungeonEnterPortal && Svc.Party.Length == 0;
+        var entering = Plugin.Instance.Configuration.DungeonEnterPortal && !PartyPresence.InParty();
         Diag($"Map: a portal appeared (message {(announced ? "seen" : "not seen")}, {found}); {(entering ? "it is entered once the coffer is looted" : "it is left alone")}.");
         if (!entering)
         {

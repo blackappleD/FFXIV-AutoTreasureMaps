@@ -146,7 +146,7 @@ internal static class LootCleanupCard
         {
             var itemId = BagSnapshot.ItemIdOf(key);
             var highQuality = BagSnapshot.IsHighQualityKey(key);
-            var name = highQuality ? $"{NotableLoot.Name(itemId)} HQ" : NotableLoot.Name(itemId);
+            var name = highQuality ? Loc.T(L.Cleanup.HighQualityName, NotableLoot.Name(itemId)) : NotableLoot.Name(itemId);
             rows.Add((itemId, highQuality, ItemIcon.IdOf(itemId), Loc.T(L.Cleanup.ItemLine, name, quantity)));
         }
 

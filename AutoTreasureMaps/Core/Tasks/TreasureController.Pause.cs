@@ -42,6 +42,16 @@ internal sealed partial class TreasureController
 
         var pausing = session!;
         PauseReason = reason;
+        if (pausing.ActiveMap is { CofferOpened: true } openedMap)
+        {
+            openedMap.CleanupBlocked = true;
+        }
+
+        if (pausing.ActiveDungeon is { } dungeon)
+        {
+            dungeon.CleanupBlocked = true;
+        }
+
         progress.SetPhase(TreasurePhase.Paused);
         pausing.Sample();
         pausing.BeginPause();

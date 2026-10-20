@@ -118,6 +118,24 @@ internal static unsafe class DungeonField
         };
 
     // The advance objects of the nearest wall (the gates) or the machine, in no particular order.
+    // Whether any gate or machine is up within the room, without building the list Decide would throw away every tick.
+    public static bool AnyAdvanceObject(DungeonProfile profile)
+    {
+        var from = PlayerPosition;
+        var objects = Svc.Objects;
+        for (var index = 0; index < objects.Length; index++)
+        {
+            var candidate = objects[index];
+            if (candidate is { IsTargetable: true, ObjectKind: ObjectKind.EventObj } && profile.IsAdvance(candidate.BaseId)
+                && Vector3.DistanceSquared(from, candidate.Position) <= RoomMeters * RoomMeters)
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     public static List<IGameObject> AdvanceObjects(DungeonProfile profile)
     {
         var from = PlayerPosition;
@@ -170,7 +188,7 @@ internal static unsafe class DungeonField
         // X runs east and Z south, so facing north (-Z) puts +X on the right: right = (-facing.Z, 0, facing.X).
         var right = new Vector3(-facing.Z, 0f, facing.X);
         var ordered = new List<IGameObject>(gates);
-        ordered.Sort((a, b) => Vector3.Dot(a.Position - centre, right).CompareTo(Vector3.Dot(b.Position - centre, right)));
+        ordered.Sort((first, second) => Vector3.Dot(first.Position - centre, right).CompareTo(Vector3.Dot(second.Position - centre, right)));
         return ordered;
     }
 
