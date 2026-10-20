@@ -60,8 +60,9 @@ internal static class DungeonProfiles
         // Goldy cat, vaultkeeper; vault onion, eggplant, garlic, tomato, queen.
         BonusNameIds: [14014, 14015],
         MandragoraNameIds: [14016, 14017, 14018, 14019, 14020],
-        // Fastitocalon's two vault laser cannons fire at the character for the rest of the fight once they appear.
-        FirstNameIds: [14000],
+        // The adds that come with a boss hit hard and are killed before it: Fastitocalon's vault laser cannons, Bitter
+        // Eye's vault eyeclopses, Gwyddneu's vault leptocyons, Paeonia's seedlings, the Gilded Sentry's laser turrets.
+        FirstNameIds: [14000, 14002, 13997, 14006, 14008],
         // The bonus round's gold and silver sacks; it asks for a hundred glowing sacks in ninety seconds.
         GoldSackBaseIds: [2014791],
         SilverSackBaseIds: [2014792],

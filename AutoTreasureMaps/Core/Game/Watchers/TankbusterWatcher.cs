@@ -67,11 +67,11 @@ internal sealed unsafe class TankbusterWatcher : IDisposable
     // Aurora is cast on a target, so the Action sheet names no buff of its own for it.
     private const uint AuroraStatus = 1835;
 
-    // The short mitigation comes first; the rest, tried in this order, are only used against a boss's tankbuster.
-    private static readonly uint[] warriorMitigations = [RawIntuition, Rampart, Vengeance];
-    private static readonly uint[] paladinMitigations = [Sheltron, Rampart, Sentinel, Bulwark];
-    private static readonly uint[] darkKnightMitigations = [TheBlackestNight, Oblation, Rampart, ShadowWall, DarkMind];
-    private static readonly uint[] gunbreakerMitigations = [HeartOfStone, Camouflage, Rampart, Nebula];
+    // The short mitigation comes first; the rest, strongest first, are only used against a boss's tankbuster.
+    private static readonly uint[] warriorMitigations = [RawIntuition, Vengeance, Rampart];
+    private static readonly uint[] paladinMitigations = [Sheltron, Sentinel, Rampart, Bulwark];
+    private static readonly uint[] darkKnightMitigations = [TheBlackestNight, ShadowWall, Rampart, Oblation, DarkMind];
+    private static readonly uint[] gunbreakerMitigations = [HeartOfStone, Nebula, Rampart, Camouflage];
 
     // Every tankbuster the combat plugin's treasure hunt modules mark, by the boss that casts it.
     private static readonly uint[] bossTankbusters =
@@ -134,6 +134,7 @@ internal sealed unsafe class TankbusterWatcher : IDisposable
 
         stillCasting.Clear();
         var busy = false;
+        var answeringSeen = false;
         var inWindow = Environment.TickCount64 < windowEndsAtMs;
         var objects = Svc.Objects;
         for (var index = 0; index < objects.Length; index++)
@@ -153,6 +154,7 @@ internal sealed unsafe class TankbusterWatcher : IDisposable
             }
 
             var key = (caster.EntityId, caster.CastActionId);
+            answeringSeen |= key == answering;
             if (handled.Contains(key))
             {
                 stillCasting.Add(key);
@@ -208,6 +210,10 @@ internal sealed unsafe class TankbusterWatcher : IDisposable
             {
                 windowEndsAtMs = Environment.TickCount64 + MitigationWindowMs;
                 inWindow = true;
+                if (tankbuster && pressed.Count == 1 && pressed[0] == ActionManager.Instance()->GetAdjustedActionId(mitigations[0]))
+                {
+                    RunLog.Info($"Tankbuster: {cast}; no bigger cooldown is ready.");
+                }
             }
             else
             {
@@ -218,6 +224,14 @@ internal sealed unsafe class TankbusterWatcher : IDisposable
         }
 
         (handled, stillCasting) = (stillCasting, handled);
+
+        // A boss casts the same tankbuster again and again, so what was pressed for one cast is forgotten once it ends;
+        // kept, it read as already pressed and the next casts got nothing.
+        if (!answeringSeen)
+        {
+            answering = default;
+            pressed.Clear();
+        }
         if (!busy)
         {
             MitigateByHp(mitigations, player);
