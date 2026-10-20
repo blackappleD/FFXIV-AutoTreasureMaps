@@ -12,10 +12,11 @@ namespace AutoTreasureMaps.Core.Game.Watchers;
 
 // The combat plugin's tank module only mitigates a tankbuster its boss module has marked, and treasure hunt enemies have
 // none, so its short mitigation waited for the HP to drop under 75% and the hit landed bare. With the setting on, while
-// a run is on and the character tanks, a heavy cast aimed at the character gets the job's short mitigation (Bloodwhetting,
+// a run is on and the character tanks, a cast aimed at the character gets the job's short mitigation (Bloodwhetting,
 // Holy Sheltron, The Blackest Night, Heart of Corundum) once the cast is close enough to its end for the buff to cover
-// it. One mitigation covers a window, so a volley from several casters spends one cooldown, and nothing is used while
-// one of the job's mitigations is already up. The long cooldowns stay with the combat plugin's tank module.
+// it. Only a boss's tankbuster, told apart by its long cast, falls back to a bigger cooldown when the short one is down,
+// so a mob's cast never spends one. One mitigation covers a window, so a volley from several casters spends one
+// cooldown, and nothing is used while one of the job's mitigations is already up.
 internal sealed unsafe class TankbusterWatcher : IDisposable
 {
     private const byte TankRole = 1;
@@ -23,6 +24,9 @@ internal sealed unsafe class TankbusterWatcher : IDisposable
     private const byte CircleCastType = 2;
     // Casts shorter than this are a mob's filler, not worth a cooldown.
     private const float MinCastSeconds = 1.5f;
+    // Treasure hunt bosses cast their tankbusters for 4.7 s and mobs their spells for 1.5 to 2.5 s, so a cast this long
+    // is a tankbuster and may take a bigger cooldown.
+    private const float HeavyCastSeconds = 4f;
     // The shortest of the short mitigations lasts 7 s, so a longer cast waits until it would still cover the hit.
     private const float MitigateWithinSeconds = 6f;
     // A mitigation used covers every cast that lands within this window.
@@ -43,7 +47,7 @@ internal sealed unsafe class TankbusterWatcher : IDisposable
     private const uint Camouflage = 16140;
     private const uint Nebula = 16148; // Great Nebula from level 92
 
-    // The short mitigation comes first; the rest are only looked at for a buff that is already up.
+    // The short mitigation comes first; the rest, tried in this order, are only used against a tankbuster.
     private static readonly uint[] warriorMitigations = [RawIntuition, Rampart, Vengeance];
     private static readonly uint[] paladinMitigations = [Sheltron, Rampart, Sentinel, Bulwark];
     private static readonly uint[] darkKnightMitigations = [TheBlackestNight, Oblation, Rampart, ShadowWall, DarkMind];
@@ -113,7 +117,8 @@ internal sealed unsafe class TankbusterWatcher : IDisposable
                 continue;
             }
 
-            switch (Mitigate(mitigations, player, out var used))
+            var heavy = caster.TotalCastTime >= HeavyCastSeconds;
+            switch (Mitigate(mitigations, heavy, player, out var used))
             {
                 case MitigationResult.Used:
                     RunLog.Info($"Tankbuster: {caster.Name} casts {ActionName(caster.CastActionId)} on the character ({caster.TotalCastTime:F1}s); used {ActionName(used)}.");
@@ -126,7 +131,9 @@ internal sealed unsafe class TankbusterWatcher : IDisposable
                     stillCasting.Add(key);
                     break;
                 case MitigationResult.NotReady:
-                    RunLog.Info($"Tankbuster: {caster.Name} casts {ActionName(caster.CastActionId)} on the character, but {ActionName(used)} is not ready.");
+                    RunLog.Info(heavy
+                        ? $"Tankbuster: {caster.Name} casts {ActionName(caster.CastActionId)} on the character ({caster.TotalCastTime:F1}s), but no mitigation is ready."
+                        : $"Tankbuster: {caster.Name} casts {ActionName(caster.CastActionId)} on the character ({caster.TotalCastTime:F1}s), but {ActionName(used)} is not ready.");
                     stillCasting.Add(key);
                     break;
             }
@@ -149,9 +156,10 @@ internal sealed unsafe class TankbusterWatcher : IDisposable
         => Svc.Data.GetExcelSheet<LuminaAction>().TryGetRow(actionId, out var action)
         && action.CastType is SingleTargetCastType or CircleCastType;
 
-    // Uses the job's short mitigation unless any of its mitigations is already on the character. A press the game
-    // refuses (an animation lock) is pressed again next frame.
-    private static MitigationResult Mitigate(uint[] mitigations, IPlayerCharacter player, out uint used)
+    // Uses the job's short mitigation unless any of its mitigations is already on the character; against a tankbuster,
+    // the first bigger one that is ready when the short one is not. A press the game refuses (an animation lock) is
+    // pressed again next frame.
+    private static MitigationResult Mitigate(uint[] mitigations, bool heavy, IPlayerCharacter player, out uint used)
     {
         used = 0;
         var actions = ActionManager.Instance();
@@ -170,13 +178,19 @@ internal sealed unsafe class TankbusterWatcher : IDisposable
             }
         }
 
-        used = actions->GetAdjustedActionId(mitigations[0]);
-        if (actions->GetActionStatus(ActionType.Action, used, player.GameObjectId) != 0)
+        var tried = heavy ? mitigations.Length : 1;
+        for (var mitigationIndex = 0; mitigationIndex < tried; mitigationIndex++)
         {
-            return MitigationResult.NotReady;
+            var actionId = actions->GetAdjustedActionId(mitigations[mitigationIndex]);
+            if (actions->GetActionStatus(ActionType.Action, actionId, player.GameObjectId) == 0)
+            {
+                used = actionId;
+                return actions->UseAction(ActionType.Action, actionId, player.GameObjectId) ? MitigationResult.Used : MitigationResult.Refused;
+            }
         }
 
-        return actions->UseAction(ActionType.Action, used, player.GameObjectId) ? MitigationResult.Used : MitigationResult.Refused;
+        used = actions->GetAdjustedActionId(mitigations[0]);
+        return MitigationResult.NotReady;
     }
 
     // The buff an action puts on its user is read from the Action sheet, so no status ids are kept here.
