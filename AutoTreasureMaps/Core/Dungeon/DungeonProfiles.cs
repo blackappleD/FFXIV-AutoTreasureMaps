@@ -38,6 +38,7 @@ internal static class DungeonProfiles
         // Alpaca of fortune, uolon of fortune; Turali onion, eggplant, garlic, tomato, Tuligora queen.
         BonusNameIds: [13240, 13241],
         MandragoraNameIds: [13242, 13243, 13244, 13245, 13246],
+        FirstNameIds: [],
         GoldSackBaseIds: [],
         SilverSackBaseIds: [],
         Verified: true);
@@ -59,6 +60,8 @@ internal static class DungeonProfiles
         // Goldy cat, vaultkeeper; vault onion, eggplant, garlic, tomato, queen.
         BonusNameIds: [14014, 14015],
         MandragoraNameIds: [14016, 14017, 14018, 14019, 14020],
+        // Fastitocalon's two vault laser cannons fire at the character for the rest of the fight once they appear.
+        FirstNameIds: [14000],
         // The bonus round's gold and silver sacks; it asks for a hundred glowing sacks in ninety seconds.
         GoldSackBaseIds: [2014791],
         SilverSackBaseIds: [2014792],

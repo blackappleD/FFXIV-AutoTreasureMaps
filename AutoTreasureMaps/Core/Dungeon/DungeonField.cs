@@ -418,11 +418,12 @@ internal static unsafe class DungeonField
         return false;
     }
 
-    // The enemy the settings want killed first: the nearest rare enemy, then the mandragora whose marker comes next. Null
-    // when neither is asked for or none is near. Only live, targetable, hostile combatants within the room count.
+    // The enemy to kill first: the nearest rare enemy and then the mandragora whose marker comes next, where the settings
+    // ask for them, then the nearest add the profile puts before the boss it comes with. Null when none is near. Only
+    // live, targetable, hostile combatants within the room count.
     public static IBattleNpc? PriorityEnemy(DungeonProfile profile, bool bonusFirst, bool mandragorasInOrder)
     {
-        if (!bonusFirst && !mandragorasInOrder)
+        if (!bonusFirst && !mandragorasInOrder && profile.FirstNameIds.Length == 0)
         {
             return null;
         }
@@ -432,6 +433,8 @@ internal static unsafe class DungeonField
         var bonusDistance = EnemyMeters * EnemyMeters;
         IBattleNpc? mandragora = null;
         var mandragoraOrder = int.MaxValue;
+        IBattleNpc? first = null;
+        var firstDistance = EnemyMeters * EnemyMeters;
         var objects = Svc.Objects;
         for (var index = 0; index < objects.Length; index++)
         {
@@ -458,10 +461,17 @@ internal static unsafe class DungeonField
             {
                 mandragoraOrder = order;
                 mandragora = npc;
+                continue;
+            }
+
+            if (profile.IsFirst(npc.NameId) && distance < firstDistance)
+            {
+                firstDistance = distance;
+                first = npc;
             }
         }
 
-        return bonus ?? mandragora;
+        return bonus ?? mandragora ?? first;
     }
 
     private static bool Faded(IGameObject coffer)

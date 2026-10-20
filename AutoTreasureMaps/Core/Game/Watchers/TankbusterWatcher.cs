@@ -16,7 +16,9 @@ namespace AutoTreasureMaps.Core.Game.Watchers;
 // Holy Sheltron, The Blackest Night, Heart of Corundum) once the cast is close enough to its end for the buff to cover
 // it. Only a boss's tankbuster, told apart by its long cast, falls back to a bigger cooldown when the short one is down,
 // so a mob's cast never spends one. One mitigation covers a window, so a volley from several casters spends one
-// cooldown, and nothing is used while one of the job's mitigations is already up.
+// cooldown, and nothing is used while one of the job's mitigations is already up. Some bosses cast their tankbuster
+// through an invisible helper, which has no nameplate and so never reads as hostile; a helper's cast counts only when
+// it is one of the tankbusters listed here.
 internal sealed unsafe class TankbusterWatcher : IDisposable
 {
     private const byte TankRole = 1;
@@ -32,6 +34,8 @@ internal sealed unsafe class TankbusterWatcher : IDisposable
     // A mitigation used covers every cast that lands within this window.
     private const long MitigationWindowMs = 7_000;
     private const uint ActionKind = 1;
+    // The BNpcBase row of the invisible helper a boss casts some of its attacks through.
+    private const uint HelperBaseId = 9020;
 
     private const uint Rampart = 7531;
     private const uint RawIntuition = 3551; // Bloodwhetting from level 82
@@ -52,6 +56,15 @@ internal sealed unsafe class TankbusterWatcher : IDisposable
     private static readonly uint[] paladinMitigations = [Sheltron, Rampart, Sentinel, Bulwark];
     private static readonly uint[] darkKnightMitigations = [TheBlackestNight, Oblation, Rampart, ShadowWall, DarkMind];
     private static readonly uint[] gunbreakerMitigations = [HeartOfStone, Camouflage, Rampart, Nebula];
+
+    // Tankbusters a treasure hunt boss casts through its helper, as the combat plugin's modules mark them.
+    private static readonly uint[] helperTankbusters =
+    [
+        43650, // Thundercrack, Gwyddneu (The Vault Oneiron)
+        43668, // Uplift, Fastitocalon
+        43698, // Tormenting Twinkle, Great Gimme Cat
+        43784, // Hypercondensed Thunder, Spirit of Thunder
+    ];
 
     // Casts already answered, keyed by caster and action, kept only while the caster is still casting them.
     private HashSet<(uint Caster, uint Action)> handled = [];
@@ -92,8 +105,16 @@ internal sealed unsafe class TankbusterWatcher : IDisposable
         var objects = Svc.Objects;
         for (var index = 0; index < objects.Length; index++)
         {
-            if (objects[index] is not IBattleNpc { BattleNpcKind: BattleNpcSubKind.Combatant, IsCasting: true, IsDead: false } caster
-                || caster.CastTargetObjectId != player.GameObjectId || caster.CastActionType != ActionKind || !caster.IsHostile())
+            if (objects[index] is not IBattleNpc { IsCasting: true, IsDead: false } caster
+                || caster.CastTargetObjectId != player.GameObjectId || caster.CastActionType != ActionKind)
+            {
+                continue;
+            }
+
+            var fromHelper = caster.BaseId == HelperBaseId;
+            if (fromHelper
+                ? Array.IndexOf(helperTankbusters, caster.CastActionId) < 0
+                : caster.BattleNpcKind != BattleNpcSubKind.Combatant || !caster.IsHostile())
             {
                 continue;
             }
@@ -106,7 +127,7 @@ internal sealed unsafe class TankbusterWatcher : IDisposable
             }
 
             if (caster.TotalCastTime < MinCastSeconds || caster.TotalCastTime - caster.CurrentCastTime > MitigateWithinSeconds
-                || !AimedAtOne(caster.CastActionId))
+                || (!fromHelper && !AimedAtOne(caster.CastActionId)))
             {
                 continue;
             }

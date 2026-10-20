@@ -681,8 +681,8 @@ public abstract partial class AutoCommon
         }
     }
 
-    // Keeps the character on the enemy the settings want killed first, with the rotations told to attack only that
-    // target, and hands targeting back to the rotations once none is left. True while such an enemy is targeted.
+    // Keeps the character on the enemy the settings or the profile want killed first, with the rotations told to attack
+    // only that target, and hands targeting back to the rotations once none is left. True while such an enemy is targeted.
     // The combat plugin's treasure room modules rank the mandragora party above the room's other enemies, so while one
     // waits unpulled and the settings leave the party alone, the run picks the targets itself: the combat plugin's
     // automatic targeting rests, the rotations attack only the character's target, and that target is never a
