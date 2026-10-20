@@ -1,3 +1,4 @@
+using AutoTreasureMaps.Core.Dungeon;
 using AutoTreasureMaps.Core.External;
 using AutoTreasureMaps.Core.Game.Ops;
 using AutoTreasureMaps.Core.Localization;
@@ -53,6 +54,15 @@ internal static class RunReadiness
         }
 
         var supply = MapSupplyChain.Check(plugin);
+
+        // A run started inside a treasure dungeon clears it first, so it needs no map to start; the maps only count
+        // for what comes after, and a run with none left ends once the dungeon is done.
+        if (DungeonRegistry.IsDungeon(Svc.ClientState.TerritoryType))
+        {
+            var held = HeldMapReader.TryRead(plugin.Catalog, out _) ? HeldMapCount : 0;
+            return new RunCheck(RunBlocker.None, default, held + (supply.CanSupply ? supply.Available : 0));
+        }
+
         if (!HeldMapReader.TryRead(plugin.Catalog, out _))
         {
             return supply.CanSupply ? new RunCheck(RunBlocker.None, default, supply.Available) : new RunCheck(RunBlocker.NoMaps, supply.Reason, 0);
