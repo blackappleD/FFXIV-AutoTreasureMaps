@@ -19,7 +19,7 @@ internal static class TreasureCombatPreset
     // Bumped whenever the preset changes, so the copy in the combat plugin is rewritten once.
     public const int Revision = 4;
 
-    private const string AutoTargetModule = "BossMod.Autorotation.MiscAI.AutoTarget";
+    public const string AutoTargetModule = "BossMod.Autorotation.MiscAI.AutoTarget";
     private const string NormalMovementModule = "BossMod.Autorotation.MiscAI.NormalMovement";
     private const string LeylinesModule = "BossMod.Autorotation.MiscAI.StayWithinLeylines";
     private const string WarriorModule = "BossMod.Autorotation.VeynWAR";
@@ -58,6 +58,10 @@ internal static class TreasureCombatPreset
     public const string TargetingTrack = "Targeting";
     // The rotation then attacks only what the character has targeted.
     public const string ManualTargeting = "Manual";
+
+    public const string AutoTargetTrack = "General";
+    // AutoTarget then leaves the character's target alone.
+    public const string PassiveAutoTarget = "Passive";
 
     private static string? serialized;
     private static string[]? targetingModules;

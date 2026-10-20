@@ -355,8 +355,9 @@ internal static unsafe class DungeonField
         return nearest;
     }
 
-    // Live, targetable, hostile combatants close enough to be this room's. The mandragora party is left out unless the
-    // settings want it killed: it leaves on its own before long, so pulling it unasked only loses the run time.
+    // Live, targetable, hostile combatants close enough to be this room's. A mandragora that is not fighting yet is left
+    // out unless the settings want the party killed: it leaves on its own before long, so pulling it unasked only loses
+    // the run time. One that fights the character counts like any other enemy.
     public static IBattleNpc? NearestEnemy(DungeonProfile profile, bool mandragoras, out int count)
     {
         count = 0;
@@ -371,7 +372,7 @@ internal static unsafe class DungeonField
                 continue;
             }
 
-            if (!mandragoras && profile.MandragoraOrder(npc.NameId) >= 0)
+            if (!mandragoras && Unpulled(profile, npc))
             {
                 continue;
             }
@@ -391,6 +392,30 @@ internal static unsafe class DungeonField
         }
 
         return nearest;
+    }
+
+    // A mandragora of the party that is not fighting anyone yet.
+    public static bool Unpulled(DungeonProfile profile, IBattleNpc npc)
+        => profile.MandragoraOrder(npc.NameId) >= 0 && (npc.StatusFlags & StatusFlags.InCombat) == 0;
+
+    // Whether a mandragora of the party is anywhere in the room and not fighting anyone yet.
+    public static bool UnpulledMandragora(DungeonProfile profile)
+    {
+        if (profile.MandragoraNameIds.Length == 0)
+        {
+            return false;
+        }
+
+        var objects = Svc.Objects;
+        for (var index = 0; index < objects.Length; index++)
+        {
+            if (objects[index] is IBattleNpc { BattleNpcKind: BattleNpcSubKind.Combatant, IsTargetable: true, IsDead: false } npc && npc.CurrentHp != 0 && Unpulled(profile, npc))
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     // The enemy the settings want killed first: the nearest rare enemy, then the mandragora whose marker comes next. Null

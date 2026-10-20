@@ -79,6 +79,9 @@ public abstract partial class AutoCommon
     // Set while the rotations are told to attack only the enemy the settings want killed first.
     private bool priorityTargeting;
 
+    // Set while the combat plugin's automatic targeting is told to rest, so it does not pull the mandragora party.
+    private bool autoTargetPaused;
+
     // Clears the treasure dungeon the character stands in, or picks the session's dungeon up where a pause or a fault
     // left it. Every step reads the field first, so the run carries on wherever the dungeon stands.
     // The caller has found the handler for the territory the character stands in.
@@ -650,7 +653,7 @@ public abstract partial class AutoCommon
                     Svc.Targets.Target = null;
                 }
 
-                if (FocusPriorityEnemy(context, scope))
+                if (FocusPriorityEnemy(context, scope, enemy))
                 {
                     await NextFrame(FightTickFrames);
                     continue;
@@ -680,57 +683,82 @@ public abstract partial class AutoCommon
 
     // Keeps the character on the enemy the settings want killed first, with the rotations told to attack only that
     // target, and hands targeting back to the rotations once none is left. True while such an enemy is targeted.
-    private bool FocusPriorityEnemy(DungeonContext context, string scope)
+    // The combat plugin's treasure room modules rank the mandragora party above the room's other enemies, so while one
+    // waits unpulled and the settings leave the party alone, the run picks the targets itself: the combat plugin's
+    // automatic targeting rests, the rotations attack only the character's target, and that target is never a
+    // mandragora that is not fighting yet. Enemy is the room's nearest one the run fights, or null.
+    private bool FocusPriorityEnemy(DungeonContext context, string scope, IBattleNpc? enemy)
     {
         var configuration = context.Config;
         var priority = DungeonField.PriorityEnemy(context.Profile, configuration.DungeonPreferBonusEnemies, configuration.DungeonMandragorasInOrder);
-        if (priority is null)
+        var avoidMandragoras = !configuration.DungeonMandragorasInOrder && DungeonField.UnpulledMandragora(context.Profile);
+        SetPriorityTargeting(scope, priority is not null || avoidMandragoras, avoidMandragoras);
+        if (priority is not null)
         {
-            ReleasePriorityTargeting(scope);
+            if (Svc.Targets.Target?.GameObjectId != priority.GameObjectId)
+            {
+                Diag($"{scope}: targeting {priority.Name} ({priority.GameObjectId:X}, name id {priority.NameId}) first.");
+                Svc.Targets.Target = priority;
+            }
+
+            return true;
+        }
+
+        if (!avoidMandragoras)
+        {
             return false;
         }
 
-        if (Svc.Targets.Target?.GameObjectId != priority.GameObjectId)
+        if (Svc.Targets.Target is IBattleNpc current && DungeonField.Unpulled(context.Profile, current))
         {
-            Diag($"{scope}: targeting {priority.Name} ({priority.GameObjectId:X}, name id {priority.NameId}) first.");
-            Svc.Targets.Target = priority;
+            Diag($"{scope}: {current.Name} ({current.GameObjectId:X}) is a mandragora the settings leave alone; {(enemy is null ? "dropping the target" : $"targeting {enemy.Name} ({enemy.GameObjectId:X}) instead")}.");
+            Svc.Targets.Target = enemy;
         }
-
-        if (!priorityTargeting)
+        else if (Svc.Targets.Target is null && enemy is not null)
         {
-            priorityTargeting = true;
-            var modules = TreasureCombatPreset.TargetingModules;
-            var set = 0;
-            for (var index = 0; index < modules.Length; index++)
-            {
-                if (BossModIPC.Instance.AddTransientStrategy(TreasureCombatPreset.Name, modules[index], TreasureCombatPreset.TargetingTrack, TreasureCombatPreset.ManualTargeting))
-                {
-                    set++;
-                }
-            }
-
-            Diag($"{scope}: the rotations attack only the chosen target for now ({set} of {modules.Length} took it).");
+            Diag($"{scope}: targeting {enemy.Name} ({enemy.GameObjectId:X}); the mandragoras are left alone.");
+            Svc.Targets.Target = enemy;
         }
 
         return true;
     }
 
-    private void ReleasePriorityTargeting(string scope)
+    private void SetPriorityTargeting(string scope, bool manual, bool autoTargetPaused)
     {
-        if (!priorityTargeting)
+        if (manual != priorityTargeting)
         {
-            return;
+            priorityTargeting = manual;
+            var modules = TreasureCombatPreset.TargetingModules;
+            var set = 0;
+            for (var index = 0; index < modules.Length; index++)
+            {
+                var done = manual
+                    ? BossModIPC.Instance.AddTransientStrategy(TreasureCombatPreset.Name, modules[index], TreasureCombatPreset.TargetingTrack, TreasureCombatPreset.ManualTargeting)
+                    : BossModIPC.Instance.ClearTransientStrategy(TreasureCombatPreset.Name, modules[index], TreasureCombatPreset.TargetingTrack);
+                if (done)
+                {
+                    set++;
+                }
+            }
+
+            Diag(manual
+                ? $"{scope}: the rotations attack only the chosen target for now ({set} of {modules.Length} took it)."
+                : $"{scope}: no enemy is wanted first any more; the rotations pick their targets again.");
         }
 
-        priorityTargeting = false;
-        var modules = TreasureCombatPreset.TargetingModules;
-        for (var index = 0; index < modules.Length; index++)
+        if (autoTargetPaused != this.autoTargetPaused)
         {
-            BossModIPC.Instance.ClearTransientStrategy(TreasureCombatPreset.Name, modules[index], TreasureCombatPreset.TargetingTrack);
+            this.autoTargetPaused = autoTargetPaused;
+            var done = autoTargetPaused
+                ? BossModIPC.Instance.AddTransientStrategy(TreasureCombatPreset.Name, TreasureCombatPreset.AutoTargetModule, TreasureCombatPreset.AutoTargetTrack, TreasureCombatPreset.PassiveAutoTarget)
+                : BossModIPC.Instance.ClearTransientStrategy(TreasureCombatPreset.Name, TreasureCombatPreset.AutoTargetModule, TreasureCombatPreset.AutoTargetTrack);
+            Diag(autoTargetPaused
+                ? $"{scope}: a mandragora waits unpulled; the combat plugin's automatic targeting rests (took it: {done})."
+                : $"{scope}: the combat plugin's automatic targeting is back.");
         }
-
-        Diag($"{scope}: no enemy is wanted first any more; the rotations pick their targets again.");
     }
+
+    private void ReleasePriorityTargeting(string scope) => SetPriorityTargeting(scope, false, false);
 
     // The lure's window closes the moment a challenge is taken and opens again for the next one, so between the two
     // the coffer looks free to open and the gates free to take. The lure runs while its window is up or its high and
