@@ -309,6 +309,8 @@ internal static unsafe class LootCleanup
             return;
         }
 
+        // The slot a pass cut short discarded last may have emptied since, so its copies come off the count first.
+        ConsumeLastSlotIfGone();
         running = true;
         discardedThisPass = 0;
         lastItemId = 0;
@@ -338,6 +340,8 @@ internal static unsafe class LootCleanup
             return;
         }
 
+        // A pass cut short by its time limit never reaches the tick that takes the last discarded slot off the count.
+        ConsumeLastSlotIfGone();
         running = false;
         RunLog.Debug($"Cleanup: stopped after {discardedThisPass} discards");
     }
@@ -442,6 +446,23 @@ internal static unsafe class LootCleanup
         }
 
         lastQuantity = 0;
+    }
+
+    private static void ConsumeLastSlotIfGone()
+    {
+        if (lastItemId != 0 && !SlotHolds(lastContainer, lastSlot, lastItemId, lastHighQuality))
+        {
+            ConsumeLastSlot();
+        }
+    }
+
+    // The quality counts too: the slot may hold the item again in the other quality, which was never listed.
+    private static bool SlotHolds(InventoryType container, ushort slot, uint itemId, bool highQuality)
+    {
+        var inventory = InventoryManager.Instance();
+        var bag = inventory is null ? null : inventory->GetInventoryContainer(container);
+        var item = bag is null ? null : bag->GetInventorySlot(slot);
+        return item is not null && item->ItemId == itemId && item->IsHighQuality() == highQuality;
     }
 
     private static int SlotQuantity(InventoryType container, ushort slot)

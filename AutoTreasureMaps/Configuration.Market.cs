@@ -17,6 +17,9 @@ public sealed partial class Configuration
 
     public MarketBoardChoice MarketBoard { get; set; } = MarketBoardChoice.Automatic;
 
+    // Prices the rare loot from Universalis for the stat cards and tooltips.
+    public bool LootPriceEstimates { get; set; } = false;
+
     // Buys on the world of the data centre Universalis lists cheapest, through Lifestream, and digs there.
     public bool MarketCrossWorld { get; set; } = false;
 

@@ -30,6 +30,8 @@ internal static class CleanupSettings
 
     private static readonly List<uint> results = [];
     private static readonly List<string> resultNames = [];
+    private static readonly Dictionary<uint, string> keptNames = [];
+    private static LanguageInfo? keptNamesLanguage;
     private static string query = string.Empty;
     private static bool queryFocused;
     private static int matchCount;
@@ -208,6 +210,24 @@ internal static class CleanupSettings
         }
     }
 
+    // The whitelist's names, read from the sheet once per item and language rather than on every frame.
+    private static string KeptName(uint itemId)
+    {
+        if (!ReferenceEquals(keptNamesLanguage, Loc.Current))
+        {
+            keptNames.Clear();
+            keptNamesLanguage = Loc.Current;
+        }
+
+        if (!keptNames.TryGetValue(itemId, out var name))
+        {
+            name = NotableLoot.Name(itemId);
+            keptNames[itemId] = name;
+        }
+
+        return name;
+    }
+
     private static void DrawKeptList(Configuration configuration)
     {
         var items = configuration.AutoDiscardKeep;
@@ -225,7 +245,7 @@ internal static class CleanupSettings
             ImGui.AlignTextToFramePadding();
             using (ImRaii.PushColor(ImGuiCol.Text, Styling.TextStrong))
             {
-                ImGui.TextUnformatted(NotableLoot.Name(items[index]));
+                ImGui.TextUnformatted(KeptName(items[index]));
             }
 
             if (ListRows.RemoveButton(KeptListId, index, Loc.T(L.Safety.Remove)))

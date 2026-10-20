@@ -98,6 +98,12 @@ internal static class GeneralSettings
             () => SettingsControls.DrawToggle(configuration, () => configuration.AutoResumeOnFault, value => configuration.AutoResumeOnFault = value, "##atm_general_autoresume"),
             SettingsRow.ToggleHeight);
 
+        SettingsRow.Draw(Loc.T(L.Settings.LootPrices),
+            Loc.T(L.Settings.LootPricesHelp),
+            SettingsControls.ToggleWidth,
+            () => SettingsControls.DrawToggle(configuration, () => configuration.LootPriceEstimates, value => configuration.LootPriceEstimates = value, "##atm_general_lootprices"),
+            SettingsRow.ToggleHeight);
+
         SettingsRow.Draw(Loc.T(L.Settings.Tankbuster),
             Loc.T(L.Settings.TankbusterHelp),
             SettingsControls.ToggleWidth,

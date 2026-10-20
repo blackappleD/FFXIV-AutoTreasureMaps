@@ -134,7 +134,9 @@ internal sealed class MapTallyCards
 
     private void Build(Dictionary<uint, MapTally> tallies)
     {
-        pricesCaption = LootPrices.Loaded ? Loc.T(L.Stats.Prices, LootPrices.DataCenter) : Loc.T(L.Stats.PricesLoading);
+        pricesCaption = !LootPrices.Enabled ? Loc.T(L.Stats.PricesOff)
+            : LootPrices.Loaded ? Loc.T(L.Stats.Prices, LootPrices.DataCenter)
+            : Loc.T(L.Stats.PricesLoading);
         cards.Clear();
         var catalog = Plugin.Instance.Catalog;
         var ordered = new List<(byte Rank, uint MapItemId, MapTally Tally)>(tallies.Count);
@@ -143,7 +145,7 @@ internal sealed class MapTallyCards
             ordered.Add((catalog.TryGetByTimewornItem(mapItemId, out var tier) ? tier.Rank : (byte)0, mapItemId, tally));
         }
 
-        ordered.Sort(static (a, b) => a.Rank != b.Rank ? b.Rank.CompareTo(a.Rank) : a.MapItemId.CompareTo(b.MapItemId));
+        ordered.Sort(static (first, second) => first.Rank != second.Rank ? second.Rank.CompareTo(first.Rank) : first.MapItemId.CompareTo(second.MapItemId));
         for (var index = 0; index < ordered.Count; index++)
         {
             cards.Add(BuildCard(ordered[index].MapItemId, ordered[index].Tally));

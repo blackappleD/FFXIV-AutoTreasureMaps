@@ -14,10 +14,14 @@ internal sealed class MapTally
     // Rare items only, by item id.
     public Dictionary<uint, int> Items { get; set; } = [];
 
+    // A dungeon that reached no round still counts, but has no floor to show.
     public void NoteFloor(int floor)
     {
         Dungeons++;
-        Floors[floor] = Floors.GetValueOrDefault(floor) + 1;
+        if (floor > 0)
+        {
+            Floors[floor] = Floors.GetValueOrDefault(floor) + 1;
+        }
     }
 
     public void NoteItem(uint itemId, int quantity)

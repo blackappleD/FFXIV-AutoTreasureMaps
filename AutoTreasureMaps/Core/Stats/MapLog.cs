@@ -167,7 +167,7 @@ internal sealed class MapLog
 
             // Written beside the log and moved over it, so a crash mid-write cannot leave half a file behind.
             var temporary = FilePath + ".tmp";
-            File.WriteAllText(temporary, JsonConvert.SerializeObject(Entries, Formatting.Indented));
+            File.WriteAllText(temporary, JsonConvert.SerializeObject(Entries, Formatting.None));
             File.Move(temporary, FilePath, overwrite: true);
         }
         catch (Exception exception)

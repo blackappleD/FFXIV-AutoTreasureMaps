@@ -8,7 +8,8 @@ using System.Threading.Tasks;
 namespace AutoTreasureMaps.Core.Market;
 
 // What the rare loot sells for: the lowest listing on the home world's data centre, from Universalis. One batched
-// request prices every listed item, and only while it is wanted: a run is going or a stat card is on screen. It is
+// request prices every listed item, and only with the setting on and while it is wanted: a run is going or a stat card
+// is on screen. It is
 // refreshed every half hour, and after a failure the next try waits longer each time, up to the half hour. Tick runs on
 // the framework thread; the request itself runs off it, and the windows only read the last prices it brought back.
 internal static class LootPrices
@@ -22,6 +23,9 @@ internal static class LootPrices
     private static Dictionary<uint, int> prices = [];
     private static long wantedAtMs = long.MinValue / 2;
     private static int failures;
+    private static bool wasEnabled;
+
+    public static bool Enabled => Plugin.Instance.Configuration.LootPriceEstimates;
     private static Task<Dictionary<uint, int>>? pending;
     private static long nextRequestAtMs;
     private static uint pricedHomeWorld;
@@ -39,6 +43,14 @@ internal static class LootPrices
 
     public static void Tick()
     {
+        // Turning the setting on or off changes every price shown, so the views rebuild.
+        var enabled = Enabled;
+        if (enabled != wasEnabled)
+        {
+            wasEnabled = enabled;
+            Revision++;
+        }
+
         if (pending is { } request)
         {
             if (request.IsCompleted)
@@ -49,7 +61,7 @@ internal static class LootPrices
             return;
         }
 
-        if (!Plugin.Instance.Controller.Running && Environment.TickCount64 - wantedAtMs > WantedForMs)
+        if (!enabled || (!Plugin.Instance.Controller.Running && Environment.TickCount64 - wantedAtMs > WantedForMs))
         {
             return;
         }
@@ -75,7 +87,7 @@ internal static class LootPrices
     }
 
     // 0 for an item nobody lists or before the prices have come in.
-    public static int Of(uint itemId) => prices.GetValueOrDefault(itemId);
+    public static int Of(uint itemId) => Enabled ? prices.GetValueOrDefault(itemId) : 0;
 
     public static long ValueOf(Dictionary<uint, int>? items)
     {

@@ -6,6 +6,7 @@ internal static partial class L
     {
         public static readonly LocString Title = new("stats.title", "By map");
         public static readonly LocString Prices = new("stats.prices", "Lowest listings on {0}, from Universalis");
+        public static readonly LocString PricesOff = new("stats.pricesOff", "Turn on General > Behavior > Estimate loot prices to see what the loot is worth.");
         public static readonly LocString PricesLoading = new("stats.pricesLoading", "Fetching prices from Universalis…");
         public static readonly LocPlural Maps = new("stats.maps", "{0} map", "{0} maps");
         public static readonly LocPlural Dungeons = new("stats.dungeons", "{0} dungeon", "{0} dungeons");

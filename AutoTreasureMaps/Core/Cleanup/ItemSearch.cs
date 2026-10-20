@@ -23,11 +23,11 @@ internal static class ItemSearch
         }
 
         EnsureLoaded();
-        if (uint.TryParse(query, NumberStyles.None, CultureInfo.InvariantCulture, out var id))
+        if (uint.TryParse(query, NumberStyles.None, CultureInfo.InvariantCulture, out var itemId))
         {
-            if (Array.IndexOf(ids, id) >= 0)
+            if (Array.IndexOf(ids, itemId) >= 0)
             {
-                destination.Add(id);
+                destination.Add(itemId);
                 return 1;
             }
 
