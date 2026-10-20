@@ -791,6 +791,7 @@
   "dungeon.chat.lureRare": "宝箱にレアアイテム（{0}）があるため、罠への挑戦は1回だけにします。",
   "dungeon.chat.lureChallenge": "強欲の罠：{0}回目の挑戦を選びました。ハイ・ローはご自身で選んでください。罠が終わるまで待機します。",
   "dungeon.chat.lureTake": "強欲の罠：{0}倍の財宝を受け取ります。",
+  "dungeon.chat.lureBlindGuess": "強欲の罠：1分以内に誰も選ばなかったため、財宝を失わないよう{0}をランダムに選びました。この後の宝箱は挑戦せずにそのまま受け取ります。",
   "dungeon.outcome.cleared": "踏破",
   "dungeon.outcome.expelled": "強制退出",
   "dungeon.outcome.died": "戦闘不能",

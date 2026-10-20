@@ -791,6 +791,7 @@
   "dungeon.chat.lureRare": "The coffer holds rare loot ({0}), so the lure is challenged only once.",
   "dungeon.chat.lureChallenge": "Gambler's Lure: challenge {0} taken. Guess high or low yourself; the run waits until the lure ends.",
   "dungeon.chat.lureTake": "Gambler's Lure: taking the treasure at {0}x.",
+  "dungeon.chat.lureBlindGuess": "Gambler's Lure: no one guessed within a minute, so the run picked {0} at random to keep the treasure from being lost. The rest of this run takes the coffers as they are.",
   "dungeon.outcome.cleared": "Cleared",
   "dungeon.outcome.expelled": "Sent out",
   "dungeon.outcome.died": "Knocked out",

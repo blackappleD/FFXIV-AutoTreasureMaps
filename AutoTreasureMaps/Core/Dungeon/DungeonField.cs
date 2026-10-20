@@ -21,6 +21,9 @@ internal static unsafe class DungeonField
     // Squared distances are compared, so a gold sack three times as far as a silver one weighs the same.
     private const float SilverSackWeight = 9f;
     private const float SackMovedMeters = 1f;
+    // EObj rows of the Gambler's Lure's cards, 大 (high) and 小 (low), seen in Cenote Ja Ja Gural.
+    private const uint LureHighCard = 2013876;
+    private const uint LureLowCard = 2013877;
 
     public static Vector3 PlayerPosition => Svc.Objects.LocalPlayer?.Position ?? Vector3.Zero;
 
@@ -190,6 +193,35 @@ internal static unsafe class DungeonField
         }
 
         return nearest;
+    }
+
+    // The Gambler's Lure deals its cards as the 大 and 小 event objects beside the coffer; they can be targeted only
+    // while a guess is waited on.
+    public static bool LureGuessPending()
+    {
+        foreach (var candidate in Svc.Objects)
+        {
+            if (candidate.ObjectKind == ObjectKind.EventObj && candidate.BaseId is LureHighCard or LureLowCard && candidate.IsTargetable)
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    public static IGameObject? LureCard(bool high)
+    {
+        var baseId = high ? LureHighCard : LureLowCard;
+        foreach (var candidate in Svc.Objects)
+        {
+            if (candidate.ObjectKind == ObjectKind.EventObj && candidate.BaseId == baseId && candidate.IsTargetable)
+            {
+                return candidate;
+            }
+        }
+
+        return null;
     }
 
     public static HashSet<ulong> EventObjectIds()

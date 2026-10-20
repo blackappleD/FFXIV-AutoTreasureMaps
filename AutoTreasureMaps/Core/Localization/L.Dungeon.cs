@@ -25,6 +25,7 @@ internal static partial class L
         public static readonly LocString ChatLureRare = new("dungeon.chat.lureRare", "The coffer holds rare loot ({0}), so the lure is challenged only once.");
         public static readonly LocString ChatLureChallenge = new("dungeon.chat.lureChallenge", "Gambler's Lure: challenge {0} taken. Guess high or low yourself; the run waits until the lure ends.");
         public static readonly LocString ChatLureTake = new("dungeon.chat.lureTake", "Gambler's Lure: taking the treasure at {0}x.");
+        public static readonly LocString ChatLureBlindGuess = new("dungeon.chat.lureBlindGuess", "Gambler's Lure: no one guessed within a minute, so the run picked {0} at random to keep the treasure from being lost. The rest of this run takes the coffers as they are.");
         public static readonly LocString ChatNotRecording = new("dungeon.chat.notRecording", "Nothing is being recorded.");
 
         public static readonly LocString OutcomeCleared = new("dungeon.outcome.cleared", "Cleared");

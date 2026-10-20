@@ -791,6 +791,7 @@
   "dungeon.chat.lureRare": "Le coffre contient un butin rare ({0}) : la tentation n'est relevée qu'une fois.",
   "dungeon.chat.lureChallenge": "Tentation du flambeur : défi {0} relevé. Devinez vous-même plus haut ou plus bas ; la session attend la fin du jeu.",
   "dungeon.chat.lureTake": "Tentation du flambeur : le trésor est pris à x{0}.",
+  "dungeon.chat.lureBlindGuess": "Tentation du flambeur : personne n'a deviné en une minute, {0} a donc été choisi au hasard pour ne pas perdre le trésor. Le reste de la session prend les coffres tels quels.",
   "dungeon.outcome.cleared": "Terminé",
   "dungeon.outcome.expelled": "Expulsé",
   "dungeon.outcome.died": "K.O.",

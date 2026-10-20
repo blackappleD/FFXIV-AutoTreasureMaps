@@ -791,6 +791,7 @@
   "dungeon.chat.lureRare": "El cofre contiene botín raro ({0}), así que la trampa solo se desafía una vez.",
   "dungeon.chat.lureChallenge": "Trampa de la codicia: desafío {0} aceptado. Adivina tú mayor o menor; la ejecución espera a que termine la trampa.",
   "dungeon.chat.lureTake": "Trampa de la codicia: se toma el tesoro a x{0}.",
+  "dungeon.chat.lureBlindGuess": "Trampa de la codicia: nadie adivinó en un minuto, así que se eligió {0} al azar para no perder el tesoro. El resto de la ejecución toma los cofres tal cual.",
   "dungeon.outcome.cleared": "Completada",
   "dungeon.outcome.expelled": "Expulsado",
   "dungeon.outcome.died": "Derrotado",

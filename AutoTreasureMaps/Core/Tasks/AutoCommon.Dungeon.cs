@@ -31,14 +31,19 @@ public abstract partial class AutoCommon
     private const int DungeonFightCapMs = 600_000;
     private const int LureClickAttempts = 3;
     private const int LureCloseWaitMs = 3_000;
-    // A guess takes about 15 seconds to play out; with no lure message for this long the lure is taken as over.
-    private const int LureQuietLimitMs = 60_000;
+    // Nobody may be there to guess: the game waits about five minutes for a guess before it takes the treasure away.
+    private const int LureQuietLimitMs = 360_000;
     // Each challenge is taken before the first card shows, so it is won 7 times in 9 whatever the card turns out to
     // be. A coffer with rare loot is challenged once: the treasure is kept 78% of the time, and a second challenge
     // would keep it only 60% of the time. Any other coffer is challenged twice and taken at 3x: 1.82x on average with
     // the treasure lost 40% of the time, against 1.88x and 53% for a third challenge.
     private const int LureChallengesWithRareLoot = 1;
     private const int LureChallengesPlain = 2;
+    // The game takes the treasure away about five minutes after the cards are dealt if no one guesses. A guess not
+    // made by the player within this long is made by the run, by a coin toss, since the card's face cannot be read
+    // yet: an even chance beats losing the treasure for sure.
+    private const int LureGuessWaitMs = 60_000;
+    private const int LureGuessAnswerMs = 10_000;
     private const int BonusRoundCapMs = 120_000;
     private const float SackReachMeters = 0.6f;
     private const int SackWalkMs = 10_000;
@@ -54,6 +59,10 @@ public abstract partial class AutoCommon
 
     // Set when the last RunDungeon ended on an unexpected error, for the caller to hand to the session's fault handling.
     private protected Exception? DungeonFault { get; private set; }
+
+    // Set once the run had to guess a lure's cards itself: no one is at the keyboard, so the coffers that follow in this
+    // run are taken as they are rather than challenged. Cleared when the player guesses one themselves.
+    private bool lureUnattended;
 
     // Set while the rotations are told to attack only the enemy the settings want killed first.
     private bool priorityTargeting;
@@ -665,12 +674,13 @@ public abstract partial class AutoCommon
         Diag($"{scope}: no enemy is wanted first any more; the rotations pick their targets again.");
     }
 
-    // The lure's window closes the moment a guess is taken and opens again for the next one, so between the two the
-    // coffer looks free to open and the gates free to take. The lure runs from the trap springing until the game says
-    // how it ended; until then nothing else in the chamber is touched.
+    // The lure's window closes the moment a challenge is taken and opens again for the next one, so between the two
+    // the coffer looks free to open and the gates free to take. The lure runs while its window is up or its high and
+    // low cards wait on a guess, and from the trap springing until the game says how it ended; until then nothing else
+    // in the chamber is touched. The cards are read off the field, so a plugin reload mid-lure still sees it.
     private bool LureOngoing(DungeonInProgress dungeon)
     {
-        if (LureDialog.Open())
+        if (LureDialog.Open() || DungeonField.LureGuessPending())
         {
             return true;
         }
@@ -697,6 +707,12 @@ public abstract partial class AutoCommon
         const string scope = "dungeon-lure";
         var dungeon = context.Dungeon;
         var policy = Plugin.Instance.Configuration.DungeonLurePolicy;
+        if (DungeonField.LureGuessPending() && !LureDialog.Open())
+        {
+            await AwaitLureGuess(scope, context, policy);
+            return;
+        }
+
         if (policy != LurePolicy.AskMe && !LureDialog.Open())
         {
             // The window is answered; the coffer is opening, or the cards are out for the player to guess.
@@ -740,11 +756,11 @@ public abstract partial class AutoCommon
         }
 
         rare.RemoveAll(static itemId => !LootCleanup.KeepsRare(itemId));
-        var limit = rare.Count > 0 ? LureChallengesWithRareLoot : LureChallengesPlain;
+        var limit = lureUnattended ? 0 : rare.Count > 0 ? LureChallengesWithRareLoot : LureChallengesPlain;
         var next = NextLureChallenge(dungeon);
         var challenge = next <= limit;
         var names = string.Join(", ", rare.Select(static itemId => NotableLoot.Name(itemId)));
-        Diag($"{scope}: {entries} treasure entr(ies), rare loot kept [{names}]; challenge {next}, limit {limit}: {(challenge ? "challenging" : "taking the treasure")}.");
+        Diag($"{scope}: {entries} treasure entr(ies), rare loot kept [{names}], unattended {lureUnattended}; challenge {next}, limit {limit}: {(challenge ? "challenging" : "taking the treasure")}.");
         if (rare.Count > 0 && !dungeon.LureNoticeShown)
         {
             dungeon.LureNoticeShown = true;
@@ -760,6 +776,55 @@ public abstract partial class AutoCommon
             ? $"{AtmConstants.LogPrefix} {Loc.T(L.Dungeon.ChatLureChallenge, next)}"
             : $"{AtmConstants.LogPrefix} {Loc.T(L.Dungeon.ChatLureTake, next)}");
         return true;
+    }
+
+    // The cards are dealt and wait on a guess. The player has a minute to make it; after that the run guesses so the
+    // treasure is not lost for nothing, and stops challenging for the rest of the run. With the policy left to the
+    // player, the run only waits.
+    private async Task AwaitLureGuess(string scope, DungeonContext context, LurePolicy policy)
+    {
+        Status = "Gambler's Lure: waiting for your guess";
+        var dealtAt = Environment.TickCount64;
+        while (DungeonField.LureGuessPending() && !CancelToken.IsCancellationRequested && context.InDungeon)
+        {
+            if (policy != LurePolicy.AskMe && Environment.TickCount64 - dealtAt >= LureGuessWaitMs && !NpcInteraction.SelectYesnoOpen())
+            {
+                await GuessLureBlind(scope, context);
+                return;
+            }
+
+            await NextFrame(DungeonTickFrames);
+        }
+
+        if (!CancelToken.IsCancellationRequested && lureUnattended && Environment.TickCount64 - dealtAt < LureGuessWaitMs)
+        {
+            lureUnattended = false;
+            Diag($"{scope}: the player guessed; challenges are back on.");
+        }
+    }
+
+    private async Task GuessLureBlind(string scope, DungeonContext context)
+    {
+        lureUnattended = true;
+        var high = Random.Shared.Next(2) == 0;
+        var card = DungeonField.LureCard(high);
+        if (card is null)
+        {
+            return;
+        }
+
+        var cardId = card.GameObjectId;
+        var name = high ? "high" : "low";
+        Warn($"{scope}: no guess within {LureGuessWaitMs / TimeUnits.MillisecondsPerSecond}s; guessing {name} at random and taking the coffers as they are for the rest of the run.");
+        Svc.Chat.Print($"{AtmConstants.LogPrefix} {Loc.T(L.Dungeon.ChatLureBlindGuess, card.Name.TextValue)}");
+        Status = "Gambler's Lure: guessing";
+        await context.Interact(() => Svc.Objects.SearchById(cardId), $"lure card {name}", NpcInteraction.SelectYesnoOpen, scope);
+        if (await WaitUntilTimed(NpcInteraction.SelectYesnoOpen, LureGuessAnswerMs, "lure guess question"))
+        {
+            context.ConfirmPrompt(scope);
+        }
+
+        await WaitUntilTimed(() => !DungeonField.LureGuessPending(), LureGuessAnswerMs, "lure guess taken");
     }
 
     // The challenge the window offers now, counted from 1; the treasure stands at this many shares.

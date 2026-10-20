@@ -12,7 +12,8 @@ namespace AutoTreasureMaps.Core.Dungeon;
 internal sealed class GateAdvance : IAdvanceStrategy
 {
     private const string Scope = "dungeon-gate";
-    private const int GateAnswerMs = 15_000;
+    // A gate can take 25 seconds to open after the key is used, so the answer is waited on well past that.
+    private const int GateAnswerMs = 45_000;
     private const int AnswerPollMs = 200;
     private const int LeftHint = 1;
     private const int RightHint = 2;

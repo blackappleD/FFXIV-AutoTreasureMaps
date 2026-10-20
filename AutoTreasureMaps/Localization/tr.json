@@ -791,6 +791,7 @@
   "dungeon.chat.lureRare": "Sandıkta nadir ganimet var ({0}), bu yüzden tuzağa yalnızca bir kez meydan okunuyor.",
   "dungeon.chat.lureChallenge": "Açgözlülük tuzağı: {0}. meydan okuma alındı. Büyük mü küçük mü kendin tahmin et; tuzak bitene kadar beklenir.",
   "dungeon.chat.lureTake": "Açgözlülük tuzağı: hazine {0} katıyla alınıyor.",
+  "dungeon.chat.lureBlindGuess": "Açgözlülük tuzağı: bir dakika içinde kimse tahmin etmedi, hazine kaybolmasın diye {0} rastgele seçildi. Bu turun geri kalanında sandıklar olduğu gibi alınır.",
   "dungeon.outcome.cleared": "Tamamlandı",
   "dungeon.outcome.expelled": "Dışarı atıldı",
   "dungeon.outcome.died": "Bayıldı",

@@ -791,6 +791,7 @@
   "dungeon.chat.lureRare": "宝箱里有稀有品（{0}），强欲陷阱只挑战 1 次。",
   "dungeon.chat.lureChallenge": "强欲陷阱：已选择第 {0} 次挑战，请自己猜大小。强欲结束前插件会原地等待。",
   "dungeon.chat.lureTake": "强欲陷阱：不再挑战，领取 {0} 倍的财宝。",
+  "dungeon.chat.lureBlindGuess": "强欲陷阱：1 分钟内没人猜，为了不白白失去财宝，插件随机选了“{0}”。本轮之后遇到强欲都不再挑战，直接开箱。",
   "dungeon.outcome.cleared": "通关",
   "dungeon.outcome.expelled": "被传送出",
   "dungeon.outcome.died": "无法战斗",

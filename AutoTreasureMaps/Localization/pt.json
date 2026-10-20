@@ -791,6 +791,7 @@
   "dungeon.chat.lureRare": "O baú tem saque raro ({0}), então a armadilha é desafiada só uma vez.",
   "dungeon.chat.lureChallenge": "Armadilha da cobiça: desafio {0} aceito. Adivinhe maior ou menor você mesmo; a execução espera a armadilha acabar.",
   "dungeon.chat.lureTake": "Armadilha da cobiça: levando o tesouro em {0}x.",
+  "dungeon.chat.lureBlindGuess": "Armadilha da cobiça: ninguém adivinhou em um minuto, então {0} foi escolhido ao acaso para não perder o tesouro. O resto da execução leva os baús como estão.",
   "dungeon.outcome.cleared": "Concluída",
   "dungeon.outcome.expelled": "Expulso",
   "dungeon.outcome.died": "Nocauteado",
