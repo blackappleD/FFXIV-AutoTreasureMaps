@@ -55,4 +55,19 @@ internal sealed class MapTally
 
         return copy;
     }
+
+    // Adds each kind of map's tally into the sum for that kind.
+    public static void AddAll(Dictionary<uint, MapTally> sums, Dictionary<uint, MapTally> tallies)
+    {
+        foreach (var (mapItemId, tally) in tallies)
+        {
+            if (!sums.TryGetValue(mapItemId, out var sum))
+            {
+                sum = new MapTally();
+                sums[mapItemId] = sum;
+            }
+
+            sum.Add(tally);
+        }
+    }
 }

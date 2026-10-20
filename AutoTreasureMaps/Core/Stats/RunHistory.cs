@@ -95,20 +95,9 @@ internal sealed class RunHistory
             totals.Portals += record.PortalsSeen;
             totals.Tomestones += record.Tomestones;
             totals.Seconds += record.DurationSeconds;
-            if (record.Tallies is null)
+            if (record.Tallies is not null)
             {
-                continue;
-            }
-
-            foreach (var (mapItemId, tally) in record.Tallies)
-            {
-                if (!tallies.TryGetValue(mapItemId, out var sum))
-                {
-                    sum = new MapTally();
-                    tallies[mapItemId] = sum;
-                }
-
-                sum.Add(tally);
+                MapTally.AddAll(tallies, record.Tallies);
             }
         }
 
