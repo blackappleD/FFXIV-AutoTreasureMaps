@@ -791,7 +791,10 @@
   "dungeon.chat.lureRare": "The coffer holds rare loot ({0}), so the lure is challenged only once.",
   "dungeon.chat.lureChallenge": "Gambler's Lure: challenge {0} taken. Guess high or low yourself; the run waits until the lure ends.",
   "dungeon.chat.lureTake": "Gambler's Lure: taking the treasure at {0}x.",
-  "dungeon.chat.lureBlindGuess": "Gambler's Lure: no one guessed within a minute, so the run picked {0} at random to keep the treasure from being lost. The rest of this run takes the coffers as they are.",
+  "dungeon.chat.lureBlindGuess": "Gambler's Lure: no one guessed within a minute and the card could not be read, so the run guessed {0} at random to keep the treasure from being lost. The rest of this run takes the coffers as they are.",
+  "dungeon.chat.lureCardHint": "Gambler's Lure: the card shows {0}; guess {1}.",
+  "dungeon.lure.high": "high",
+  "dungeon.lure.low": "low",
   "dungeon.outcome.cleared": "Cleared",
   "dungeon.outcome.expelled": "Sent out",
   "dungeon.outcome.died": "Knocked out",
@@ -831,5 +834,5 @@
   "dungeon.lure.open.name": "Open the coffer",
   "dungeon.lure.open.detail": "Take the treasure as it is and skip the game.",
   "dungeon.lure.auto.name": "Challenge by the loot",
-  "dungeon.lure.auto.detail": "Challenges once when the coffer holds rare loot the cleanup keeps, otherwise twice, then opens the coffer. You guess the cards yourself."
+  "dungeon.lure.auto.detail": "Challenges once when the coffer holds rare loot the cleanup keeps, otherwise twice, then opens the coffer. Each guess is made on the card dealt face up: 1 to 4 high, 6 to 9 low."
 }

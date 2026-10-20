@@ -791,7 +791,10 @@
   "dungeon.chat.lureRare": "Le coffre contient un butin rare ({0}) : la tentation n'est relevée qu'une fois.",
   "dungeon.chat.lureChallenge": "Tentation du flambeur : défi {0} relevé. Devinez vous-même plus haut ou plus bas ; la session attend la fin du jeu.",
   "dungeon.chat.lureTake": "Tentation du flambeur : le trésor est pris à x{0}.",
-  "dungeon.chat.lureBlindGuess": "Tentation du flambeur : personne n'a deviné en une minute, {0} a donc été choisi au hasard pour ne pas perdre le trésor. Le reste de la session prend les coffres tels quels.",
+  "dungeon.chat.lureBlindGuess": "Tentation du flambeur : personne n'a deviné en une minute et la carte était illisible, {0} a donc été choisi au hasard pour ne pas perdre le trésor. Le reste de la session prend les coffres tels quels.",
+  "dungeon.chat.lureCardHint": "Tentation du flambeur : la carte montre {0} ; choisissez {1}.",
+  "dungeon.lure.high": "plus haut",
+  "dungeon.lure.low": "plus bas",
   "dungeon.outcome.cleared": "Terminé",
   "dungeon.outcome.expelled": "Expulsé",
   "dungeon.outcome.died": "K.O.",
@@ -831,5 +834,5 @@
   "dungeon.lure.open.name": "Ouvrir le coffre",
   "dungeon.lure.open.detail": "Prendre le trésor tel quel et passer le jeu.",
   "dungeon.lure.auto.name": "Relever selon le butin",
-  "dungeon.lure.auto.detail": "Relève le défi une fois si le coffre contient un butin rare que le nettoyage garde, sinon deux fois, puis ouvre le coffre. Vous devinez les cartes vous-même."
+  "dungeon.lure.auto.detail": "Relève le défi une fois si le coffre contient un butin rare que le nettoyage garde, sinon deux fois, puis ouvre le coffre. Chaque choix se fait sur la carte visible : 1 à 4 plus haut, 6 à 9 plus bas."
 }

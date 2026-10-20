@@ -791,7 +791,10 @@
   "dungeon.chat.lureRare": "宝箱里有稀有品（{0}），强欲陷阱只挑战 1 次。",
   "dungeon.chat.lureChallenge": "强欲陷阱：已选择第 {0} 次挑战，请自己猜大小。强欲结束前插件会原地等待。",
   "dungeon.chat.lureTake": "强欲陷阱：不再挑战，领取 {0} 倍的财宝。",
-  "dungeon.chat.lureBlindGuess": "强欲陷阱：1 分钟内没人猜，为了不白白失去财宝，插件随机选了“{0}”。本轮之后遇到强欲都不再挑战，直接开箱。",
+  "dungeon.chat.lureBlindGuess": "强欲陷阱：1 分钟内没人猜，明牌也读不出来，为了不白白失去财宝，插件随机猜了“{0}”。本轮之后遇到强欲都不再挑战，直接开箱。",
+  "dungeon.chat.lureCardHint": "强欲陷阱：明牌是 {0}，建议猜“{1}”。",
+  "dungeon.lure.high": "大",
+  "dungeon.lure.low": "小",
   "dungeon.outcome.cleared": "通关",
   "dungeon.outcome.expelled": "被传送出",
   "dungeon.outcome.died": "无法战斗",
@@ -831,5 +834,5 @@
   "dungeon.lure.open.name": "直接开箱",
   "dungeon.lure.open.detail": "不挑战解除陷阱，按当前数量领取财宝。",
   "dungeon.lure.auto.name": "按奖励自动挑战",
-  "dungeon.lure.auto.detail": "宝箱里有自动清理保留的稀有品（稀有品中高亮的物品）时只挑战 1 次，否则挑战 2 次（拿到 3 倍），然后开箱。猜大小需要你自己来。"
+  "dungeon.lure.auto.detail": "宝箱里有自动清理保留的稀有品（稀有品中高亮的物品）时只挑战 1 次，否则挑战 2 次（拿到 3 倍），然后开箱。猜大小由插件按明牌自动选：1 到 4 猜大，6 到 9 猜小，5 随机。"
 }

@@ -791,7 +791,10 @@
   "dungeon.chat.lureRare": "宝箱にレアアイテム（{0}）があるため、罠への挑戦は1回だけにします。",
   "dungeon.chat.lureChallenge": "強欲の罠：{0}回目の挑戦を選びました。ハイ・ローはご自身で選んでください。罠が終わるまで待機します。",
   "dungeon.chat.lureTake": "強欲の罠：{0}倍の財宝を受け取ります。",
-  "dungeon.chat.lureBlindGuess": "強欲の罠：1分以内に誰も選ばなかったため、財宝を失わないよう{0}をランダムに選びました。この後の宝箱は挑戦せずにそのまま受け取ります。",
+  "dungeon.chat.lureBlindGuess": "強欲の罠：1分以内に誰も選ばず、カードも読めなかったため、財宝を失わないよう{0}をランダムに選びました。この後の宝箱は挑戦せずにそのまま受け取ります。",
+  "dungeon.chat.lureCardHint": "強欲の罠：カードは{0}です。{1}を選んでください。",
+  "dungeon.lure.high": "ハイ",
+  "dungeon.lure.low": "ロー",
   "dungeon.outcome.cleared": "踏破",
   "dungeon.outcome.expelled": "強制退出",
   "dungeon.outcome.died": "戦闘不能",
@@ -831,5 +834,5 @@
   "dungeon.lure.open.name": "宝箱を開ける",
   "dungeon.lure.open.detail": "罠には挑まず、そのままの財宝を受け取ります。",
   "dungeon.lure.auto.name": "中身で挑戦回数を決める",
-  "dungeon.lure.auto.detail": "整理で残すレアアイテムが宝箱にあれば1回、なければ2回挑戦してから宝箱を開けます。カードのハイ・ローはご自身で選んでください。"
+  "dungeon.lure.auto.detail": "整理で残すレアアイテムが宝箱にあれば1回、なければ2回挑戦してから宝箱を開けます。ハイ・ローは表向きのカードで決めます（1〜4はハイ、6〜9はロー）。"
 }

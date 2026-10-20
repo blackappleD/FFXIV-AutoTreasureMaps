@@ -25,7 +25,10 @@ internal static partial class L
         public static readonly LocString ChatLureRare = new("dungeon.chat.lureRare", "The coffer holds rare loot ({0}), so the lure is challenged only once.");
         public static readonly LocString ChatLureChallenge = new("dungeon.chat.lureChallenge", "Gambler's Lure: challenge {0} taken. Guess high or low yourself; the run waits until the lure ends.");
         public static readonly LocString ChatLureTake = new("dungeon.chat.lureTake", "Gambler's Lure: taking the treasure at {0}x.");
-        public static readonly LocString ChatLureBlindGuess = new("dungeon.chat.lureBlindGuess", "Gambler's Lure: no one guessed within a minute, so the run picked {0} at random to keep the treasure from being lost. The rest of this run takes the coffers as they are.");
+        public static readonly LocString ChatLureBlindGuess = new("dungeon.chat.lureBlindGuess", "Gambler's Lure: no one guessed within a minute and the card could not be read, so the run guessed {0} at random to keep the treasure from being lost. The rest of this run takes the coffers as they are.");
+        public static readonly LocString ChatLureCardHint = new("dungeon.chat.lureCardHint", "Gambler's Lure: the card shows {0}; guess {1}.");
+        public static readonly LocString LureHigh = new("dungeon.lure.high", "high");
+        public static readonly LocString LureLow = new("dungeon.lure.low", "low");
         public static readonly LocString ChatNotRecording = new("dungeon.chat.notRecording", "Nothing is being recorded.");
 
         public static readonly LocString OutcomeCleared = new("dungeon.outcome.cleared", "Cleared");
@@ -68,6 +71,6 @@ internal static partial class L
         public static readonly LocString LureOpenName = new("dungeon.lure.open.name", "Open the coffer");
         public static readonly LocString LureOpenDetail = new("dungeon.lure.open.detail", "Take the treasure as it is and skip the game.");
         public static readonly LocString LureAutoName = new("dungeon.lure.auto.name", "Challenge by the loot");
-        public static readonly LocString LureAutoDetail = new("dungeon.lure.auto.detail", "Challenges once when the coffer holds rare loot the cleanup keeps, otherwise twice, then opens the coffer. You guess the cards yourself.");
+        public static readonly LocString LureAutoDetail = new("dungeon.lure.auto.detail", "Challenges once when the coffer holds rare loot the cleanup keeps, otherwise twice, then opens the coffer. Each guess is made on the card dealt face up: 1 to 4 high, 6 to 9 low.");
     }
 }

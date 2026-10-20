@@ -791,7 +791,10 @@
   "dungeon.chat.lureRare": "Die Truhe enthält seltene Beute ({0}), daher wird die Falle nur einmal herausgefordert.",
   "dungeon.chat.lureChallenge": "Falle der Verlockung: Herausforderung {0} angenommen. Rate selbst höher oder niedriger; der Lauf wartet, bis die Falle vorbei ist.",
   "dungeon.chat.lureTake": "Falle der Verlockung: Der Schatz wird mit {0}-facher Menge genommen.",
-  "dungeon.chat.lureBlindGuess": "Falle der Verlockung: Niemand hat innerhalb einer Minute geraten, daher wurde {0} zufällig gewählt, damit der Schatz nicht verloren geht. Für den Rest des Laufs werden die Truhen so genommen, wie sie sind.",
+  "dungeon.chat.lureBlindGuess": "Falle der Verlockung: Niemand hat innerhalb einer Minute geraten und die Karte war nicht lesbar, daher wurde zufällig {0} getippt, damit der Schatz nicht verloren geht. Für den Rest des Laufs werden die Truhen so genommen, wie sie sind.",
+  "dungeon.chat.lureCardHint": "Falle der Verlockung: Die Karte zeigt {0}; tippe auf {1}.",
+  "dungeon.lure.high": "höher",
+  "dungeon.lure.low": "niedriger",
   "dungeon.outcome.cleared": "Geräumt",
   "dungeon.outcome.expelled": "Hinausbefördert",
   "dungeon.outcome.died": "Kampfunfähig",
@@ -831,5 +834,5 @@
   "dungeon.lure.open.name": "Truhe öffnen",
   "dungeon.lure.open.detail": "Den Schatz so nehmen, wie er ist, und das Spiel auslassen.",
   "dungeon.lure.auto.name": "Nach Beute herausfordern",
-  "dungeon.lure.auto.detail": "Fordert einmal heraus, wenn die Truhe seltene Beute enthält, die die Aufräumung behält, sonst zweimal, und öffnet dann die Truhe. Die Karten rätst du selbst."
+  "dungeon.lure.auto.detail": "Fordert einmal heraus, wenn die Truhe seltene Beute enthält, die die Aufräumung behält, sonst zweimal, und öffnet dann die Truhe. Jeder Tipp richtet sich nach der offenen Karte: 1 bis 4 höher, 6 bis 9 niedriger."
 }

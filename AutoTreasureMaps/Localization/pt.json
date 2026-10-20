@@ -791,7 +791,10 @@
   "dungeon.chat.lureRare": "O baú tem saque raro ({0}), então a armadilha é desafiada só uma vez.",
   "dungeon.chat.lureChallenge": "Armadilha da cobiça: desafio {0} aceito. Adivinhe maior ou menor você mesmo; a execução espera a armadilha acabar.",
   "dungeon.chat.lureTake": "Armadilha da cobiça: levando o tesouro em {0}x.",
-  "dungeon.chat.lureBlindGuess": "Armadilha da cobiça: ninguém adivinhou em um minuto, então {0} foi escolhido ao acaso para não perder o tesouro. O resto da execução leva os baús como estão.",
+  "dungeon.chat.lureBlindGuess": "Armadilha da cobiça: ninguém adivinhou em um minuto e a carta não pôde ser lida, então {0} foi escolhido ao acaso para não perder o tesouro. O resto da execução leva os baús como estão.",
+  "dungeon.chat.lureCardHint": "Armadilha da cobiça: a carta mostra {0}; escolha {1}.",
+  "dungeon.lure.high": "maior",
+  "dungeon.lure.low": "menor",
   "dungeon.outcome.cleared": "Concluída",
   "dungeon.outcome.expelled": "Expulso",
   "dungeon.outcome.died": "Nocauteado",
@@ -831,5 +834,5 @@
   "dungeon.lure.open.name": "Abrir o baú",
   "dungeon.lure.open.detail": "Levar o tesouro como está e pular o jogo.",
   "dungeon.lure.auto.name": "Desafiar conforme o saque",
-  "dungeon.lure.auto.detail": "Desafia uma vez se o baú tiver saque raro que a limpeza mantém, senão duas vezes, e depois abre o baú. Você adivinha as cartas."
+  "dungeon.lure.auto.detail": "Desafia uma vez se o baú tiver saque raro que a limpeza mantém, senão duas vezes, e depois abre o baú. Cada escolha segue a carta virada: 1 a 4 maior, 6 a 9 menor."
 }

@@ -791,7 +791,10 @@
   "dungeon.chat.lureRare": "Sandıkta nadir ganimet var ({0}), bu yüzden tuzağa yalnızca bir kez meydan okunuyor.",
   "dungeon.chat.lureChallenge": "Açgözlülük tuzağı: {0}. meydan okuma alındı. Büyük mü küçük mü kendin tahmin et; tuzak bitene kadar beklenir.",
   "dungeon.chat.lureTake": "Açgözlülük tuzağı: hazine {0} katıyla alınıyor.",
-  "dungeon.chat.lureBlindGuess": "Açgözlülük tuzağı: bir dakika içinde kimse tahmin etmedi, hazine kaybolmasın diye {0} rastgele seçildi. Bu turun geri kalanında sandıklar olduğu gibi alınır.",
+  "dungeon.chat.lureBlindGuess": "Açgözlülük tuzağı: bir dakika içinde kimse tahmin etmedi ve kart okunamadı, hazine kaybolmasın diye rastgele {0} seçildi. Bu turun geri kalanında sandıklar olduğu gibi alınır.",
+  "dungeon.chat.lureCardHint": "Açgözlülük tuzağı: kart {0} gösteriyor; {1} seç.",
+  "dungeon.lure.high": "büyük",
+  "dungeon.lure.low": "küçük",
   "dungeon.outcome.cleared": "Tamamlandı",
   "dungeon.outcome.expelled": "Dışarı atıldı",
   "dungeon.outcome.died": "Bayıldı",
@@ -831,5 +834,5 @@
   "dungeon.lure.open.name": "Sandığı aç",
   "dungeon.lure.open.detail": "Hazineyi olduğu gibi al ve oyunu atla.",
   "dungeon.lure.auto.name": "Ganimete göre meydan oku",
-  "dungeon.lure.auto.detail": "Sandıkta temizliğin sakladığı nadir ganimet varsa bir kez, yoksa iki kez meydan okur, sonra sandığı açar. Kartları sen tahmin edersin."
+  "dungeon.lure.auto.detail": "Sandıkta temizliğin sakladığı nadir ganimet varsa bir kez, yoksa iki kez meydan okur, sonra sandığı açar. Her tahmin açık karta göre yapılır: 1-4 büyük, 6-9 küçük."
 }

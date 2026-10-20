@@ -11,6 +11,7 @@ using Dalamud.Game.ClientState.Objects.Enums;
 using Dalamud.Game.ClientState.Objects.Types;
 using ECommons.DalamudServices;
 using FFXIVClientStructs.FFXIV.Client.Game.Event;
+using System.Globalization;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
@@ -39,11 +40,14 @@ public abstract partial class AutoCommon
     // the treasure lost 40% of the time, against 1.88x and 53% for a third challenge.
     private const int LureChallengesWithRareLoot = 1;
     private const int LureChallengesPlain = 2;
-    // The game takes the treasure away about five minutes after the cards are dealt if no one guesses. A guess not
-    // made by the player within this long is made by the run, by a coin toss, since the card's face cannot be read
-    // yet: an even chance beats losing the treasure for sure.
+    // The game takes the treasure away about five minutes after the cards are dealt if no one guesses. With the card
+    // dealt face up readable, the run guesses on it at once; when it cannot be read, a guess not made by the player
+    // within this long is made by a coin toss: an even chance beats losing the treasure for sure.
     private const int LureGuessWaitMs = 60_000;
+    // The middle card: 1 to 4 guess high, 6 to 9 guess low, and a 5 wins either way half the time.
+    private const int LureMiddleCard = 5;
     private const int LureGuessAnswerMs = 10_000;
+    private const int LureCardReadMs = 3_000;
     private const int BonusRoundCapMs = 120_000;
     private const float SackReachMeters = 0.6f;
     private const int SackWalkMs = 10_000;
@@ -778,18 +782,44 @@ public abstract partial class AutoCommon
         return true;
     }
 
-    // The cards are dealt and wait on a guess. The player has a minute to make it; after that the run guesses so the
-    // treasure is not lost for nothing, and stops challenging for the rest of the run. With the policy left to the
-    // player, the run only waits.
+    // The cards are dealt and wait on a guess. With the policy left to the player, the run names the better guess
+    // and waits. Otherwise it guesses on the card dealt face up; if that card cannot be read, the player has a minute
+    // to guess before the run tosses a coin, and the run stops challenging for the rest of it.
     private async Task AwaitLureGuess(string scope, DungeonContext context, LurePolicy policy)
     {
-        Status = "Gambler's Lure: waiting for your guess";
+        Status = "Gambler's Lure: waiting for the guess";
         var dealtAt = Environment.TickCount64;
+        var shown = await WaitForShownCard(context);
+        var raw = 0;
+        if (shown is null)
+        {
+            DungeonField.LureShownCard(out raw);
+        }
+
+        Diag($"{scope}: the card dealt face up reads {(shown?.ToString(CultureInfo.InvariantCulture) ?? "unreadable")} (mask 0x{raw:X}).");
+        if (shown is { } card)
+        {
+            var high = card < LureMiddleCard || (card == LureMiddleCard && Random.Shared.Next(2) == 0);
+            if (policy == LurePolicy.AskMe)
+            {
+                Svc.Chat.Print($"{AtmConstants.LogPrefix} {Loc.T(L.Dungeon.ChatLureCardHint, card, Loc.T(high ? L.Dungeon.LureHigh : L.Dungeon.LureLow))}");
+            }
+            else
+            {
+                await GuessLure(scope, context, high, $"the card shows {card}");
+                return;
+            }
+        }
+
         while (DungeonField.LureGuessPending() && !CancelToken.IsCancellationRequested && context.InDungeon)
         {
-            if (policy != LurePolicy.AskMe && Environment.TickCount64 - dealtAt >= LureGuessWaitMs && !NpcInteraction.SelectYesnoOpen())
+            if (shown is null && policy != LurePolicy.AskMe && Environment.TickCount64 - dealtAt >= LureGuessWaitMs && !NpcInteraction.SelectYesnoOpen())
             {
-                await GuessLureBlind(scope, context);
+                lureUnattended = true;
+                var coin = Random.Shared.Next(2) == 0;
+                Warn($"{scope}: no guess within {LureGuessWaitMs / TimeUnits.MillisecondsPerSecond}s and the card unreadable; guessing at random and taking the coffers as they are for the rest of the run.");
+                Svc.Chat.Print($"{AtmConstants.LogPrefix} {Loc.T(L.Dungeon.ChatLureBlindGuess, Loc.T(coin ? L.Dungeon.LureHigh : L.Dungeon.LureLow))}");
+                await GuessLure(scope, context, coin, "a coin toss");
                 return;
             }
 
@@ -803,22 +833,35 @@ public abstract partial class AutoCommon
         }
     }
 
-    private async Task GuessLureBlind(string scope, DungeonContext context)
+    // The card turns over a moment before the choices can be targeted, so it is read for a short while.
+    private async Task<int?> WaitForShownCard(DungeonContext context)
     {
-        lureUnattended = true;
-        var high = Random.Shared.Next(2) == 0;
-        var card = DungeonField.LureCard(high);
-        if (card is null)
+        var deadline = Environment.TickCount64 + LureCardReadMs;
+        while (Environment.TickCount64 < deadline && DungeonField.LureGuessPending() && !CancelToken.IsCancellationRequested && context.InDungeon)
+        {
+            if (DungeonField.LureShownCard(out _) is { } card)
+            {
+                return card;
+            }
+
+            await NextFrame(DungeonTickFrames);
+        }
+
+        return null;
+    }
+
+    private async Task GuessLure(string scope, DungeonContext context, bool high, string reason)
+    {
+        if (!await HumanDelay(HumanAction.OpenCoffer, scope) || DungeonField.LureChoice(high) is not { } choice)
         {
             return;
         }
 
-        var cardId = card.GameObjectId;
+        var choiceId = choice.GameObjectId;
         var name = high ? "high" : "low";
-        Warn($"{scope}: no guess within {LureGuessWaitMs / TimeUnits.MillisecondsPerSecond}s; guessing {name} at random and taking the coffers as they are for the rest of the run.");
-        Svc.Chat.Print($"{AtmConstants.LogPrefix} {Loc.T(L.Dungeon.ChatLureBlindGuess, card.Name.TextValue)}");
+        Diag($"{scope}: guessing {name} ({reason}).");
         Status = "Gambler's Lure: guessing";
-        await context.Interact(() => Svc.Objects.SearchById(cardId), $"lure card {name}", NpcInteraction.SelectYesnoOpen, scope);
+        await context.Interact(() => Svc.Objects.SearchById(choiceId), $"lure choice {name}", NpcInteraction.SelectYesnoOpen, scope);
         if (await WaitUntilTimed(NpcInteraction.SelectYesnoOpen, LureGuessAnswerMs, "lure guess question"))
         {
             context.ConfirmPrompt(scope);
