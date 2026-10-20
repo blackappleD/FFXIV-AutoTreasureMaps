@@ -59,6 +59,11 @@ internal static class TreasureCombatPreset
     // The rotation then attacks only what the character has targeted.
     public const string ManualTargeting = "Manual";
 
+    public const string TankModule = RotationModulePrefix + "TankAI";
+    public const string PersonalMitigationTrack = "Personal mits";
+    // The tank module then uses no personal mitigation by the HP, its bigger cooldowns included.
+    public const string PersonalMitigationOff = "Disabled";
+
     public const string AutoTargetTrack = "General";
     // AutoTarget then leaves the character's target alone.
     public const string PassiveAutoTarget = "Passive";

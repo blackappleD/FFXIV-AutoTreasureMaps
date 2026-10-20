@@ -336,7 +336,7 @@
   "settings.general.autoPause": "副本中自动暂停",
   "settings.general.autoPauseHelp": "在副本、讨伐战、团队副本或其他实例化内容中时暂停运行，回到外面后继续。你的运行进度和本次统计会保留。",
   "settings.general.tankbuster": "死刑减伤",
-  "settings.general.tankbusterHelp": "运行期间如果你是坦克，敌人对你读条1.5秒以上的技能，会在读条最后6秒内开职业的短减伤（原初的血气、圣盾阵、至黑之夜或刚玉之心），已经有减伤生效时不会再开。读条4秒以上的视为boss死刑，短减伤在冷却时改用铁壁等大减伤；更短的读条不会动用大减伤。默认关闭。",
+  "settings.general.tankbusterHelp": "运行期间如果你是坦克，个人减伤由本插件接管，战斗插件不再按血量开减伤。敌人对你读条1.5秒以上的技能，会在读条最后6秒内开职业的短减伤（原初的血气、圣盾阵、至黑之夜或刚玉之心）；血量低于80%时也会开短减伤。铁壁等大减伤只在宝物库boss读死刑、且短减伤在冷却时使用。已经有减伤生效时不会再开。默认关闭。",
   "plugin.commandHelp": "打开或关闭 TreasureHelper 窗口。\n/atm start - 执行藏宝图直到满足停止条件：解读、前往、挖掘、战斗并拾取\n/atm stop - 停止运行\n/atm pause - 暂停或继续运行\n/atm dig - 执行所持藏宝图：前往、挖掘、击败守卫并拾取宝箱\n/atm decipher [藏宝图] - 解读背包中的下一张陈旧的地图，或指定的那张\n/atm buy [藏宝图] - 在市场布告板上以不高于限价的价格购买下一张藏宝图，或指定的那张\n/atm spot - 显示所持藏宝图的挖掘地点\n/atm flag - 在地图上标记挖掘地点\n/atm goto spot - 前往挖掘地点\n/atm goto <territory> <x> <y> <z> - 前往指定地点（调试用）\n/atm goto stop - 停止该移动\n/atm tiers - 在控制台列出所有藏宝图种类\n/atm target - 输出当前目标的 BaseId\n/atm config - 打开设置\n/atm stats - 打开历史\n/atm log - 打开控制台\n/atm deps - 打开插件页\n/atm changelog - 打开更新日志\n/atm about - 打开关于页",
   "plugin.commandHelpAlias": "/atm 的别名。",
   "progress.phase.upkeep": "整备中",
