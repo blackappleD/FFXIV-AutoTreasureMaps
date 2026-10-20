@@ -34,18 +34,19 @@ public abstract partial class AutoCommon
     private const int LureCloseWaitMs = 3_000;
     // Nobody may be there to guess: the game waits about five minutes for a guess before it takes the treasure away.
     private const int LureQuietLimitMs = 360_000;
-    // Each challenge is taken before the first card shows, so it is won 7 times in 9 whatever the card turns out to
-    // be. A coffer with rare loot is challenged once: the treasure is kept 78% of the time, and a second challenge
-    // would keep it only 60% of the time. Any other coffer is challenged twice and taken at 3x: 1.82x on average with
-    // the treasure lost 40% of the time, against 1.88x and 53% for a third challenge.
-    private const int LureChallengesWithRareLoot = 1;
-    private const int LureChallengesPlain = 2;
+    // The first challenge is taken before any card shows and is won 7 times in 9, so it is always taken. The right card
+    // a won guess turns over becomes the next left card, so every later challenge is weighed on a known card: a card
+    // of c is won max(9 - c, c - 1) times in 8, a tie being dealt again. Without rare loot the treasure is played for
+    // the most on average: at 2x anything but a 5, at 3x a card of 1 to 3 or 7 to 9, from 4x a card of 1, 2, 8 or 9
+    // (2.00x on average, all lost 41% of the time). With rare loot only a card won at least 6 times in 8 is
+    // challenged, 1 to 3 or 7 to 9 at any share (1.95x, 34%).
+    private const int LureMiddleCard = 5;
+    private const int LureGameChallenges = 5;
     // The game takes the treasure away about five minutes after the cards are dealt if no one guesses. With the card
     // dealt face up readable, the run guesses on it at once; when it cannot be read, a guess not made by the player
     // within this long is made by a coin toss: an even chance beats losing the treasure for sure.
     private const int LureGuessWaitMs = 60_000;
-    // The middle card: 1 to 4 guess high, 6 to 9 guess low, and a 5 wins either way half the time.
-    private const int LureMiddleCard = 5;
+
     private const int LureGuessAnswerMs = 10_000;
     private const int LureCardReadMs = 3_000;
     private const int BonusRoundCapMs = 120_000;
@@ -749,8 +750,8 @@ public abstract partial class AutoCommon
         }
     }
 
-    // Challenges or takes the treasure by what the coffer holds and how many challenges it has had. The cards are left
-    // to the player. False when the window could not be read or would not take the choice.
+    // Challenges or takes the treasure by what the coffer holds, the shares it stands at and the card the next
+    // challenge would be guessed on. False when the window could not be read or would not take the choice.
     private async Task<bool> PlayLure(string scope, DungeonInProgress dungeon)
     {
         if (!LureDialog.TryReadRareLoot(out var rare, out var entries))
@@ -760,11 +761,18 @@ public abstract partial class AutoCommon
         }
 
         rare.RemoveAll(static itemId => !LootCleanup.KeepsRare(itemId));
-        var limit = lureUnattended ? 0 : rare.Count > 0 ? LureChallengesWithRareLoot : LureChallengesPlain;
         var next = NextLureChallenge(dungeon);
-        var challenge = next <= limit;
+        int? card = null;
+        var raw = 0;
+        if (next > 1)
+        {
+            card = DungeonField.LureCardFace(left: false, out raw);
+        }
+
+        var challenge = !lureUnattended && WorthChallenging(next, card, rare.Count > 0);
         var names = string.Join(", ", rare.Select(static itemId => NotableLoot.Name(itemId)));
-        Diag($"{scope}: {entries} treasure entr(ies), rare loot kept [{names}], unattended {lureUnattended}; challenge {next}, limit {limit}: {(challenge ? "challenging" : "taking the treasure")}.");
+        var cardText = next == 1 ? "none yet" : card?.ToString(CultureInfo.InvariantCulture) ?? $"unreadable (mask 0x{raw:X})";
+        Diag($"{scope}: {entries} treasure entr(ies), rare loot kept [{names}], unattended {lureUnattended}; challenge {next}, next card {cardText}: {(challenge ? "challenging" : "taking the treasure")}.");
         if (rare.Count > 0 && !dungeon.LureNoticeShown)
         {
             dungeon.LureNoticeShown = true;
@@ -780,6 +788,33 @@ public abstract partial class AutoCommon
             ? $"{AtmConstants.LogPrefix} {Loc.T(L.Dungeon.ChatLureChallenge, next)}"
             : $"{AtmConstants.LogPrefix} {Loc.T(L.Dungeon.ChatLureTake, next)}");
         return true;
+    }
+
+    // Whether to take challenge next, counted from 1, with the treasure at next shares. An unread card is not gambled on.
+    private static bool WorthChallenging(int next, int? card, bool rare)
+    {
+        if (next == 1)
+        {
+            return true;
+        }
+
+        if (next > LureGameChallenges || card is not { } value)
+        {
+            return false;
+        }
+
+        var wins = Math.Max(9 - value, value - 1);
+        if (rare)
+        {
+            return wins >= 6;
+        }
+
+        return next switch
+        {
+            2 => value != LureMiddleCard,
+            3 => wins >= 6,
+            _ => wins >= 7,
+        };
     }
 
     // The cards are dealt and wait on a guess. With the policy left to the player, the run names the better guess

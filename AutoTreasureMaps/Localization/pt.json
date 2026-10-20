@@ -788,8 +788,8 @@
   "dungeon.chat.recordStopped": "Gravação salva em {0}.",
   "dungeon.chat.notRecording": "Nada está sendo gravado.",
   "dungeon.chat.lureCapture": "A janela da armadilha da ganância está sendo registrada em {0}.",
-  "dungeon.chat.lureRare": "O baú tem saque raro ({0}), então a armadilha é desafiada só uma vez.",
-  "dungeon.chat.lureChallenge": "Armadilha da cobiça: desafio {0} aceito. Adivinhe maior ou menor você mesmo; a execução espera a armadilha acabar.",
+  "dungeon.chat.lureRare": "O baú tem saque raro ({0}), então após o primeiro desafio só se continua com uma carta de 1 a 3 ou de 7 a 9.",
+  "dungeon.chat.lureChallenge": "Armadilha da cobiça: desafio {0} aceito.",
   "dungeon.chat.lureTake": "Armadilha da cobiça: levando o tesouro em {0}x.",
   "dungeon.chat.lureBlindGuess": "Armadilha da cobiça: ninguém adivinhou em um minuto e a carta não pôde ser lida, então {0} foi escolhido ao acaso para não perder o tesouro. O resto da execução leva os baús como estão.",
   "dungeon.chat.lureCardHint": "Armadilha da cobiça: a carta mostra {0}; escolha {1}.",
@@ -834,5 +834,5 @@
   "dungeon.lure.open.name": "Abrir o baú",
   "dungeon.lure.open.detail": "Levar o tesouro como está e pular o jogo.",
   "dungeon.lure.auto.name": "Desafiar conforme o saque",
-  "dungeon.lure.auto.detail": "Desafia uma vez se o baú tiver saque raro que a limpeza mantém, senão duas vezes, e depois abre o baú. Cada escolha segue a carta virada: 1 a 4 maior, 6 a 9 menor."
+  "dungeon.lure.auto.detail": "Aceita o primeiro desafio e avalia cada seguinte pela carta, já que a carta virada é a próxima a ser adivinhada. Sem saque raro que a limpeza mantém, joga pela maior média; com ele, só continua com carta de 1 a 3 ou de 7 a 9. Cada escolha segue a carta: 1 a 4 maior, 6 a 9 menor."
 }

@@ -788,8 +788,8 @@
   "dungeon.chat.recordStopped": "Kayıt {0} dosyasına kaydedildi.",
   "dungeon.chat.notRecording": "Şu anda kayıt yapılmıyor.",
   "dungeon.chat.lureCapture": "Açgözlülük tuzağı penceresi {0} dosyasına kaydediliyor.",
-  "dungeon.chat.lureRare": "Sandıkta nadir ganimet var ({0}), bu yüzden tuzağa yalnızca bir kez meydan okunuyor.",
-  "dungeon.chat.lureChallenge": "Açgözlülük tuzağı: {0}. meydan okuma alındı. Büyük mü küçük mü kendin tahmin et; tuzak bitene kadar beklenir.",
+  "dungeon.chat.lureRare": "Sandıkta nadir ganimet var ({0}), bu yüzden ilk meydan okumadan sonra yalnızca 1-3 ya da 7-9 kartında devam edilir.",
+  "dungeon.chat.lureChallenge": "Açgözlülük tuzağı: {0}. meydan okuma alındı.",
   "dungeon.chat.lureTake": "Açgözlülük tuzağı: hazine {0} katıyla alınıyor.",
   "dungeon.chat.lureBlindGuess": "Açgözlülük tuzağı: bir dakika içinde kimse tahmin etmedi ve kart okunamadı, hazine kaybolmasın diye rastgele {0} seçildi. Bu turun geri kalanında sandıklar olduğu gibi alınır.",
   "dungeon.chat.lureCardHint": "Açgözlülük tuzağı: kart {0} gösteriyor; {1} seç.",
@@ -834,5 +834,5 @@
   "dungeon.lure.open.name": "Sandığı aç",
   "dungeon.lure.open.detail": "Hazineyi olduğu gibi al ve oyunu atla.",
   "dungeon.lure.auto.name": "Ganimete göre meydan oku",
-  "dungeon.lure.auto.detail": "Sandıkta temizliğin sakladığı nadir ganimet varsa bir kez, yoksa iki kez meydan okur, sonra sandığı açar. Her tahmin açık karta göre yapılır: 1-4 büyük, 6-9 küçük."
+  "dungeon.lure.auto.detail": "İlk meydan okumayı alır, sonrakileri kartına göre tartar, çünkü açılan kart tahmin edilecek bir sonraki karttır. Temizliğin sakladığı nadir ganimet yoksa en yüksek ortalamaya oynar; varsa yalnızca 1-3 ya da 7-9 kartında devam eder. Tahmin karta göre yapılır: 1-4 büyük, 6-9 küçük."
 }

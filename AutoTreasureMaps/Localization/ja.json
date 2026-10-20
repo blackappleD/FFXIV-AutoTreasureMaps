@@ -788,8 +788,8 @@
   "dungeon.chat.recordStopped": "記録を {0} に保存しました。",
   "dungeon.chat.notRecording": "記録中ではありません。",
   "dungeon.chat.lureCapture": "欲望の罠のウィンドウを {0} に記録しています。",
-  "dungeon.chat.lureRare": "宝箱にレアアイテム（{0}）があるため、罠への挑戦は1回だけにします。",
-  "dungeon.chat.lureChallenge": "強欲の罠：{0}回目の挑戦を選びました。ハイ・ローはご自身で選んでください。罠が終わるまで待機します。",
+  "dungeon.chat.lureRare": "宝箱にレアアイテム（{0}）があるため、2回目以降はカードが1〜3か7〜9のときだけ挑戦します。",
+  "dungeon.chat.lureChallenge": "強欲の罠：{0}回目の挑戦を選びました。",
   "dungeon.chat.lureTake": "強欲の罠：{0}倍の財宝を受け取ります。",
   "dungeon.chat.lureBlindGuess": "強欲の罠：1分以内に誰も選ばず、カードも読めなかったため、財宝を失わないよう{0}をランダムに選びました。この後の宝箱は挑戦せずにそのまま受け取ります。",
   "dungeon.chat.lureCardHint": "強欲の罠：カードは{0}です。{1}を選んでください。",
@@ -834,5 +834,5 @@
   "dungeon.lure.open.name": "宝箱を開ける",
   "dungeon.lure.open.detail": "罠には挑まず、そのままの財宝を受け取ります。",
   "dungeon.lure.auto.name": "中身で挑戦回数を決める",
-  "dungeon.lure.auto.detail": "整理で残すレアアイテムが宝箱にあれば1回、なければ2回挑戦してから宝箱を開けます。ハイ・ローは表向きのカードで決めます（1〜4はハイ、6〜9はロー）。"
+  "dungeon.lure.auto.detail": "1回目は必ず挑戦し、以降は次のカードを見て判断します（めくれた右のカードが次の左のカードになるため）。整理で残すレアアイテムがなければ期待値が最大になるように、あればカードが1〜3か7〜9のときだけ続けます。ハイ・ローはカードで決めます（1〜4はハイ、6〜9はロー）。"
 }

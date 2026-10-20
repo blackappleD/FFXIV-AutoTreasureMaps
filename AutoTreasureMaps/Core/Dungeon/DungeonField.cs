@@ -31,6 +31,9 @@ internal static unsafe class DungeonField
     private const uint LureCardObject = 2007457;
     private const int LureCardFaceOffset = 0x1B2;
     private const int LureCardFaceShift = 3;
+    // The left card stands about 2m from the midpoint of the choices on the 大 side, the right card as far on the 小
+    // side, and the coffer between them; a card counts as a side's past this.
+    private const float LureCardSideMeters = 1.5f;
     private const float LureCardMeters = 3.5f;
 
     public static Vector3 PlayerPosition => Svc.Objects.LocalPlayer?.Position ?? Vector3.Zero;
@@ -219,31 +222,35 @@ internal static unsafe class DungeonField
     }
 
     // The 大 or 小 choice waiting on a guess.
-    public static IGameObject? LureChoice(bool high)
-    {
-        foreach (var candidate in Svc.Objects)
-        {
-            if (IsLureChoice(candidate) && candidate.IsTargetable && (candidate.BaseId % 2 == 0) == high)
-            {
-                return candidate;
-            }
-        }
+    public static IGameObject? LureChoice(bool high) => FindLureChoice(high, targetableOnly: true);
 
-        return null;
-    }
-
-    // The value of the card dealt face up, 1 to 9, while a guess is waited on; null when no card near the choices
-    // shows exactly one face. raw is the part mask read, for the log.
+    // The value of the left card, dealt face up, while a guess is waited on; null when it does not show one face.
+    // raw is the mask read, for the log.
     public static int? LureShownCard(out int raw)
     {
         raw = 0;
-        if (LureChoice(true) is not { } high || LureChoice(false) is not { } low)
+        return LureGuessPending() ? LureCardFace(left: true, out raw) : null;
+    }
+
+    // The value a card shows, 1 to 9, at any point of the lure: the right card turned over by the last guess becomes
+    // the next challenge's left card, so it is read before deciding to challenge again. Null when the card is face
+    // down or not found.
+    public static int? LureCardFace(bool left, out int raw)
+    {
+        raw = 0;
+        if (FindLureChoice(high: true, targetableOnly: false) is not { } high || FindLureChoice(high: false, targetableOnly: false) is not { } low)
         {
             return null;
         }
 
         var middle = (high.Position + low.Position) / 2f;
-        int? shown = null;
+        var towardRight = low.Position - high.Position;
+        if (towardRight.LengthSquared() < float.Epsilon)
+        {
+            return null;
+        }
+
+        towardRight = Vector3.Normalize(towardRight);
         foreach (var candidate in Svc.Objects)
         {
             if (candidate.ObjectKind != ObjectKind.EventObj || candidate.BaseId != LureCardObject || candidate.Address == 0
@@ -252,23 +259,30 @@ internal static unsafe class DungeonField
                 continue;
             }
 
-            var mask = *(ushort*)((byte*)candidate.Address + LureCardFaceOffset);
-            if (FaceOf(mask) is not { } value)
+            var along = Vector3.Dot(candidate.Position - middle, towardRight);
+            if (left ? along > -LureCardSideMeters : along < LureCardSideMeters)
             {
                 continue;
             }
 
-            // Two faces up means the guess has already been answered; neither is the one to guess on.
-            if (shown is not null)
-            {
-                return null;
-            }
-
-            shown = value;
-            raw = mask;
+            raw = *(ushort*)((byte*)candidate.Address + LureCardFaceOffset);
+            return FaceOf(raw);
         }
 
-        return shown;
+        return null;
+    }
+
+    private static IGameObject? FindLureChoice(bool high, bool targetableOnly)
+    {
+        foreach (var candidate in Svc.Objects)
+        {
+            if (IsLureChoice(candidate) && (!targetableOnly || candidate.IsTargetable) && (candidate.BaseId % 2 == 0) == high)
+            {
+                return candidate;
+            }
+        }
+
+        return null;
     }
 
     private static int? FaceOf(int mask)
