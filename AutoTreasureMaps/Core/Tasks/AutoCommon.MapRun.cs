@@ -271,6 +271,12 @@ public abstract partial class AutoCommon
             return;
         }
 
+        // A dug portal the run is about to take is no refusal to the player; entering it says so in the chat instead.
+        if (result.Refusal == MapRefusal.PortalDug && WillEnterPortal())
+        {
+            return;
+        }
+
         var name = result.Tier.Name;
         if (result.Outcome == MapOutcome.Looted)
         {

@@ -1,14 +1,11 @@
 using AutoTreasureMaps.Core.Game.Ops;
-using Dalamud.Game.ClientState.Conditions;
 using ECommons.Automation;
-using ECommons.DalamudServices;
 using System.Threading.Tasks;
 
 namespace AutoTreasureMaps.Core.Tasks;
 
-public sealed class AutoAfterRun(AfterRunAction action) : AutoCommon
+public sealed class AutoAfterRun(AfterRunAction action, string postRunCommands) : AutoCommon
 {
-    private const int ReadyWaitMs = 20_000;
     private const int ConfirmationWaitMs = 6_000;
     // The game drops a chat command issued in the middle of a transition.
     private const int PreCommandSettleMs = 800;
@@ -18,6 +15,7 @@ public sealed class AutoAfterRun(AfterRunAction action) : AutoCommon
     private const string CloseGameCommand = "/xlkill";
 
     private readonly AfterRunAction action = action;
+    private readonly string postRunCommands = postRunCommands;
 
     protected override async Task Execute()
     {
@@ -31,20 +29,19 @@ public sealed class AutoAfterRun(AfterRunAction action) : AutoCommon
         }
     }
 
-    // A mob still on the character keeps it in combat, where neither the logout nor a clean exit goes through.
     private async Task FinishRun()
     {
-        await FightOffAttackers("after-run");
-        if (!await WaitUntilTimed(IsSafeToFinish, ReadyWaitMs, "after-run-ready"))
+        if (!await WaitUntilSafeToFinish("after-run"))
         {
             if (!CancelToken.IsCancellationRequested)
             {
-                Warn($"After-run {action} skipped: no safe moment (combat, casting, or a zone change) within {ReadyWaitMs / TimeUnits.MillisecondsPerSecond}s.");
+                Warn($"After-run chat commands and {action} skipped: no safe moment (combat, casting, or a zone change) within {AfterRunReadyWaitMs / TimeUnits.MillisecondsPerSecond}s.");
             }
 
             return;
         }
 
+        await SendPostRunCommands(postRunCommands);
         switch (action)
         {
             case AfterRunAction.Logout:
@@ -99,10 +96,4 @@ public sealed class AutoAfterRun(AfterRunAction action) : AutoCommon
         Diag($"After-run: closing the game with {CloseGameCommand}.");
         Chat.ExecuteCommand(CloseGameCommand);
     }
-
-    private static bool IsSafeToFinish()
-        => Svc.Objects.LocalPlayer is not null
-        && !Svc.Condition[ConditionFlag.InCombat]
-        && !Svc.Condition[ConditionFlag.BetweenAreas]
-        && !Svc.Condition[ConditionFlag.Casting];
 }

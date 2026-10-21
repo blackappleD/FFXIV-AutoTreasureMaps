@@ -1,5 +1,4 @@
 using AutoTreasureMaps.Core.Ipc;
-using clib.TaskSystem;
 using Dalamud.Plugin.Services;
 using ECommons.DalamudServices;
 using System.Runtime.CompilerServices;
@@ -8,7 +7,7 @@ using AutoTask = clib.Services.AutoTask;
 
 namespace AutoTreasureMaps.Core.Tasks;
 
-public abstract partial class AutoCommon : TaskBase
+public abstract partial class AutoCommon : AutoTask
 {
     private const int DelayPollFrames = 2;
     private const int WaitPollFrames = 30;

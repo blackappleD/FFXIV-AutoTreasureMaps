@@ -17,7 +17,7 @@ What counts:
 - Code execution or crashes triggerable by crafted game state.
 - The plugin teleporting, engaging mobs, or persisting something it shouldn't (beyond the documented treasure map automation, which is the feature).
 - Data exfiltration: the plugin makes two kinds of network call, both to [Universalis](https://universalis.app) and both only when you turn them on:
-  - **Buy on the cheapest world** (Market): before a purchase in a run, it asks for the map's listings, sending the data centre's name and the map's item id.
+  - **Buy on the cheapest world** (Market): once per purchase in a run, it asks in one request for the listings of the maps it may buy and when each world was last uploaded, sending the data centre's name and the maps' item ids.
   - **Estimate loot prices** (General): while a run is going or the stats are on screen, at most every half hour, it asks for the rare loot's prices, sending your home data centre's name and the rare loot's item ids.
 
   Any other network traffic would be a bug.

@@ -38,6 +38,9 @@ public abstract partial class AutoCommon
     private static string[] PortalPromptFragments
         => portalPromptFragments ??= Svc.Data.GetExcelSheet<Addon>().GetRowOrDefault(PortalPromptAddonRow) is { } row ? GameText.FixedFragments(row.Text) : [];
 
+    // Whether a portal the last map left would be walked into: the setting is on and the character is solo.
+    private protected static bool WillEnterPortal() => Plugin.Instance.Configuration.DungeonEnterPortal && !PartyPresence.InParty();
+
     // Enters the portal the last map left behind and clears the dungeon behind it. Stop when the run must end here: a
     // stop, a pause, or a fault already handed to the session.
     private protected async Task<PortalStep> EnterPortalAndClear(TreasureSession session, TreasureProgress progress)
@@ -66,7 +69,13 @@ public abstract partial class AutoCommon
         if (!await EnterPortal(portalLead))
         {
             DutyWatcher.ReleaseDungeonEntryHold();
-            return CancelToken.IsCancellationRequested ? PortalStep.Stop : PortalStep.Skipped;
+            if (CancelToken.IsCancellationRequested)
+            {
+                return PortalStep.Stop;
+            }
+
+            Svc.Chat.PrintError($"{AtmConstants.LogPrefix} {Loc.T(L.Dungeon.ChatPortalNotEntered)}");
+            return PortalStep.Skipped;
         }
 
         session.MarkOwnDungeon();

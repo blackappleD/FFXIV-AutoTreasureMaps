@@ -4,13 +4,14 @@ using System.Numerics;
 
 namespace AutoTreasureMaps.Core.Travel;
 
-internal readonly record struct CityInn(uint CityTerritoryId, uint InnTerritoryId, uint InnkeeperBaseId, Vector3 InnkeeperPosition);
+// CityAetheryteId is the city's own aetheryte, which a visit to another world leaves from and lands at.
+internal readonly record struct CityInn(uint CityTerritoryId, uint CityAetheryteId, uint InnTerritoryId, uint InnkeeperBaseId, Vector3 InnkeeperPosition);
 
 internal static class GrandCompanyInns
 {
-    private static readonly CityInn limsaLominsa = new(128, 177, 1000974, new Vector3(15.42688f, 39.99999f, 12.466553f));
-    private static readonly CityInn gridania = new(132, 179, 1000102, new Vector3(25.6627f, -8f, 99.74237f));
-    private static readonly CityInn uldah = new(130, 178, 1001976, new Vector3(28.85994f, 6.999999f, -80.12716f));
+    private static readonly CityInn limsaLominsa = new(128, 8, 177, 1000974, new Vector3(15.42688f, 39.99999f, 12.466553f));
+    private static readonly CityInn gridania = new(132, 2, 179, 1000102, new Vector3(25.6627f, -8f, 99.74237f));
+    private static readonly CityInn uldah = new(130, 9, 178, 1001976, new Vector3(28.85994f, 6.999999f, -80.12716f));
 
     // A character with no Grand Company has no home city to prefer, so it falls back to Limsa Lominsa.
     public static CityInn For(byte grandCompany) => grandCompany switch

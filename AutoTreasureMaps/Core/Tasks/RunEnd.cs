@@ -27,6 +27,10 @@ internal static class RunEnds
     public static bool MetStopCondition(RunEnd end)
         => end is RunEnd.OutOfMaps or RunEnd.MapLimit or RunEnd.TimeLimit or RunEnd.FailureStreak or RunEnd.KnockedOutTwice or RunEnd.SingleMap or RunEnd.Dungeon;
 
+    // The player's chat commands promise never to follow a failure, which a failure streak or two knockouts are.
+    public static bool Succeeded(RunEnd end)
+        => MetStopCondition(end) && end is not (RunEnd.FailureStreak or RunEnd.KnockedOutTwice);
+
     public static LocString Label(RunEnd end) => end switch
     {
         RunEnd.OutOfMaps => L.Run.EndOutOfMaps,

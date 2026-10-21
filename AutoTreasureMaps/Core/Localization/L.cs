@@ -266,6 +266,28 @@ internal static partial class L
         public static readonly LocString New = new("changelog.new", "New");
         public static readonly LocPlural Changes = new("changelog.changes", "{0} change", "{0} changes");
 
+        public static readonly LocString[] Release1200 =
+        [
+            new("changelog.r1200.1", "Added Chat commands to the settings: list your own commands, one per line (such as /li home or /ays m), and they run when a run finishes on its own, before the after-run action, never after Stop or a failure"),
+            new("changelog.r1200.2", "Fixed a run waiting at a hub aetheryte forever when none of the aethernet stops into a zone are attuned, as with the Idyllshire gates to the Hinterlands: it now stops with a message saying a stop needs attuning"),
+            new("changelog.r1200.3", "The main window now moves only when you drag its top bar, so a drag inside it no longer moves it by accident; turn on Drag from anywhere in the settings for the old behaviour"),
+        ];
+
+        public static readonly LocString[] Release1100 =
+        [
+            new("changelog.r1100.1", "Added treasure dungeons (experimental): with Enter the portal on under Dungeons (off by default), a solo run walks into the portal a map turns up, clears Cenote Ja Ja Gural or the Vault Oneiron, then moves on to the next map; /atm dig does the same. Contributed by blackappleD"),
+            new("changelog.r1100.2", "In treasure dungeons the run follows the glowing gate hint or a gate side you pick, fights a boss's adds before the boss, collects the bonus round's sacks and leaves the mandragora party alone unless you ask; Attack bonus enemies first can now be set per dungeon. Contributed by blackappleD"),
+            new("changelog.r1100.3", "Added a Gambler's Lure choice for treasure dungeons: Let me choose (the default) waits out the whole lure and suggests the better guess in chat, Open the coffer skips the game, and Challenge by the loot plays it on each card's odds, more carefully when the coffer holds rare loot you keep. Contributed by blackappleD"),
+            new("changelog.r1100.4", "Added Buy on the cheapest world (off by default): with Lifestream installed, the run checks Universalis and buys maps on another world of your data centre when that saves enough gil, skips worlds whose listings are over 12 hours old, and goes back to its starting world when the run ends. Contributed by blackappleD"),
+            new("changelog.r1100.5", "Added Buy a map ahead and Buy a spare before the first dig (both off by default), so back-to-back maps need fewer trips to the market board, and a busy market board is now waited out instead of ending the visit. Contributed by blackappleD"),
+            new("changelog.r1100.6", "Coffer guards go down faster, as the combat preset now spreads area attacks over the whole wave, and the new Mitigate tankbusters setting (off by default) uses a tank's short mitigation near the end of a heavy cast. Contributed by blackappleD"),
+            new("changelog.r1100.7", "Added per-map stats on the Treasure and History pages, and a Map log in History with each map's portal, dungeon floor, deaths, time and rare loot; tomestones are now counted on their own, like gil. Contributed by blackappleD"),
+            new("changelog.r1100.8", "Added Loot cleanup (off by default): it discards the low-value items coffers and dungeons drop, never anything you already held, keeps whitelisted and notable items, and lets you pick per map and per dungeon which rare loot to keep. Contributed by blackappleD"),
+            new("changelog.r1100.9", "Hovering a map name in the map settings or the market price caps shows the game's item tooltip, each map shows the patch it arrived in, and the /atm help lists one command per line. Contributed by blackappleD"),
+            new("changelog.r1100.10", "Fixed digs attempted in mid-air after a flying dismount, and, on the Chinese client, coffers left unopened after their guards fell and missing characters in map, city and loot names. Contributed by blackappleD"),
+            new("changelog.r1100.11", "Fixed long sessions ending in a crash or a Start button that stops working; moving around no longer sets up new game hooks each time"),
+        ];
+
         public static readonly LocString[] Release1000 =
         [
             new("changelog.r1000.1", "Runs your timeworn maps from start to finish: deciphers each one, flies to the dig spot, digs up the coffer, fights off its guards and loots it"),
@@ -375,6 +397,8 @@ internal static partial class L
         public static readonly LocString GeneralWindow = new("settings.general.window", "Window");
         public static readonly LocString OpenOnLogin = new("settings.general.openOnLogin", "Open on login");
         public static readonly LocString OpenOnLoginHelp = new("settings.general.openOnLoginHelp", "Pop the main window automatically the next time you log in.");
+        public static readonly LocString DragAnywhere = new("settings.general.dragAnywhere", "Drag from anywhere");
+        public static readonly LocString DragAnywhereHelp = new("settings.general.dragAnywhereHelp", "Move the window by dragging anywhere inside it. When off, only the top bar moves it.");
         public static readonly LocString GeneralBehavior = new("settings.general.behavior", "Behavior");
         public static readonly LocString AutoPause = new("settings.general.autoPause", "Auto-pause in content");
         public static readonly LocString AutoPauseHelp = new("settings.general.autoPauseHelp", "Pause the run while you are inside a duty, trial, raid, or any other instanced content, then resume it once you are back outside. Your run and session stats are kept.");
@@ -382,6 +406,11 @@ internal static partial class L
         public static readonly LocString LootPricesHelp = new("settings.general.lootPricesHelp", "Price the rare loot on the stat cards and in the tooltips from Universalis. While a run is going or the stats are on screen, the plugin sends Universalis your home data centre's name and the rare loot's item ids, at most every half hour. Off by default.");
         public static readonly LocString Tankbuster = new("settings.general.tankbuster", "Mitigate tankbusters");
         public static readonly LocString TankbusterHelp = new("settings.general.tankbusterHelp", "While a run is on and you play a tank, this plugin takes the personal mitigations over from the combat plugin, which then uses none by your HP. An enemy cast of 1.5 s or more aimed at you gets your job's short mitigation (Bloodwhetting, Holy Sheltron, The Blackest Night or Heart of Corundum) in the last 6 seconds of the cast. A treasure dungeon boss's tankbuster gets the short mitigation and one bigger cooldown, strongest first (Damnation before Rampart), as soon as their cooldowns allow. By your HP, the short mitigation is used under 80%, or under 50% while a boss is casting tankbusters, so it is ready for them. A bigger cooldown is used outside a tankbuster only when three or more enemies are hitting you and your HP is under 40%. Off by default.");
+
+        public static readonly LocString PostRunGroup = new("settings.postRun.group", "Chat commands");
+        public static readonly LocString PostRunLabel = new("settings.postRun.label", "Run when the run finishes");
+        public static readonly LocString PostRunHelp = new("settings.postRun.help", "One command per line, each starting with a slash. They run when a run ends on its own, before the after-run action, and never after Stop or a failure.");
+        public static readonly LocString PostRunCaption = new("settings.postRun.caption", "Lines that do not start with a slash are skipped, so nothing is ever said in chat. Try /li home to head home or /ays m to hand off to AutoRetainer.");
     }
 
     internal static class Plugin

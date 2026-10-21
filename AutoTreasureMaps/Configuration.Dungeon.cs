@@ -10,7 +10,7 @@ public enum GatePolicy : byte
 }
 
 // The Gambler's Lure: the coffer's high-or-low game. Opening the coffer takes the treasure as it is and skips the game;
-// Auto challenges or stops by the coffer's rare loot and leaves the cards to the player.
+// Auto challenges or stops by the coffer's rare loot and the card shown, and guesses on that card. AskMe stays the default.
 public enum LurePolicy : byte
 {
     AskMe,

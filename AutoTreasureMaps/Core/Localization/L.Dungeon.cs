@@ -15,6 +15,7 @@ internal static partial class L
         public static readonly LocString ChatLure = new("dungeon.chat.lure", "The Gambler's Lure is up. Make your choice; the run goes on once the lure is over.");
         public static readonly LocString ChatBonusRound = new("dungeon.chat.bonusRound", "A bonus round began. Pick up the glowing sacks yourself; the run goes on once it ends.");
         public static readonly LocString ChatEnteringPortal = new("dungeon.chat.enteringPortal", "A portal appeared. Entering it to clear the treasure dungeon.");
+        public static readonly LocString ChatPortalNotEntered = new("dungeon.chat.portalNotEntered", "The run could not get into the portal, so the dungeon is left to you.");
         public static readonly LocString ChatPortalInParty = new("dungeon.chat.portalInParty", "A portal appeared, but you are in a party, so the dungeon is left to you.");
         public static readonly LocString ChatNotOurDungeon = new("dungeon.chat.notOurDungeon", "The run did not enter this treasure dungeon, so it is up to you (/atm dungeon clears it). The run carries on once you are back outside.");
         public static readonly LocString ChatLootWaiting = new("dungeon.chat.lootWaiting", "Items still wait on a roll, so the run leaves the dungeon to you rather than lose them.");

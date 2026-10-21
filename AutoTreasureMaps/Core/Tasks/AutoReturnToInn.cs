@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 
 namespace AutoTreasureMaps.Core.Tasks;
 
-public sealed class AutoReturnToInn : AutoCommon
+public sealed class AutoReturnToInn(string postRunCommands) : AutoCommon
 {
     private const float InnkeeperArrivalMeters = 3.5f;
     private const float InnkeeperReachMeters = 5f;
@@ -21,8 +21,16 @@ public sealed class AutoReturnToInn : AutoCommon
     private const int DialogPollMs = 250;
     private const int InteractRetryMs = 500;
 
+    private readonly string postRunCommands = postRunCommands;
+
     protected override async Task Execute()
     {
+        await SendPostRunCommandsWhenSafe();
+        if (CancelToken.IsCancellationRequested)
+        {
+            return;
+        }
+
         var inn = GrandCompanyInns.ForPlayer();
         var cityName = TerritoryNames.Of(inn.CityTerritoryId);
         Diag($"Return to inn: {cityName} ({inn.CityTerritoryId}), innkeeper {inn.InnkeeperBaseId}, inn room territory {inn.InnTerritoryId}.");
@@ -44,7 +52,7 @@ public sealed class AutoReturnToInn : AutoCommon
                 return;
             }
 
-            if (Worlds.AwayFromHome && !await ChangeWorld(Worlds.Home, "inn-home", CityGateway(inn.CityTerritoryId)))
+            if (Worlds.AwayFromHome && !await ChangeWorld(Worlds.Home, "inn-home", inn.CityAetheryteId))
             {
                 if (!CancelToken.IsCancellationRequested)
                 {
@@ -79,14 +87,31 @@ public sealed class AutoReturnToInn : AutoCommon
         }
     }
 
-    // The inn city's own aetheryte, so the visit home lands in the city the inn is in: Limsa 8, Gridania 2, Ul'dah 9.
-    private static uint CityGateway(uint cityTerritoryId) => cityTerritoryId switch
+    private async Task SendPostRunCommandsWhenSafe()
     {
-        128 or 129 => 8,
-        132 or 133 => 2,
-        130 or 131 => 9,
-        _ => 0,
-    };
+        if (string.IsNullOrWhiteSpace(postRunCommands))
+        {
+            return;
+        }
+
+        try
+        {
+            if (await WaitUntilSafeToFinish("inn-commands"))
+            {
+                await SendPostRunCommands(postRunCommands);
+                return;
+            }
+
+            if (!CancelToken.IsCancellationRequested)
+            {
+                Warn($"Return to inn: chat commands skipped, no safe moment (combat, casting, or a zone change) within {AfterRunReadyWaitMs / TimeUnits.MillisecondsPerSecond}s.");
+            }
+        }
+        finally
+        {
+            ReleaseCombatMovement("inn-commands");
+        }
+    }
 
     private async Task EnterInn(CityInn inn, string cityName)
     {

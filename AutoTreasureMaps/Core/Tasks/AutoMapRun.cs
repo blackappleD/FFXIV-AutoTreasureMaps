@@ -44,15 +44,21 @@ internal sealed class AutoMapRun(TreasureSession session, TreasureProgress progr
                 return;
             }
 
-            if ((result.PortalSeen || result.Refusal == MapRefusal.PortalDug) && result.Outcome != MapOutcome.Cancelled
-                && await EnterPortalAndClear(session, progress) == PortalStep.Stop)
+            var portal = PortalStep.Skipped;
+            if ((result.PortalSeen || result.Refusal == MapRefusal.PortalDug) && result.Outcome != MapOutcome.Cancelled)
             {
-                return;
+                portal = await EnterPortalAndClear(session, progress);
+                if (portal == PortalStep.Stop)
+                {
+                    return;
+                }
             }
 
+            // A dug portal whose dungeon the run went on to clear ran the map after all; only one left alone is a refusal.
             if (MapOutcomes.Final(result.Outcome))
             {
-                session.Finish(result.Outcome == MapOutcome.Refused ? RunEnd.Refused : RunEnd.SingleMap, result.Refusal);
+                var refused = result.Outcome == MapOutcome.Refused && !(result.Refusal == MapRefusal.PortalDug && portal == PortalStep.Cleared);
+                session.Finish(refused ? RunEnd.Refused : RunEnd.SingleMap, refused ? result.Refusal : MapRefusal.None);
             }
         }
         catch (Exception exception)

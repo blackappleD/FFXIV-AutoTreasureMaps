@@ -102,28 +102,41 @@ internal sealed partial class TreasureController
         }
 
         ending.AfterActionDispatched = true;
-        var action = Plugin.Instance.Configuration.AfterRun;
-        if (action == AfterRunAction.StayLoggedIn)
+        var configuration = Plugin.Instance.Configuration;
+        var action = configuration.AfterRun;
+        var postRunCommands = ending.EndedBy is { } end && RunEnds.Succeeded(end) ? configuration.PostRunCommands : string.Empty;
+        if (action == AfterRunAction.StayLoggedIn && string.IsNullOrWhiteSpace(postRunCommands))
         {
-            Diag("Run completed by its stop condition; the after-run action is StayLoggedIn, nothing to do.");
+            Diag("Run completed by its stop condition; the after-run action is StayLoggedIn and no chat commands are set, nothing to do.");
             return false;
         }
 
         if (ending.DidNothing)
         {
-            Diag($"Run ended by its stop condition without doing any work; skipping after-run action {action}.");
+            Diag($"Run ended by its stop condition without doing any work; skipping chat commands and after-run action {action}.");
             return false;
         }
 
-        Diag($"Run completed by its stop condition; starting after-run action {action}.");
+        // Staying logged in still goes back to the starting world first, so the commands run once this plugin is done moving.
+        if (action == AfterRunAction.StayLoggedIn && TryTravelBack(ending, () => StartAfterRunTask(action, postRunCommands)))
+        {
+            return true;
+        }
+
+        StartAfterRunTask(action, postRunCommands);
+        return true;
+    }
+
+    private void StartAfterRunTask(AfterRunAction action, string postRunCommands)
+    {
+        Diag($"Run completed by its stop condition; starting chat commands and after-run action {action}.");
         progress.SetPhase(TreasurePhase.Finishing);
-        AutoCommon task = action == AfterRunAction.ReturnToInn ? new AutoReturnToInn() : new AutoAfterRun(action);
+        AutoCommon task = action == AfterRunAction.ReturnToInn ? new AutoReturnToInn(postRunCommands) : new AutoAfterRun(action, postRunCommands);
         RunTask(task, () =>
         {
             Diag($"After-run action {action} finished.");
             ClearRun();
         });
-        return true;
     }
 
     // Idempotent through Recorded, so an explicit Stop and a finished task can both call it.

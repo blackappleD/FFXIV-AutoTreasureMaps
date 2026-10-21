@@ -29,6 +29,7 @@ internal static class GeneralSettings
         DrawBehaviorGroup(configuration);
         DrawRunGroup(configuration);
         DrawAfterRunGroup(configuration);
+        PostRunSettings.Draw(configuration);
     }
 
     private static void DrawRunGroup(Configuration configuration)
@@ -79,6 +80,12 @@ internal static class GeneralSettings
             Loc.T(L.Settings.OpenOnLoginHelp),
             SettingsControls.ToggleWidth,
             () => SettingsControls.DrawToggle(configuration, () => configuration.AutoShowOnLogin, value => configuration.AutoShowOnLogin = value, "##atm_general_autoshow"),
+            SettingsRow.ToggleHeight);
+
+        SettingsRow.Draw(Loc.T(L.Settings.DragAnywhere),
+            Loc.T(L.Settings.DragAnywhereHelp),
+            SettingsControls.ToggleWidth,
+            () => SettingsControls.DrawToggle(configuration, () => configuration.DragWindowFromAnywhere, value => configuration.DragWindowFromAnywhere = value, "##atm_general_draganywhere"),
             SettingsRow.ToggleHeight);
     }
 

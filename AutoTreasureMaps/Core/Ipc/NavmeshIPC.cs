@@ -23,6 +23,8 @@ internal sealed class NavmeshIPC
     private const string ListWaypointsFailed = AtmConstants.LogPrefix + " Navmesh ListWaypoints failed";
     private const string StopFailed = AtmConstants.LogPrefix + " Navmesh Stop failed";
     private const string MoveToFailed = AtmConstants.LogPrefix + " Navmesh Path.MoveTo failed";
+    private const string GetToleranceFailed = AtmConstants.LogPrefix + " Navmesh Path.GetTolerance failed";
+    private const string PathfindAndMoveCloseToFailed = AtmConstants.LogPrefix + " Navmesh SimpleMove.PathfindAndMoveCloseTo failed";
 
     private static NavmeshIPC? instance;
 
@@ -38,6 +40,8 @@ internal sealed class NavmeshIPC
     private readonly ICallGateSubscriber<List<Vector3>, bool, object> pathMoveTo;
     private readonly ICallGateSubscriber<int> pathNumWaypoints;
     private readonly ICallGateSubscriber<List<Vector3>> pathListWaypoints;
+    private readonly ICallGateSubscriber<float> pathGetTolerance;
+    private readonly ICallGateSubscriber<Vector3, bool, float, bool> simpleMovePathfindAndMoveCloseTo;
 
     // Cached once so the per-frame stall checks do not allocate a delegate on every call.
     private readonly Func<bool> isRunningCall;
@@ -47,6 +51,7 @@ internal sealed class NavmeshIPC
     private readonly Func<float> buildProgressCall;
     private readonly Func<int> numWaypointsCall;
     private readonly Func<List<Vector3>?> listWaypointsCall;
+    private readonly Func<float> getToleranceCall;
     private readonly Action stopCall;
 
     private NavmeshIPC()
@@ -64,6 +69,8 @@ internal sealed class NavmeshIPC
         pathMoveTo = pluginInterface.GetIpcSubscriber<List<Vector3>, bool, object>("vnavmesh.Path.MoveTo");
         pathNumWaypoints = pluginInterface.GetIpcSubscriber<int>("vnavmesh.Path.NumWaypoints");
         pathListWaypoints = pluginInterface.GetIpcSubscriber<List<Vector3>>("vnavmesh.Path.ListWaypoints");
+        pathGetTolerance = pluginInterface.GetIpcSubscriber<float>("vnavmesh.Path.GetTolerance");
+        simpleMovePathfindAndMoveCloseTo = pluginInterface.GetIpcSubscriber<Vector3, bool, float, bool>("vnavmesh.SimpleMove.PathfindAndMoveCloseTo");
 
         isRunningCall = pathIsRunning.InvokeFunc;
         simpleMovePathfindInProgressCall = simpleMovePathfindInProgress.InvokeFunc;
@@ -72,6 +79,7 @@ internal sealed class NavmeshIPC
         buildProgressCall = navBuildProgress.InvokeFunc;
         numWaypointsCall = pathNumWaypoints.InvokeFunc;
         listWaypointsCall = pathListWaypoints.InvokeFunc;
+        getToleranceCall = pathGetTolerance.InvokeFunc;
         stopCall = pathStop.InvokeAction;
     }
 
@@ -94,6 +102,9 @@ internal sealed class NavmeshIPC
 
     public bool IsBusy()
         => IsRunning() || IsPathfinding();
+
+    public float Tolerance()
+        => IpcGate.Invoke(pathGetTolerance.HasFunction, getToleranceCall, 0f, GetToleranceFailed);
 
     // The pathfinder calls a polygon reachable only when it connects to one of its own seed points for the zone. A zone
     // seeded on one landmass reads every other landmass as unreachable, so this answers "is any floor here at all".
@@ -137,6 +148,14 @@ internal sealed class NavmeshIPC
     // Registered as an action on the far side, so it is HasAction that says whether it can be called.
     public void Stop()
         => IpcGate.Run(pathStop.HasAction, stopCall, StopFailed);
+
+    // Stops arriveWithin metres short of the destination, which is how the movement library parks beside a point.
+    public bool PathfindAndMoveCloseTo(Vector3 destination, bool fly, float arriveWithin)
+        => IpcGate.Invoke(
+            simpleMovePathfindAndMoveCloseTo.HasFunction,
+            () => simpleMovePathfindAndMoveCloseTo.InvokeFunc(destination, fly, arriveWithin),
+            false,
+            PathfindAndMoveCloseToFailed);
 
     // Follows the given waypoints as they are, with no path search, so the caller has to know the way is clear.
     public void MoveAlong(List<Vector3> waypoints, bool fly)

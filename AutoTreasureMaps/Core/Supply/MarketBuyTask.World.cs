@@ -11,7 +11,8 @@ namespace AutoTreasureMaps.Core.Supply;
 
 // Before the board is opened, Universalis tells which world of the data centre sells the map cheapest. The run visits
 // that world when the saving is worth the trip and buys there, digging on whatever world it stands on; the board it
-// opens there is read afresh, so a stale or sold listing only costs the trip.
+// opens there is read afresh, so a sold listing only costs the trip, and a world whose listings are too old is not
+// travelled to. Every tier is asked for in one request, made once for the purchase however many worlds it visits.
 internal sealed partial class MarketBuyTask
 {
     // Worlds tried after the first whose board had nothing under the cap after all.
@@ -19,6 +20,7 @@ internal sealed partial class MarketBuyTask
     private const int PriceQueryTimeoutMs = 15_000;
 
     private readonly HashSet<uint> excludedWorlds = [];
+    private Dictionary<uint, ItemListings>? prices;
 
     // Whether this purchase may visit other worlds at all. A purchase outside a run has nothing to travel back after it,
     // and in a party a visit would leave the party behind while the dig waits on members who are on another world.
@@ -56,25 +58,41 @@ internal sealed partial class MarketBuyTask
             return 0;
         }
 
+        prices ??= await QueryPrices(dataCenter, tiers);
+        if (prices is null)
+        {
+            return 0;
+        }
+
         var spendable = MarketRules.Spendable(configuration, session);
+        var now = DateTimeOffset.UtcNow;
         for (var index = 0; index < tiers.Count; index++)
         {
             var tier = tiers[index];
-            var listings = await QueryPrices(dataCenter, tier);
-            if (listings is null)
+            if (!prices.TryGetValue(tier.TimewornItemId, out var item))
             {
-                return 0;
+                Diag($"Market: Universalis has nothing on {tier.Name} in {dataCenter}.");
+                continue;
             }
 
+            var listings = item.Listings;
             var cap = MarketRules.CapOf(configuration, tier.Rank);
             // Universalis answers for the data centre asked, so every world it lists is one Lifestream can visit; the CN
             // World sheet marks no world public, so the sheet is not asked. A world Lifestream refuses is left out.
+            // A world whose listings were last uploaded too long ago is not travelled to either, as they are likely sold.
             var refused = new HashSet<uint>();
             var allowed = new HashSet<uint>();
+            var stale = new HashSet<uint>();
             bool Elsewhere(uint worldId)
             {
-                if (worldId == here || excludedWorlds.Contains(worldId) || refused.Contains(worldId))
+                if (worldId == here || excludedWorlds.Contains(worldId) || refused.Contains(worldId) || stale.Contains(worldId))
                 {
+                    return false;
+                }
+
+                if (!item.Fresh(worldId, now))
+                {
+                    stale.Add(worldId);
                     return false;
                 }
 
@@ -95,7 +113,7 @@ internal sealed partial class MarketBuyTask
             if (cheapest is null && cheapestHere is null)
             {
                 var lowest = listings.Count == 0 ? "none" : $"{listings.Min(listing => listing.UnitPrice)} gil";
-                Diag($"Market: Universalis shows no {tier.Name} under {cap} gil that can be bought in {dataCenter} ({listings.Count} listing(s), lowest {lowest}, {refused.Count} world(s) Lifestream would not visit).");
+                Diag($"Market: Universalis shows no {tier.Name} under {cap} gil that can be bought in {dataCenter} ({listings.Count} listing(s), lowest {lowest}, {refused.Count} world(s) Lifestream would not visit, {stale.Count} with listings too old).");
                 continue;
             }
 
@@ -118,10 +136,11 @@ internal sealed partial class MarketBuyTask
     }
 
     // Null when Universalis could not be asked; the run then buys where it stands.
-    private async Task<List<WorldListing>?> QueryPrices(string dataCenter, TreasureTier tier)
+    private async Task<Dictionary<uint, ItemListings>?> QueryPrices(string dataCenter, List<TreasureTier> tiers)
     {
-        Status = $"Comparing prices of {tier.Name} across {dataCenter}";
-        var request = Universalis.Listings(dataCenter, tier.TimewornItemId, CancelToken);
+        Status = $"Comparing map prices across {dataCenter}";
+        var itemIds = tiers.Select(static tier => tier.TimewornItemId).Distinct().ToList();
+        var request = Universalis.Listings(dataCenter, itemIds, CancelToken);
         await WaitUntilTimed(() => request.IsCompleted, PriceQueryTimeoutMs, "universalis prices");
         if (request.IsCompletedSuccessfully)
         {
