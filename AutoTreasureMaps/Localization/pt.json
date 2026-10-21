@@ -472,7 +472,7 @@
   "cleanup.group": "Descartar automaticamente",
   "cleanup.enable": "Descartar o espólio automaticamente",
   "cleanup.enableHelp": "Cada item que um baú ou uma masmorra do tesouro dá é anotado. Entre mapas, antes de entrar num portal e ao fim de uma execução, os itens anotados que não são mantidos são descartados da sua bolsa. Mapas e tudo na lista branca nunca são descartados, o saque raro é mantido a menos que você o escolha abaixo, e itens notáveis são mantidos a menos que você desative isso. A lista pertence à execução e ao personagem: é esquecida quando a execução para ou termina e ao fazer logout.",
-  "cleanup.safety": "Só pode ser descartado um item do qual a bolsa não tinha nenhum antes de o baú abrir, e nunca mais cópias do que o baú ou a masmorra deu. Um mapa ou masmorra em que você pausou a execução depois de o baú abrir é deixado de lado, pois o que você fez nesse meio-tempo pareceria saque.",
+  "cleanup.safety": "Só pode ser descartado um item do qual a bolsa não tinha nenhum antes de o baú abrir, a menos que ele não se empilhe (cada cópia ocupa então o seu próprio espaço), e nunca mais cópias do que o baú ou a masmorra deu. Um mapa ou masmorra em que você pausou a execução depois de o baú abrir é deixado de lado, pois o que você fez nesse meio-tempo pareceria saque.",
   "cleanup.off": "Descartar automaticamente está desligado. Nada é anotado nem descartado.",
   "cleanup.maxQuantity": "Manter pilhas grandes",
   "cleanup.maxQuantityHelp": "Um item obtido em quantidade maior que esta é mantido em vez de descartado, como uma pilha grande de pedras de amolar de uma masmorra do tesouro. 0 não define limite.",

@@ -472,7 +472,7 @@
   "cleanup.group": "Otomatik atma",
   "cleanup.enable": "Ganimeti otomatik at",
   "cleanup.enableHelp": "Bir sandığın ya da hazine zindanının verdiği her eşya not edilir. Haritalar arasında, bir portala girmeden önce ve çalışma bitince, tutulmayan not edilmiş eşyalar çantandan atılır. Haritalar ve beyaz listedeki her şey asla atılmaz, nadir ganimet aşağıda seçmedikçe tutulur, kayda değer eşyalar da bunu kapatmadıkça tutulur. Liste çalışmaya ve karaktere aittir: çalışma durunca ya da bitince ve oturumu kapatınca unutulur.",
-  "cleanup.safety": "Yalnızca sandık açılmadan önce çantada hiç olmayan bir eşya atılabilir, sandığın ya da zindanın verdiğinden fazla kopya asla atılmaz. Sandık açıldıktan sonra çalışmayı duraklattığın bir harita ya da zindana dokunulmaz; o arada yaptıkların onun ganimeti gibi görünürdü.",
+  "cleanup.safety": "Yalnızca sandık açılmadan önce çantada hiç olmayan bir eşya atılabilir, yığılmayan eşyalar hariç (her kopya kendi yuvasında durur); sandığın ya da zindanın verdiğinden fazla kopya asla atılmaz. Sandık açıldıktan sonra çalışmayı duraklattığın bir harita ya da zindana dokunulmaz; o arada yaptıkların onun ganimeti gibi görünürdü.",
   "cleanup.off": "Otomatik atma kapalı. Hiçbir şey not edilmez veya atılmaz.",
   "cleanup.maxQuantity": "Büyük yığınları tut",
   "cleanup.maxQuantityHelp": "Bundan fazla miktarda elde edilen eşya atılmak yerine tutulur, örneğin bir hazine zindanından gelen büyük bir bileği taşı yığını. 0 sınır koymaz.",

@@ -472,7 +472,7 @@
   "cleanup.group": "Auto-discard",
   "cleanup.enable": "Auto-discard loot",
   "cleanup.enableHelp": "Every item a coffer or a treasure dungeon gives is noted. Between maps, before walking into a portal, and once a run finishes, the noted items that are not kept are discarded from your bags. Maps and anything on the whitelist are never discarded, rare loot is kept unless you pick it below, and notable items are kept unless you turn that off. The noted list belongs to the run and the character: it is forgotten when the run stops or ends and when you log out.",
-  "cleanup.safety": "Only an item the bags held none of before the coffer opened can be discarded, and never more copies than the coffer or dungeon gave. A map or dungeon you paused the run in after its coffer opened is left alone, since what you did meanwhile would look like its loot.",
+  "cleanup.safety": "Only an item the bags held none of before the coffer opened can be discarded, unless it does not stack (each copy then has a slot of its own), and never more copies than the coffer or dungeon gave. A map or dungeon you paused the run in after its coffer opened is left alone, since what you did meanwhile would look like its loot.",
   "cleanup.off": "Auto-discard is off. Nothing is noted or discarded.",
   "cleanup.maxQuantity": "Keep large stacks",
   "cleanup.maxQuantityHelp": "An item looted in a larger quantity than this is kept instead of discarded, such as a big stack of whetstones from a treasure dungeon. 0 sets no limit.",

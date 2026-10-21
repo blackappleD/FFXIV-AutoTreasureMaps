@@ -472,7 +472,7 @@
   "cleanup.group": "Tirar automáticamente",
   "cleanup.enable": "Tirar el botín automáticamente",
   "cleanup.enableHelp": "Se anota cada objeto que da un cofre o una mazmorra del tesoro. Entre mapas, antes de entrar en un portal y al terminar una ejecución, los objetos anotados que no se conservan se tiran de tu inventario. Los mapas y todo lo de la lista blanca nunca se tiran, el botín raro se conserva salvo que lo elijas abajo, y los objetos destacados se conservan salvo que lo desactives. La lista pertenece a la ejecución y al personaje: se olvida al parar o terminar la ejecución y al cerrar sesión.",
-  "cleanup.safety": "Solo se puede tirar un objeto del que el inventario no tenía ninguno antes de abrir el cofre, y nunca más copias de las que dio el cofre o la mazmorra. Un mapa o mazmorra en el que pausaste la ejecución tras abrir el cofre se deja en paz, porque lo que hiciste mientras tanto parecería su botín.",
+  "cleanup.safety": "Solo se puede tirar un objeto del que el inventario no tenía ninguno antes de abrir el cofre, salvo que no se apile (entonces cada copia ocupa su propia casilla), y nunca más copias de las que dio el cofre o la mazmorra. Un mapa o mazmorra en el que pausaste la ejecución tras abrir el cofre se deja en paz, porque lo que hiciste mientras tanto parecería su botín.",
   "cleanup.off": "Tirar automáticamente está desactivado. No se anota ni se tira nada.",
   "cleanup.maxQuantity": "Conservar montones grandes",
   "cleanup.maxQuantityHelp": "Un objeto obtenido en mayor cantidad que esta se conserva en lugar de desecharse, como un montón grande de piedras de afilar de una mazmorra del tesoro. 0 no pone límite.",

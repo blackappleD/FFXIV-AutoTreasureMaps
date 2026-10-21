@@ -16,7 +16,8 @@ internal readonly record struct PendingLoot(uint ItemId, int Quantity, bool High
 // of, or (unless turned off) any other item of notable rarity, a unique item, equipment or an item that unlocks
 // something. Only loot that landed in the bags is listed, so gil, crystals and currency never are. The game discards
 // whole slots, so an item is listed only when the bags held none of it before the coffer opened (or it is listed
-// already): every copy in the bags is then loot. A map or dungeon that was paused after its coffer opened is not
+// already): every copy in the bags is then loot. An item that does not stack is the exception, as each copy has a slot
+// of its own: as many of its slots as the coffer gave are discarded, whatever the bags held before. A map or dungeon that was paused after its coffer opened is not
 // listed at all, since what the player did meanwhile would read as loot. The list belongs to one character and one
 // run: it is cleared when the run stops or ends and on logout, and a pass refuses to run for another character. A
 // pass discards one slot at a time, a human-like moment apart, takes each discarded slot off the noted quantity, and
@@ -184,7 +185,7 @@ internal static unsafe class LootCleanup
         }
 
         var held = bagsBefore.GetValueOrDefault(BagSnapshot.Key(gain.ItemId, gain.HighQuality));
-        if (IndexOf(gain.ItemId, gain.HighQuality) < 0 && held > 0)
+        if (IndexOf(gain.ItemId, gain.HighQuality) < 0 && held > 0 && !Unstacked(gain.ItemId))
         {
             if (log)
             {
@@ -196,6 +197,11 @@ internal static unsafe class LootCleanup
 
         return true;
     }
+
+    // One copy to a slot, so discarding a slot never takes a copy the bags held before. Equipment is left out: its
+    // copies can differ in materia, dye or spiritbond.
+    private static bool Unstacked(uint itemId)
+        => Svc.Data.GetExcelSheet<Item>().GetRowOrDefault(itemId) is { StackSize: <= 1 } item && item.EquipSlotCategory.RowId == 0;
 
     // A limit of 0 keeps nothing back for its quantity.
     private static bool OverLimit(int quantity, int limit) => limit > 0 && quantity > limit;
@@ -502,13 +508,14 @@ internal static unsafe class LootCleanup
     }
 
     // More of the item in the bags than was looted, in the same quality, means some came another way since; the item is
-    // dropped from the list rather than discarded, as a slot cannot be split.
+    // dropped from the list rather than discarded, as a slot cannot be split. An item that does not stack is discarded a
+    // slot at a time until the looted copies are gone, so the others stay.
     private static bool AllLoot(uint itemId, bool highQuality)
     {
         var at = IndexOf(itemId, highQuality);
         var looted = at < 0 ? 0 : pending[at].Quantity;
         var held = CountInBags(itemId, highQuality);
-        if (held <= looted)
+        if (held <= looted || (at >= 0 && Unstacked(itemId)))
         {
             return true;
         }
