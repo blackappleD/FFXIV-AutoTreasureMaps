@@ -418,6 +418,51 @@ internal static unsafe class DungeonField
         return false;
     }
 
+    // Whether a mandragora of the party is alive in the room, fighting or not.
+    public static bool AnyMandragora(DungeonProfile profile)
+    {
+        if (profile.MandragoraNameIds.Length == 0)
+        {
+            return false;
+        }
+
+        var objects = Svc.Objects;
+        for (var index = 0; index < objects.Length; index++)
+        {
+            if (objects[index] is IBattleNpc { BattleNpcKind: BattleNpcSubKind.Combatant, IsTargetable: true, IsDead: false } npc && npc.CurrentHp != 0 && profile.MandragoraOrder(npc.NameId) >= 0)
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    // The room's nearest live, targetable, hostile combatant that is not of the mandragora party, or null.
+    public static IBattleNpc? NearestNonMandragora(DungeonProfile profile)
+    {
+        var from = PlayerPosition;
+        IBattleNpc? nearest = null;
+        var best = EnemyMeters * EnemyMeters;
+        var objects = Svc.Objects;
+        for (var index = 0; index < objects.Length; index++)
+        {
+            if (objects[index] is not IBattleNpc { BattleNpcKind: BattleNpcSubKind.Combatant, IsTargetable: true, IsDead: false } npc || npc.CurrentHp == 0 || !npc.IsHostile() || profile.MandragoraOrder(npc.NameId) >= 0)
+            {
+                continue;
+            }
+
+            var distance = Vector3.DistanceSquared(from, npc.Position);
+            if (distance < best)
+            {
+                best = distance;
+                nearest = npc;
+            }
+        }
+
+        return nearest;
+    }
+
     // The enemy to kill first: the nearest rare enemy and then the mandragora whose marker comes next, where the settings
     // ask for them, then the nearest add the profile puts before the boss it comes with. Null when none is near. Only
     // live, targetable, hostile combatants within the room count.
