@@ -5,7 +5,8 @@ namespace AutoTreasureMaps.Core.Dungeon;
 internal static class DungeonLogMessages
 {
     // The Gambler's Lure: the first parameter of LureRound is the round, 1 to 5.
-    public const uint LureNotDisarmed = 6965;
+    // A guess that ties the two cards: the lure is "not fully disarmed" and the cards are dealt again for the same challenge.
+    public const uint LureTied = 6965;
     public const uint LureRound = 6966;
     public const uint LureSprung = 6967;
     public const uint LureDeclined = 6968;
@@ -49,7 +50,7 @@ internal static class DungeonLogMessages
 
     public static string? NameOf(uint logMessageId) => logMessageId switch
     {
-        LureNotDisarmed => nameof(LureNotDisarmed),
+        LureTied => nameof(LureTied),
         LureRound => nameof(LureRound),
         LureSprung => nameof(LureSprung),
         LureDeclined => nameof(LureDeclined),

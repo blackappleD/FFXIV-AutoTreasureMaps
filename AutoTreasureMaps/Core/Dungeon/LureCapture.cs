@@ -35,7 +35,7 @@ internal sealed unsafe class LureCapture : IDisposable
     private const int PollIntervalFrames = 5;
     private const int NodeDepth = 4;
     private const float CofferMeters = 8f;
-    private const uint FirstLureMessage = DungeonLogMessages.LureNotDisarmed;
+    private const uint FirstLureMessage = DungeonLogMessages.LureTied;
     private const uint LastLureMessage = DungeonLogMessages.LureTemptedAnother;
     private const float FieldMeters = 20f;
     private const float CardMeters = 4f;
@@ -385,7 +385,7 @@ internal sealed unsafe class LureCapture : IDisposable
             WriteCoffers();
         }
 
-        if (message.LogMessageId is DungeonLogMessages.LureNotDisarmed or DungeonLogMessages.LureDeclined or DungeonLogMessages.LureStopped
+        if (message.LogMessageId is DungeonLogMessages.LureDeclined or DungeonLogMessages.LureStopped
             or DungeonLogMessages.LureAllDisarmed or DungeonLogMessages.LureFailed)
         {
             EndLure(message.LogMessageId);

@@ -768,7 +768,8 @@ public abstract partial class AutoCommon
     // The lure's window closes the moment a challenge is taken and opens again for the next one, so between the two
     // the coffer looks free to open and the gates free to take. The lure runs while its window is up or its high and
     // low cards wait on a guess, and from the trap springing until the game says how it ended; until then nothing else
-    // in the chamber is touched. The cards are read off the field, so a plugin reload mid-lure still sees it.
+    // in the chamber is touched. A tied guess deals the cards again a few seconds later, so it does not end the lure.
+    // The cards are read off the field, so a plugin reload mid-lure still sees it.
     private bool LureOngoing(DungeonInProgress dungeon)
     {
         if (LureDialog.Open() || DungeonField.LureGuessPending())
@@ -777,7 +778,7 @@ public abstract partial class AutoCommon
         }
 
         return Messages.TryGetLatest(LureMessages, dungeon.RoundStartedAtMs, out var latest)
-            && latest.Id is DungeonLogMessages.LureSprung or DungeonLogMessages.LureRound or DungeonLogMessages.LureDisarmed
+            && latest.Id is DungeonLogMessages.LureSprung or DungeonLogMessages.LureRound or DungeonLogMessages.LureDisarmed or DungeonLogMessages.LureTied
             && Environment.TickCount64 - latest.AtMs < LureQuietLimitMs;
     }
 
@@ -786,7 +787,7 @@ public abstract partial class AutoCommon
         DungeonLogMessages.LureSprung,
         DungeonLogMessages.LureRound,
         DungeonLogMessages.LureDisarmed,
-        DungeonLogMessages.LureNotDisarmed,
+        DungeonLogMessages.LureTied,
         DungeonLogMessages.LureDeclined,
         DungeonLogMessages.LureStopped,
         DungeonLogMessages.LureAllDisarmed,
