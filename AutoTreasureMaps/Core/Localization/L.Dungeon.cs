@@ -63,6 +63,13 @@ internal static partial class L
         public static readonly LocString GroupBonus = new("dungeon.group.bonus", "Bonus enemies");
         public static readonly LocString PreferBonus = new("dungeon.preferBonus", "Attack bonus enemies first");
         public static readonly LocString PreferBonusHelp = new("dungeon.preferBonusHelp", "Rare enemies that drop extra loot and run off if left too long, such as the goldy cat and the vaultkeeper, are attacked before anything else.");
+        public static readonly LocString PerDungeonBonusHelp = new("dungeon.perDungeonBonusHelp", "Whether bonus enemies are attacked first in this dungeon only.");
+        public static readonly LocString BonusDefaultName = new("dungeon.bonus.default.name", "As above");
+        public static readonly LocString BonusDefaultDetail = new("dungeon.bonus.default.detail", "Follow the setting above.");
+        public static readonly LocString BonusFirstName = new("dungeon.bonus.first.name", "Attack first");
+        public static readonly LocString BonusFirstDetail = new("dungeon.bonus.first.detail", "Bonus enemies are attacked before anything else here.");
+        public static readonly LocString BonusLastName = new("dungeon.bonus.last.name", "Not first");
+        public static readonly LocString BonusLastDetail = new("dungeon.bonus.last.detail", "Bonus enemies are fought like the rest here, so the other enemies are not left hitting you.");
         public static readonly LocString MandragorasInOrder = new("dungeon.mandragorasInOrder", "Kill the mandragora party in order");
         public static readonly LocString MandragorasInOrderHelp = new("dungeon.mandragorasInOrderHelp", "The five mandragoras are killed by the numbers over their heads: onion, eggplant, garlic, tomato, then the queen. With both settings on, bonus enemies still come first.");
         public static readonly LocString MandragorasSoloNote = new("dungeon.mandragorasSoloNote", "Not recommended solo: area attacks and the rotation's own picks can kill them out of order, which loses the full reward.");

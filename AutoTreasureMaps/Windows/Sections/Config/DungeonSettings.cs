@@ -23,6 +23,14 @@ internal static class DungeonSettings
         new(L.Dungeon.GateDefaultName, L.Dungeon.GateDefaultDetail),
     ];
 
+    // A dungeon's own bonus setting: follow the one above, first, not first.
+    private static readonly SettingsControls.Choices.Choice[] bonusOverrideChoices =
+    [
+        new(L.Dungeon.BonusDefaultName, L.Dungeon.BonusDefaultDetail),
+        new(L.Dungeon.BonusFirstName, L.Dungeon.BonusFirstDetail),
+        new(L.Dungeon.BonusLastName, L.Dungeon.BonusLastDetail),
+    ];
+
     // Ordered like LurePolicy.
     private static readonly SettingsControls.Choices.Choice[] lureChoices =
     [
@@ -49,6 +57,16 @@ internal static class DungeonSettings
             () => SettingsControls.DrawToggle(configuration, () => configuration.DungeonPreferBonusEnemies, value => configuration.DungeonPreferBonusEnemies = value, "##atm_dungeon_bonus"),
             SettingsRow.ToggleHeight);
 
+        var handlers = DungeonRegistry.All;
+        for (var index = 0; index < handlers.Length; index++)
+        {
+            var profile = handlers[index].Profile;
+            if (profile.BonusNameIds.Length > 0)
+            {
+                DrawBonusOverride(configuration, profile);
+            }
+        }
+
         SettingsRow.Draw(Loc.T(L.Dungeon.MandragorasInOrder),
             Loc.T(L.Dungeon.MandragorasInOrderHelp),
             SettingsControls.ToggleWidth,
@@ -57,6 +75,28 @@ internal static class DungeonSettings
 
         // Area attacks kill the party out of order, which a solo character cannot avoid, so the warning stands out.
         SettingsRow.Note(Loc.T(L.Dungeon.MandragorasSoloNote), Styling.AccentAmber);
+    }
+
+    private static void DrawBonusOverride(Configuration configuration, DungeonProfile profile)
+    {
+        var key = profile.Key;
+        var selected = !configuration.DungeonPreferBonusOverrides.TryGetValue(key, out var prefer) ? 0 : prefer ? 1 : 2;
+        SettingsRow.Draw(TerritoryNames.Of(profile.TerritoryId),
+            Loc.T(L.Dungeon.PerDungeonBonusHelp),
+            SettingsControls.RowComboWidth,
+            () => SettingsControls.Choices.DrawCombo($"##atm_dungeon_bonus_{key}", bonusOverrideChoices, selected, choice =>
+            {
+                if (choice == 0)
+                {
+                    configuration.DungeonPreferBonusOverrides.Remove(key);
+                }
+                else
+                {
+                    configuration.DungeonPreferBonusOverrides[key] = choice == 1;
+                }
+
+                configuration.SaveDebounced();
+            }));
     }
 
     private static void DrawPortal(Configuration configuration)

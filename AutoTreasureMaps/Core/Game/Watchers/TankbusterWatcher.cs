@@ -18,14 +18,15 @@ namespace AutoTreasureMaps.Core.Game.Watchers;
 //
 // A cast aimed at the character gets the job's short mitigation (Bloodwhetting, Holy Sheltron, The Blackest Night, Heart
 // of Corundum) once the cast is close enough to its end for the buff to cover it, unless one of the job's mitigations is
-// already up. A boss's tankbuster, one of the casts listed here, gets the short mitigation and one bigger cooldown, each
-// as soon as its cooldown allows; nothing else ever spends a bigger one. One answer covers a window, so a volley from
-// several casters spends it once. Some bosses cast their tankbuster through an invisible helper, which has no nameplate
-// and so never reads as hostile; a helper's cast counts only when it is listed.
+// already up. A boss's tankbuster, one of the casts listed here, gets the short mitigation and one bigger cooldown (the
+// strongest ready, unless one is up already), each as soon as its cooldown allows. One answer covers a window, so a
+// volley from several casters spends it once. Some bosses cast their tankbuster through an invisible helper, which has no
+// nameplate and so never reads as hostile; a helper's cast counts only when it is listed.
 //
-// What the tank module did by the HP is done here without the bigger cooldowns: the short mitigation under 80%, a
-// warrior's Thrill of Battle and Equilibrium under 50%, a gunbreaker's Aurora under 80%. Its invulnerability stays with
-// the combat plugin.
+// What the tank module did by the HP is done here: the short mitigation under 80%, or under 50% while a boss that casts
+// tankbusters is up so it is ready for them, a warrior's Thrill of Battle and Equilibrium under 50%, a gunbreaker's
+// Aurora under 80%. The only bigger cooldown used outside a tankbuster goes to a pack of three or more hitting the
+// character under 40%. Its invulnerability stays with the combat plugin.
 //
 // One press per frame, and only while the character is free to act: a press made during an animation lock is queued by
 // the game, and that queue was seen to hold Damnation for 4 s, past the hit. A cast being answered comes before the HP.
@@ -43,6 +44,13 @@ internal sealed unsafe class TankbusterWatcher : IDisposable
     // The BNpcBase row of the invisible helper a boss casts some of its attacks through.
     private const uint HelperBaseId = 9020;
     private const float ShortMitigationHpRatio = 0.8f;
+    // While a boss that casts tankbusters is up, the short mitigation is kept for them and used by the HP only this low.
+    private const float ShortMitigationBossHpRatio = 0.5f;
+    // A boss's tankbusters come every 40 to 85 s, so one seen this recently means the boss is still up.
+    private const long BossFightMs = 90_000;
+    // A pack this big hitting the character this low gets one bigger cooldown, the only use outside a tankbuster.
+    private const float PackHpRatio = 0.4f;
+    private const int PackAttackers = 3;
     private const float WarriorHealHpRatio = 0.5f;
     private const float AuroraHpRatio = 0.8f;
     // The tank module's setting is a transient one that a rewritten preset loses, so it is set again this often.
@@ -104,6 +112,7 @@ internal sealed unsafe class TankbusterWatcher : IDisposable
     // The cast being answered and what has been pressed for it.
     private (uint Caster, uint Action) answering;
     private readonly List<uint> pressed = [];
+    private long lastTankbusterMs = long.MinValue / 2;
 
     private enum Press : byte { Now, Done }
 
@@ -187,6 +196,12 @@ internal sealed unsafe class TankbusterWatcher : IDisposable
                 pressed.Clear();
             }
 
+            answeringSeen = true;
+            if (tankbuster)
+            {
+                lastTankbusterMs = Environment.TickCount64;
+            }
+
             busy = true;
             if (!FreeToAct())
             {
@@ -234,8 +249,26 @@ internal sealed unsafe class TankbusterWatcher : IDisposable
         }
         if (!busy)
         {
-            MitigateByHp(mitigations, player);
+            var bossUp = Environment.TickCount64 - lastTankbusterMs < BossFightMs;
+            MitigateByHp(mitigations, player, bossUp, Attackers(player));
         }
+    }
+
+    // Hostile combatants whose target is the character.
+    private static int Attackers(IPlayerCharacter player)
+    {
+        var count = 0;
+        var objects = Svc.Objects;
+        for (var index = 0; index < objects.Length; index++)
+        {
+            if (objects[index] is IBattleNpc { BattleNpcKind: BattleNpcSubKind.Combatant, IsDead: false } npc
+                && npc.TargetObjectId == player.GameObjectId && npc.IsHostile())
+            {
+                count++;
+            }
+        }
+
+        return count;
     }
 
     // Tells the combat plugin's tank module to use no personal mitigation while this watcher owns them, and hands them
@@ -307,24 +340,59 @@ internal sealed unsafe class TankbusterWatcher : IDisposable
             return Press.Now;
         }
 
-        var bigUp = up != 0 && up != shortId;
-        for (var mitigationIndex = 1; tankbuster && !bigUp && mitigationIndex < mitigations.Length; mitigationIndex++)
+        // One bigger cooldown per tankbuster, so the next one still has the other.
+        if (tankbuster && !BigPressed(actions, mitigations, pressed) && BigUp(actions, mitigations, player) == 0
+            && ReadyBig(actions, mitigations, player) is var bigId and not 0)
         {
-            var bigId = actions->GetAdjustedActionId(mitigations[mitigationIndex]);
-            if (pressed.Contains(bigId))
-            {
-                break;
-            }
-
-            if (Ready(actions, bigId, player))
-            {
-                actionId = bigId;
-                return Press.Now;
-            }
+            actionId = bigId;
+            return Press.Now;
         }
 
         actionId = up;
         return Press.Done;
+    }
+
+    private static bool BigPressed(ActionManager* actions, uint[] mitigations, List<uint> pressed)
+    {
+        for (var mitigationIndex = 1; mitigationIndex < mitigations.Length; mitigationIndex++)
+        {
+            if (pressed.Contains(actions->GetAdjustedActionId(mitigations[mitigationIndex])))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    // The first bigger cooldown whose buff is on the character, or 0.
+    private static uint BigUp(ActionManager* actions, uint[] mitigations, IPlayerCharacter player)
+    {
+        for (var mitigationIndex = 1; mitigationIndex < mitigations.Length; mitigationIndex++)
+        {
+            var actionId = actions->GetAdjustedActionId(mitigations[mitigationIndex]);
+            if (BuffUp(player, actionId))
+            {
+                return actionId;
+            }
+        }
+
+        return 0;
+    }
+
+    // The strongest bigger cooldown that is ready, or 0.
+    private static uint ReadyBig(ActionManager* actions, uint[] mitigations, IPlayerCharacter player)
+    {
+        for (var mitigationIndex = 1; mitigationIndex < mitigations.Length; mitigationIndex++)
+        {
+            var actionId = actions->GetAdjustedActionId(mitigations[mitigationIndex]);
+            if (Ready(actions, actionId, player))
+            {
+                return actionId;
+            }
+        }
+
+        return 0;
     }
 
     // A press now runs at once instead of waiting in the game's queue: no animation lock, nothing queued.
@@ -334,9 +402,10 @@ internal sealed unsafe class TankbusterWatcher : IDisposable
         return actions is not null && actions->AnimationLock <= 0 && !actions->ActionQueued;
     }
 
-    // The short mitigation once the HP falls under 80% without its own buff up, and the warrior's and the gunbreaker's
-    // heals; never a bigger cooldown. At most one press, and only while the character is free to act.
-    private static void MitigateByHp(uint[] mitigations, IPlayerCharacter player)
+    // The short mitigation once the HP falls under 80% (50% while a boss that casts tankbusters is up, so it is ready for
+    // them) without its own buff up, one bigger cooldown when a pack of three or more is hitting the character under
+    // 40%, and the warrior's and the gunbreaker's heals. At most one press, and only while the character is free to act.
+    private static void MitigateByHp(uint[] mitigations, IPlayerCharacter player, bool bossUp, int attackers)
     {
         var actions = ActionManager.Instance();
         if (actions is null || player.MaxHp == 0 || !FreeToAct())
@@ -346,8 +415,16 @@ internal sealed unsafe class TankbusterWatcher : IDisposable
 
         var ratio = (float)player.CurrentHp / player.MaxHp;
         var shortId = actions->GetAdjustedActionId(mitigations[0]);
-        if (ratio < ShortMitigationHpRatio && !BuffUp(player, shortId) && UseByHp(actions, shortId, player, ratio))
+        var shortRatio = bossUp ? ShortMitigationBossHpRatio : ShortMitigationHpRatio;
+        if (ratio < shortRatio && !BuffUp(player, shortId) && UseByHp(actions, shortId, player, ratio))
         {
+            return;
+        }
+
+        if (ratio < PackHpRatio && attackers >= PackAttackers && BigUp(actions, mitigations, player) == 0
+            && ReadyBig(actions, mitigations, player) is var bigId and not 0 && UseByHp(actions, bigId, player, ratio))
+        {
+            RunLog.Info($"Tankbuster: {attackers} enemies are hitting the character; used {ActionName(bigId)} for the pack.");
             return;
         }
 

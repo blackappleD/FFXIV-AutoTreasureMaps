@@ -690,7 +690,7 @@ public abstract partial class AutoCommon
     private bool FocusPriorityEnemy(DungeonContext context, string scope, IBattleNpc? enemy)
     {
         var configuration = context.Config;
-        var priority = DungeonField.PriorityEnemy(context.Profile, configuration.DungeonPreferBonusEnemies, configuration.DungeonMandragorasInOrder);
+        var priority = DungeonField.PriorityEnemy(context.Profile, configuration.PreferBonusFor(context.Profile.Key), configuration.DungeonMandragorasInOrder);
         var avoidMandragoras = !configuration.DungeonMandragorasInOrder && DungeonField.UnpulledMandragora(context.Profile);
         SetPriorityTargeting(scope, priority is not null || avoidMandragoras, avoidMandragoras);
         if (priority is not null)
