@@ -138,13 +138,26 @@ internal sealed partial class MarketBuyTask(TreasureSession? session, byte onlyR
     private async Task<MapSupplyAnswer> VisitCheapestWorld(Configuration configuration, List<TreasureTier> tiers)
     {
         MapSupplyAnswer? previous = null;
+        // The world whose board kept asking to wait, while another is looked for; and once none qualifies, the run
+        // waits on that board instead of leaving it again.
+        uint throttledOn = 0;
+        var waitOutThrottles = false;
         for (var hop = 0; ; hop++)
         {
-            var travelledTo = await MoveToCheapestWorld(configuration, tiers);
+            var travelledTo = await MoveToCheapestWorld(configuration, tiers, throttledOn);
             if (CancelToken.IsCancellationRequested)
             {
                 return MapSupplyAnswer.Cancelled;
             }
+
+            if (throttledOn != 0 && travelledTo == 0)
+            {
+                Diag($"Market: no other world qualifies; waiting on the board on {Worlds.NameOf(throttledOn)} instead.");
+                excludedWorlds.Remove(throttledOn);
+                waitOutThrottles = true;
+            }
+
+            throttledOn = 0;
 
             // No other world qualifies after an empty board, so the board just read is not read again.
             if (previous is { } empty && travelledTo == 0)
@@ -152,15 +165,15 @@ internal sealed partial class MarketBuyTask(TreasureSession? session, byte onlyR
                 return empty;
             }
 
-            leaveOnThrottle = hop < MaxWorldHops && CanVisitWorlds(configuration);
+            leaveOnThrottle = !waitOutThrottles && hop < MaxWorldHops && CanVisitWorlds(configuration);
             var answer = await Visit(configuration, tiers);
             leaveOnThrottle = false;
             if (throttledOut)
             {
                 throttledOut = false;
                 var here = Worlds.Current;
-                Diag($"Market: the board on {Worlds.NameOf(here)} asked to wait {ThrottlesBeforeWorldChange} times; trying another world.");
-                Svc.Chat.Print($"{AtmConstants.LogPrefix} {Loc.T(L.Market.ChatThrottledWorld, Worlds.NameOf(here))}");
+                Diag($"Market: the board on {Worlds.NameOf(here)} asked to wait {ThrottlesBeforeWorldChange} times; looking for another world.");
+                throttledOn = here;
                 excludedWorlds.Add(here);
                 await CloseBoard();
                 continue;

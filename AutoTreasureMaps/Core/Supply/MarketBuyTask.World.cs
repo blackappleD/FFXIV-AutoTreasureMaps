@@ -43,8 +43,9 @@ internal sealed partial class MarketBuyTask
         return reason is null;
     }
 
-    // The world travelled to for this visit, or 0 when the run stayed where it was.
-    private async Task<uint> MoveToCheapestWorld(Configuration configuration, List<TreasureTier> tiers)
+    // The world travelled to for this visit, or 0 when the run stayed where it was. throttledOn names the world being
+    // left because its board kept asking to wait; the chat says so only once the run really travels.
+    private async Task<uint> MoveToCheapestWorld(Configuration configuration, List<TreasureTier> tiers, uint throttledOn = 0)
     {
         if (!CanVisitWorlds(configuration, log: true))
         {
@@ -125,6 +126,11 @@ internal sealed partial class MarketBuyTask
 
             var name = Worlds.NameOf(best.WorldId);
             Diag($"Market: Universalis lists {tier.Name} at {best.UnitPrice} gil on {name}, {Describe(cheapestHere)} on {Worlds.NameOf(here)}.");
+            if (throttledOn != 0)
+            {
+                Svc.Chat.Print($"{AtmConstants.LogPrefix} {Loc.T(L.Market.ChatThrottledWorld, Worlds.NameOf(throttledOn))}");
+            }
+
             Svc.Chat.Print($"{AtmConstants.LogPrefix} {Loc.T(L.Market.ChatCheapestWorld, tier.Name, name, best.UnitPrice.ToString("N0", Loc.Culture))}");
             CloseBoardNow();
             // Visiting from the board's own city aetheryte lands the character next to the board it is about to use.
