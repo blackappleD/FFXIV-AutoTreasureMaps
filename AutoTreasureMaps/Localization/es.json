@@ -826,7 +826,7 @@
   "dungeon.chat.recordStopped": "Grabación guardada en {0}.",
   "dungeon.chat.notRecording": "No se está grabando nada.",
   "dungeon.chat.lureCapture": "La ventana de la trampa de la codicia se está registrando en {0}.",
-  "dungeon.chat.lureRare": "El cofre contiene botín raro ({0}), así que tras el primer desafío solo se sigue con una carta de 1 a 3 o de 7 a 9.",
+  "dungeon.chat.lureRare": "El cofre contiene botín raro ({0}), así que se toma el tesoro tal cual en vez de desafiar a ciegas.",
   "dungeon.chat.lureChallenge": "Trampa de la codicia: desafío {0} aceptado.",
   "dungeon.chat.lureTake": "Trampa de la codicia: se toma el tesoro a x{0}.",
   "dungeon.chat.lureBlindGuess": "Trampa de la codicia: nadie adivinó en un minuto y la carta no se pudo leer, así que se eligió {0} al azar para no perder el tesoro. El resto de la ejecución toma los cofres tal cual.",
@@ -881,5 +881,5 @@
   "dungeon.lure.open.name": "Abrir el cofre",
   "dungeon.lure.open.detail": "Llevarse el tesoro tal cual y saltarse el juego.",
   "dungeon.lure.auto.name": "Desafiar según el botín",
-  "dungeon.lure.auto.detail": "Acepta el primer desafío y decide cada uno de los siguientes por su carta, ya que la carta descubierta es la siguiente sobre la que se adivina. Sin botín raro que la limpieza conserve juega por el mayor promedio; con él solo sigue con una carta de 1 a 3 o de 7 a 9. Cada elección sigue la carta: 1 a 4 mayor, 6 a 9 menor."
+  "dungeon.lure.auto.detail": "Acepta el primer desafío salvo que el cofre tenga botín raro que la limpieza conserve, y decide cada uno de los siguientes por su carta, ya que la carta descubierta es la siguiente sobre la que se adivina. Sin botín raro juega por el mayor promedio; con él solo sigue con una carta de 1 a 3 o de 7 a 9. Cada elección sigue la carta: 1 a 4 mayor, 6 a 9 menor."
 }

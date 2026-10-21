@@ -26,7 +26,7 @@ internal static partial class L
         public static readonly LocString ChatRecording = new("dungeon.chat.recording", "Already recording to {0}.");
         public static readonly LocString ChatRecordStopped = new("dungeon.chat.recordStopped", "Recording saved to {0}.");
         public static readonly LocString ChatLureCapture = new("dungeon.chat.lureCapture", "The Gambler's Lure window is being written down to {0}.");
-        public static readonly LocString ChatLureRare = new("dungeon.chat.lureRare", "The coffer holds rare loot ({0}), so after the first challenge the lure is challenged only on a card of 1 to 3 or 7 to 9.");
+        public static readonly LocString ChatLureRare = new("dungeon.chat.lureRare", "The coffer holds rare loot ({0}), so the treasure is taken as it is rather than challenged blind.");
         public static readonly LocString ChatLureChallenge = new("dungeon.chat.lureChallenge", "Gambler's Lure: challenge {0} taken.");
         public static readonly LocString ChatLureTake = new("dungeon.chat.lureTake", "Gambler's Lure: taking the treasure at {0}x.");
         public static readonly LocString ChatLureBlindGuess = new("dungeon.chat.lureBlindGuess", "Gambler's Lure: no one guessed within a minute and the card could not be read, so the run guessed {0} at random to keep the treasure from being lost. The rest of this run takes the coffers as they are.");
@@ -83,6 +83,6 @@ internal static partial class L
         public static readonly LocString LureOpenName = new("dungeon.lure.open.name", "Open the coffer");
         public static readonly LocString LureOpenDetail = new("dungeon.lure.open.detail", "Take the treasure as it is and skip the game.");
         public static readonly LocString LureAutoName = new("dungeon.lure.auto.name", "Challenge by the loot");
-        public static readonly LocString LureAutoDetail = new("dungeon.lure.auto.detail", "Takes the first challenge, then weighs each next one on its card, since the card turned over becomes the next one to guess on. Without rare loot the cleanup keeps it plays for the most on average; with it, it goes on only on a card of 1 to 3 or 7 to 9. Each guess is made on the card: 1 to 4 high, 6 to 9 low.");
+        public static readonly LocString LureAutoDetail = new("dungeon.lure.auto.detail", "Takes the first challenge unless the coffer holds rare loot the cleanup keeps, then weighs each next one on its card, since the card turned over becomes the next one to guess on. Without rare loot it plays for the most on average; with it, it goes on only on a card of 1 to 3 or 7 to 9. Each guess is made on the card: 1 to 4 high, 6 to 9 low.");
     }
 }

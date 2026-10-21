@@ -826,7 +826,7 @@
   "dungeon.chat.recordStopped": "Enregistrement sauvegardé dans {0}.",
   "dungeon.chat.notRecording": "Aucun enregistrement en cours.",
   "dungeon.chat.lureCapture": "La fenêtre du piège de l'avarice est enregistrée dans {0}.",
-  "dungeon.chat.lureRare": "Le coffre contient un butin rare ({0}) : après le premier défi, on ne continue que sur une carte de 1 à 3 ou de 7 à 9.",
+  "dungeon.chat.lureRare": "Le coffre contient un butin rare ({0}) : le trésor est pris tel quel plutôt que de relever un défi à l'aveugle.",
   "dungeon.chat.lureChallenge": "Tentation du flambeur : défi {0} relevé.",
   "dungeon.chat.lureTake": "Tentation du flambeur : le trésor est pris à x{0}.",
   "dungeon.chat.lureBlindGuess": "Tentation du flambeur : personne n'a deviné en une minute et la carte était illisible, {0} a donc été choisi au hasard pour ne pas perdre le trésor. Le reste de la session prend les coffres tels quels.",
@@ -881,5 +881,5 @@
   "dungeon.lure.open.name": "Ouvrir le coffre",
   "dungeon.lure.open.detail": "Prendre le trésor tel quel et passer le jeu.",
   "dungeon.lure.auto.name": "Relever selon le butin",
-  "dungeon.lure.auto.detail": "Relève le premier défi, puis juge chaque suivant sur sa carte, car la carte retournée devient la suivante. Sans butin rare gardé par le nettoyage, joue pour la meilleure moyenne ; avec, ne continue que sur une carte de 1 à 3 ou de 7 à 9. Chaque choix suit la carte : 1 à 4 plus haut, 6 à 9 plus bas."
+  "dungeon.lure.auto.detail": "Relève le premier défi, sauf si le coffre contient un butin rare gardé par le nettoyage, puis juge chaque suivant sur sa carte, car la carte retournée devient la suivante. Sans butin rare, joue pour la meilleure moyenne ; avec, ne continue que sur une carte de 1 à 3 ou de 7 à 9. Chaque choix suit la carte : 1 à 4 plus haut, 6 à 9 plus bas."
 }

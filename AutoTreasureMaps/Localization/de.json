@@ -826,7 +826,7 @@
   "dungeon.chat.recordStopped": "Aufzeichnung in {0} gespeichert.",
   "dungeon.chat.notRecording": "Es wird nichts aufgezeichnet.",
   "dungeon.chat.lureCapture": "Das Fenster der Gierfalle wird in {0} aufgezeichnet.",
-  "dungeon.chat.lureRare": "Die Truhe enthält seltene Beute ({0}), daher wird nach der ersten Herausforderung nur bei einer Karte von 1 bis 3 oder 7 bis 9 weitergemacht.",
+  "dungeon.chat.lureRare": "Die Truhe enthält seltene Beute ({0}), daher wird der Schatz genommen, wie er ist, statt blind herauszufordern.",
   "dungeon.chat.lureChallenge": "Falle der Verlockung: Herausforderung {0} angenommen.",
   "dungeon.chat.lureTake": "Falle der Verlockung: Der Schatz wird mit {0}-facher Menge genommen.",
   "dungeon.chat.lureBlindGuess": "Falle der Verlockung: Niemand hat innerhalb einer Minute geraten und die Karte war nicht lesbar, daher wurde zufällig {0} getippt, damit der Schatz nicht verloren geht. Für den Rest des Laufs werden die Truhen so genommen, wie sie sind.",
@@ -881,5 +881,5 @@
   "dungeon.lure.open.name": "Truhe öffnen",
   "dungeon.lure.open.detail": "Den Schatz so nehmen, wie er ist, und das Spiel auslassen.",
   "dungeon.lure.auto.name": "Nach Beute herausfordern",
-  "dungeon.lure.auto.detail": "Nimmt die erste Herausforderung an und wägt jede weitere nach ihrer Karte ab, denn die aufgedeckte Karte ist die nächste, auf die getippt wird. Ohne seltene Beute, die die Aufräumung behält, wird auf den höchsten Durchschnitt gespielt; mit ihr nur bei einer Karte von 1 bis 3 oder 7 bis 9. Getippt wird nach der Karte: 1 bis 4 höher, 6 bis 9 niedriger."
+  "dungeon.lure.auto.detail": "Nimmt die erste Herausforderung an, außer die Truhe enthält seltene Beute, die die Aufräumung behält, und wägt jede weitere nach ihrer Karte ab, denn die aufgedeckte Karte ist die nächste, auf die getippt wird. Ohne seltene Beute wird auf den höchsten Durchschnitt gespielt; mit ihr nur bei einer Karte von 1 bis 3 oder 7 bis 9. Getippt wird nach der Karte: 1 bis 4 höher, 6 bis 9 niedriger."
 }
