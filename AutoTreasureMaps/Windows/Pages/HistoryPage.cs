@@ -187,8 +187,10 @@ internal sealed class HistoryPage
             : null;
         var maps = mapsText.Get(totals.Maps, static key => key.ToString("N0", Loc.Culture));
         var cost = costText.Get(totalCost, static key => key.ToString("N0", Loc.Culture));
-        var revenue = revenueText.Get(lootValue, static key => key.ToString("N0", Loc.Culture));
-        var net = netText.Get(lootValue - totalCost, static key => Loc.T(L.History.TileNet, key.ToString("+#,0;-#,0;0", Loc.Culture)));
+        // With loot prices off nothing is known of the rare loot's worth, so the revenue and the net show no number.
+        var priced = LootPrices.Enabled;
+        var revenue = priced ? revenueText.Get(lootValue, static key => key.ToString("N0", Loc.Culture)) : NoValue;
+        var net = priced ? netText.Get(lootValue - totalCost, static key => Loc.T(L.History.TileNet, key.ToString("+#,0;-#,0;0", Loc.Culture))) : null;
         var portals = portalsText.Get(totals.Portals, static key => key.ToString("N0", Loc.Culture));
         var tomestones = tomestonesText.Get(totals.Tomestones, static key => key.ToString("N0", Loc.Culture));
 
@@ -199,7 +201,7 @@ internal sealed class HistoryPage
         StatTile.Draw(Loc.T(L.History.TileRevenue), revenue, net, Styling.AccentAmber, tileWidth);
         if (ImGui.IsItemHovered())
         {
-            Tooltip.Show(Loc.T(L.Run.TooltipCount, Loc.T(L.Stats.LootValue), revenue));
+            Tooltip.Show(priced ? Loc.T(L.Run.TooltipCount, Loc.T(L.Stats.LootValue), revenue) : Loc.T(L.Stats.PricesOff));
         }
 
         ImGui.SameLine(0, gap);
