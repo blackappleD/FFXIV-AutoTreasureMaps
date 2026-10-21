@@ -482,7 +482,7 @@
   "cleanup.keepNotableHelp": "绿色及以上稀有度的物品、独有物品、装备、家具，以及除食物和药品外有使用效果的物品（宠物、坐骑、乐谱、幻卡、发型等）永远不丢弃。下方列表没有覆盖的地图，它们的稀有物品也靠这一项保留。默认开启。",
   "cleanup.whitelist": "白名单",
   "cleanup.addItem": "添加物品",
-  "cleanup.addItemHelp": "按名称或物品 ID 搜索游戏里的任意物品。也可以在背包中右键物品，选择「添加到自动清理白名单」。",
+  "cleanup.addItemHelp": "按名称或物品 ID 搜索游戏里的任意物品。也可以在背包里的物品或聊天栏的物品链接上右键，选择「添加到自动清理白名单」。",
   "cleanup.searchHint": "物品名称或 ID",
   "cleanup.noMatch": "没有匹配的物品。",
   "cleanup.moreMatches.one": "还有{0}个匹配，请输入更多文字缩小范围。",

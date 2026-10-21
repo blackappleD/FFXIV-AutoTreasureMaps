@@ -482,7 +482,7 @@
   "cleanup.keepNotableHelp": "Ne jamais jeter un objet de rareté verte ou plus, un objet unique, de l'équipement, un meuble ou un objet ayant un usage autre que repas ou remède (mascottes, montures, partitions d'orchestrion, cartes, coiffures, etc.). Cela garde le butin rare des cartes que la liste ci-dessous ne couvre pas. Activé par défaut.",
   "cleanup.whitelist": "Liste blanche",
   "cleanup.addItem": "Ajouter un objet",
-  "cleanup.addItemHelp": "Recherchez n'importe quel objet du jeu par son nom ou son ID. Vous pouvez aussi faire un clic droit sur un objet de l'inventaire et choisir \"Ajouter à la liste blanche de nettoyage\".",
+  "cleanup.addItemHelp": "Recherchez n'importe quel objet du jeu par son nom ou son ID. Vous pouvez aussi faire un clic droit sur un objet de l'inventaire ou sur un lien d'objet dans le chat et choisir \"Ajouter à la liste blanche de nettoyage\".",
   "cleanup.searchHint": "Nom ou ID de l'objet",
   "cleanup.noMatch": "Aucun objet ne correspond.",
   "cleanup.moreMatches.one": "{0} autre résultat ; tapez davantage pour affiner.",

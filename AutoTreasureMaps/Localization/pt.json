@@ -482,7 +482,7 @@
   "cleanup.keepNotableHelp": "Nunca descartar um item de raridade verde ou acima, um item único, equipamento, mobília ou um item com uso que não seja refeição ou remédio (mascotes, montarias, rolos de orquestrion, cartas, penteados e afins). Isso mantém o saque raro dos mapas que a lista abaixo não cobre. Ativado por padrão.",
   "cleanup.whitelist": "Lista branca",
   "cleanup.addItem": "Adicionar um item",
-  "cleanup.addItemHelp": "Pesquise qualquer item do jogo pelo nome ou ID. Você também pode clicar com o botão direito em um item do inventário e escolher \"Adicionar à lista branca de limpeza\".",
+  "cleanup.addItemHelp": "Pesquise qualquer item do jogo pelo nome ou ID. Você também pode clicar com o botão direito em um item do inventário ou em um link de item no chat e escolher \"Adicionar à lista branca de limpeza\".",
   "cleanup.searchHint": "Nome ou ID do item",
   "cleanup.noMatch": "Nenhum item corresponde.",
   "cleanup.moreMatches.one": "Mais {0} resultado; digite mais para refinar.",

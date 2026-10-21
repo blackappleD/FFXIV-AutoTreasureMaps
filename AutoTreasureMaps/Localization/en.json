@@ -482,7 +482,7 @@
   "cleanup.keepNotableHelp": "Never discard an item of green rarity or above, a unique item, equipment, a furnishing, or an item with a use other than a meal or a medicine (minions, mounts, orchestrion rolls, cards, hairstyles and the like). This keeps the rare loot of the maps the list below does not cover. On by default.",
   "cleanup.whitelist": "Whitelist",
   "cleanup.addItem": "Add an item",
-  "cleanup.addItemHelp": "Search any item in the game by name or item ID. You can also right-click an item in your inventory and choose \"Add to cleanup whitelist\".",
+  "cleanup.addItemHelp": "Search any item in the game by name or item ID. You can also right-click an item in your inventory or an item link in chat and choose \"Add to cleanup whitelist\".",
   "cleanup.searchHint": "Item name or ID",
   "cleanup.noMatch": "No item matches.",
   "cleanup.moreMatches.one": "{0} more match; type more to narrow it down.",

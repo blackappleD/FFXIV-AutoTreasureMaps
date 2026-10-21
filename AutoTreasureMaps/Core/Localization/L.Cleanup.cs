@@ -19,7 +19,7 @@ internal static partial class L
         public static readonly LocString MaxQuantityFormat = new("cleanup.maxQuantityFormat", "over %d");
         public static readonly LocString Whitelist = new("cleanup.whitelist", "Whitelist");
         public static readonly LocString AddItem = new("cleanup.addItem", "Add an item");
-        public static readonly LocString AddItemHelp = new("cleanup.addItemHelp", "Search any item in the game by name or item ID. You can also right-click an item in your inventory and choose \"Add to cleanup whitelist\".");
+        public static readonly LocString AddItemHelp = new("cleanup.addItemHelp", "Search any item in the game by name or item ID. You can also right-click an item in your inventory or an item link in chat and choose \"Add to cleanup whitelist\".");
         public static readonly LocString SearchHint = new("cleanup.searchHint", "Item name or ID");
         public static readonly LocString NoMatch = new("cleanup.noMatch", "No item matches.");
         public static readonly LocPlural MoreMatches = new("cleanup.moreMatches", "{0} more match; type more to narrow it down.", "{0} more matches; type more to narrow them down.");

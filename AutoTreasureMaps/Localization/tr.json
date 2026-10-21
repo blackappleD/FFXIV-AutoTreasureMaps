@@ -482,7 +482,7 @@
   "cleanup.keepNotableHelp": "Yeşil ve üstü nadirlikteki eşyaları, benzersiz eşyaları, ekipmanı, mobilyaları ve yemek ya da ilaç dışında bir kullanımı olan eşyaları (minyonlar, binekler, orkestrion ruloları, kartlar, saç modelleri vb.) asla atma. Aşağıdaki listenin kapsamadığı haritaların nadir ganimeti böylece korunur. Varsayılan olarak açık.",
   "cleanup.whitelist": "Beyaz liste",
   "cleanup.addItem": "Eşya ekle",
-  "cleanup.addItemHelp": "Oyundaki herhangi bir eşyayı adına veya eşya kimliğine göre ara. Envanterde bir eşyaya sağ tıklayıp \"Temizlik beyaz listesine ekle\" seçeneğini de seçebilirsin.",
+  "cleanup.addItemHelp": "Oyundaki herhangi bir eşyayı adına veya eşya kimliğine göre ara. Envanterdeki bir eşyaya ya da sohbetteki bir eşya bağlantısına sağ tıklayıp \"Temizlik beyaz listesine ekle\" seçeneğini de seçebilirsin.",
   "cleanup.searchHint": "Eşya adı veya kimliği",
   "cleanup.noMatch": "Eşleşen eşya yok.",
   "cleanup.moreMatches.one": "{0} eşleşme daha var; daraltmak için daha fazla yaz.",

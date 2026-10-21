@@ -482,7 +482,7 @@
   "cleanup.keepNotableHelp": "Nie wegwerfen: Gegenstände ab grüner Seltenheit, einzigartige Gegenstände, Ausrüstung, Einrichtungsgegenstände und Gegenstände mit einer Verwendung außer Mahlzeit oder Arznei (Begleiter, Reittiere, Orchestrion-Notenrollen, Karten, Frisuren usw.). So bleibt die seltene Beute der Karten erhalten, die die Liste unten nicht abdeckt. Standardmäßig an.",
   "cleanup.whitelist": "Whitelist",
   "cleanup.addItem": "Gegenstand hinzufügen",
-  "cleanup.addItemHelp": "Suche jeden Gegenstand im Spiel nach Name oder Gegenstands-ID. Du kannst auch einen Gegenstand im Inventar rechtsklicken und \"Zur Aufräum-Whitelist hinzufügen\" wählen.",
+  "cleanup.addItemHelp": "Suche jeden Gegenstand im Spiel nach Name oder Gegenstands-ID. Du kannst auch einen Gegenstand im Inventar oder einen Gegenstandslink im Chat rechtsklicken und \"Zur Aufräum-Whitelist hinzufügen\" wählen.",
   "cleanup.searchHint": "Gegenstandsname oder ID",
   "cleanup.noMatch": "Kein Gegenstand passt.",
   "cleanup.moreMatches.one": "{0} weiterer Treffer; tippe mehr, um einzugrenzen.",

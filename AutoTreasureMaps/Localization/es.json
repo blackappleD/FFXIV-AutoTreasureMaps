@@ -482,7 +482,7 @@
   "cleanup.keepNotableHelp": "Nunca tirar un objeto de rareza verde o superior, un objeto único, equipo, un mueble o un objeto con un uso distinto de comida o medicina (esbirros, monturas, partituras de orquestrión, cartas, peinados y similares). Así se conserva el botín raro de los mapas que la lista de abajo no cubre. Activado por defecto.",
   "cleanup.whitelist": "Lista blanca",
   "cleanup.addItem": "Añadir un objeto",
-  "cleanup.addItemHelp": "Busca cualquier objeto del juego por nombre o ID. También puedes hacer clic derecho en un objeto del inventario y elegir \"Añadir a la lista blanca de limpieza\".",
+  "cleanup.addItemHelp": "Busca cualquier objeto del juego por nombre o ID. También puedes hacer clic derecho en un objeto del inventario o en un enlace de objeto del chat y elegir \"Añadir a la lista blanca de limpieza\".",
   "cleanup.searchHint": "Nombre o ID del objeto",
   "cleanup.noMatch": "Ningún objeto coincide.",
   "cleanup.moreMatches.one": "{0} coincidencia más; escribe más para acotar.",
