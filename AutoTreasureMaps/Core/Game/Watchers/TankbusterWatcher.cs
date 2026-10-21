@@ -51,6 +51,8 @@ internal sealed unsafe class TankbusterWatcher : IDisposable
     // A pack this big hitting the character this low gets one bigger cooldown, the only use outside a tankbuster.
     private const float PackHpRatio = 0.4f;
     private const int PackAttackers = 3;
+    // The bigger cooldowns last 15 to 20 s, so a pack gets no second one within this long, even if a buff goes unseen.
+    private const long PackCooldownMs = 20_000;
     private const float WarriorHealHpRatio = 0.5f;
     private const float AuroraHpRatio = 0.8f;
     // The tank module's setting is a transient one that a rewritten preset loses, so it is set again this often.
@@ -146,6 +148,7 @@ internal sealed unsafe class TankbusterWatcher : IDisposable
     private (uint Caster, uint Action) answering;
     private readonly List<uint> pressed = [];
     private long lastTankbusterMs = long.MinValue / 2;
+    private long lastPackMs = long.MinValue / 2;
 
     private enum Press : byte { Now, Done }
 
@@ -437,8 +440,9 @@ internal sealed unsafe class TankbusterWatcher : IDisposable
 
     // The short mitigation once the HP falls under 80% (50% while a boss that casts tankbusters is up, so it is ready for
     // them) without its own buff up, one bigger cooldown when a pack of three or more is hitting the character under
-    // 40%, and the warrior's and the gunbreaker's heals. At most one press, and only while the character is free to act.
-    private static void MitigateByHp(uint[] mitigations, IPlayerCharacter player, bool bossUp, int attackers)
+    // 40% (at most one every 20 s), and the warrior's and the gunbreaker's heals. At most one press, and only while the
+    // character is free to act.
+    private void MitigateByHp(uint[] mitigations, IPlayerCharacter player, bool bossUp, int attackers)
     {
         var actions = ActionManager.Instance();
         if (actions is null || player.MaxHp == 0 || !FreeToAct())
@@ -454,9 +458,11 @@ internal sealed unsafe class TankbusterWatcher : IDisposable
             return;
         }
 
-        if (ratio < PackHpRatio && attackers >= PackAttackers && BigUp(actions, mitigations, player) == 0
+        var now = Environment.TickCount64;
+        if (ratio < PackHpRatio && attackers >= PackAttackers && now - lastPackMs >= PackCooldownMs && BigUp(actions, mitigations, player) == 0
             && ReadyBig(actions, mitigations, player) is var bigId and not 0 && UseByHp(actions, bigId, player, ratio))
         {
+            lastPackMs = now;
             RunLog.Info($"Tankbuster: {attackers} enemies are hitting the character; used {ActionName(bigId)} for the pack.");
             return;
         }
