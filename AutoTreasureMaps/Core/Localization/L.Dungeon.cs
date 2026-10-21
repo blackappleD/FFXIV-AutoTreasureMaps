@@ -64,11 +64,9 @@ internal static partial class L
         public static readonly LocString PreferBonus = new("dungeon.preferBonus", "Attack bonus enemies first");
         public static readonly LocString PreferBonusHelp = new("dungeon.preferBonusHelp", "Rare enemies that drop extra loot and run off if left too long, such as the goldy cat and the vaultkeeper, are attacked before anything else.");
         public static readonly LocString PerDungeonBonus = new("dungeon.perDungeonBonus", "Per dungeon");
-        public static readonly LocString PerDungeonNone = new("dungeon.perDungeonNone", "All as above");
-        public static readonly LocPlural PerDungeonCustom = new("dungeon.perDungeonCustom", "{0} set on its own", "{0} set on their own");
-        public static readonly LocString PerDungeonBonusHelp = new("dungeon.perDungeonBonusHelp", "Whether bonus enemies are attacked first in this dungeon only.");
-        public static readonly LocString BonusDefaultName = new("dungeon.bonus.default.name", "As above");
-        public static readonly LocString BonusDefaultDetail = new("dungeon.bonus.default.detail", "Follow the setting above.");
+        public static readonly LocString PerDungeonNone = new("dungeon.perDungeonNone", "All attack first");
+        public static readonly LocPlural PerDungeonCustom = new("dungeon.perDungeonCustom", "{0} not first", "{0} not first");
+        public static readonly LocString PerDungeonBonusHelp = new("dungeon.perDungeonBonusHelp", "Not first leaves this dungeon's bonus enemies to the usual order, so the other enemies are not left hitting you.");
         public static readonly LocString BonusFirstName = new("dungeon.bonus.first.name", "Attack first");
         public static readonly LocString BonusFirstDetail = new("dungeon.bonus.first.detail", "Bonus enemies are attacked before anything else here.");
         public static readonly LocString BonusLastName = new("dungeon.bonus.last.name", "Not first");
