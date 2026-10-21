@@ -41,6 +41,7 @@ internal static class DungeonProfiles
         FirstNameIds: [],
         GoldSackBaseIds: [],
         SilverSackBaseIds: [],
+        SackChargerBaseIds: [],
         Verified: true);
 
     // G18, Timeworn Gargantuaskin Map: one room, five draws of the hypnoslot machine, each paying out a gold, silver or
@@ -66,5 +67,8 @@ internal static class DungeonProfiles
         // The bonus round's gold and silver sacks; it asks for a hundred glowing sacks in ninety seconds.
         GoldSackBaseIds: [2014791],
         SilverSackBaseIds: [2014792],
+        // The vault yans: every ten seconds a few appear at the room's edge and Rush across it, an 8m wide charge that
+        // leaves the character Heavy for five seconds.
+        SackChargerBaseIds: [18690],
         Verified: true);
 }

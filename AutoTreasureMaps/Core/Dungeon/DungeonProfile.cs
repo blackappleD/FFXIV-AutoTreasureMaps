@@ -24,8 +24,8 @@ internal readonly record struct GateCircle(uint GateBaseId, Vector3 At);
 // adds the combat plugin's module ranks above the boss they come with, killed before the rest of the room.
 // GoldSackBaseIds and SilverSackBaseIds are the event objects a bonus round scatters for the character to walk onto, a
 // gold one worth three silver; both are empty where the run does not know them, and such a bonus round is left to the
-// player. Where the combat plugin has a module for the sacks, the round is left to it instead, and the run only walks
-// them itself where it has none.
+// player. SackChargerBaseIds are the BNpcBase rows of the enemies that charge across the room during the round, each
+// along a lane the run keeps out of while the charge is due.
 internal sealed record DungeonProfile(
     string Key,
     uint MapItemId,
@@ -43,6 +43,7 @@ internal sealed record DungeonProfile(
     uint[] FirstNameIds,
     uint[] GoldSackBaseIds,
     uint[] SilverSackBaseIds,
+    uint[] SackChargerBaseIds,
     bool Verified)
 {
     public bool IsCoffer(uint baseId) => Array.IndexOf(CofferBaseIds, baseId) >= 0;
@@ -76,6 +77,8 @@ internal sealed record DungeonProfile(
     public bool IsGoldSack(uint baseId) => Array.IndexOf(GoldSackBaseIds, baseId) >= 0;
 
     public bool IsSilverSack(uint baseId) => Array.IndexOf(SilverSackBaseIds, baseId) >= 0;
+
+    public bool IsSackCharger(uint baseId) => Array.IndexOf(SackChargerBaseIds, baseId) >= 0;
 
     // The mandragora's place in the kill order, or -1 for any other enemy.
     public int MandragoraOrder(uint nameId) => Array.IndexOf(MandragoraNameIds, nameId);

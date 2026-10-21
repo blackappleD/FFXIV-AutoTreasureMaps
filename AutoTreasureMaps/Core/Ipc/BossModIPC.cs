@@ -17,7 +17,6 @@ internal sealed class BossModIPC
     private const string IsNavigatingFailed = AtmConstants.LogPrefix + " BossMod AI.IsNavigating failed";
     private const string IsMovingFailed = AtmConstants.LogPrefix + " BossMod Movement.IsMoving failed";
     private const string ConfigurationFailed = AtmConstants.LogPrefix + " BossMod Configuration failed";
-    private const string HasModuleFailed = AtmConstants.LogPrefix + " BossMod HasModuleByDataId failed";
     private const string MovementConfigType = "AIConfig";
     private const string MovementForbiddenField = "ForbidMovement";
 
@@ -35,7 +34,6 @@ internal sealed class BossModIPC
     private readonly ICallGateSubscriber<bool> isNavigating;
     private readonly ICallGateSubscriber<bool> isMoving;
     private readonly ICallGateSubscriber<List<string>, bool, List<string>> configuration;
-    private readonly ICallGateSubscriber<uint, bool> hasModuleByDataId;
     private readonly List<string> movementForbiddenQuery = [MovementConfigType, MovementForbiddenField];
 
     // Cached once so the fight loop's per-tick checks do not allocate a delegate on every call.
@@ -63,7 +61,6 @@ internal sealed class BossModIPC
         isNavigating = pluginInterface.GetIpcSubscriber<bool>("BossMod.AI.IsNavigating");
         isMoving = pluginInterface.GetIpcSubscriber<bool>("BossMod.Movement.IsMoving");
         configuration = pluginInterface.GetIpcSubscriber<List<string>, bool, List<string>>("BossMod.Configuration");
-        hasModuleByDataId = pluginInterface.GetIpcSubscriber<uint, bool>("BossMod.HasModuleByDataId");
 
         clearActiveCall = clearActive.InvokeFunc;
         getActiveCall = getActive.InvokeFunc;
@@ -133,11 +130,6 @@ internal sealed class BossModIPC
 
     public bool IsNavigating()
         => IpcGate.Invoke(isNavigating.HasFunction, isNavigatingCall, false, IsNavigatingFailed);
-
-    // True when the loaded edition has an encounter module that starts on an actor of this data id. The editions differ
-    // in which encounters they cover, so a mechanic is only left to the combat plugin where it has the module.
-    public bool HasModuleFor(uint dataId)
-        => IpcGate.Invoke(hasModuleByDataId.HasFunction, () => hasModuleByDataId.InvokeFunc(dataId), false, HasModuleFailed);
 
     public bool IsForcingMovement()
         => IpcGate.Invoke(isMoving.HasFunction, isMovingCall, false, IsMovingFailed);
