@@ -31,6 +31,8 @@ internal static class DungeonSettings
         new(L.Dungeon.BonusLastName, L.Dungeon.BonusLastDetail),
     ];
 
+    private static bool bonusOverridesOpen;
+
     // Ordered like LurePolicy.
     private static readonly SettingsControls.Choices.Choice[] lureChoices =
     [
@@ -57,15 +59,7 @@ internal static class DungeonSettings
             () => SettingsControls.DrawToggle(configuration, () => configuration.DungeonPreferBonusEnemies, value => configuration.DungeonPreferBonusEnemies = value, "##atm_dungeon_bonus"),
             SettingsRow.ToggleHeight);
 
-        var handlers = DungeonRegistry.All;
-        for (var index = 0; index < handlers.Length; index++)
-        {
-            var profile = handlers[index].Profile;
-            if (profile.BonusNameIds.Length > 0)
-            {
-                DrawBonusOverride(configuration, profile);
-            }
-        }
+        DrawBonusOverrides(configuration);
 
         SettingsRow.Draw(Loc.T(L.Dungeon.MandragorasInOrder),
             Loc.T(L.Dungeon.MandragorasInOrderHelp),
@@ -75,6 +69,34 @@ internal static class DungeonSettings
 
         // Area attacks kill the party out of order, which a solo character cannot avoid, so the warning stands out.
         SettingsRow.Note(Loc.T(L.Dungeon.MandragorasSoloNote), Styling.AccentAmber);
+    }
+
+    // One row per dungeon would outgrow the card as dungeons are added, so they sit under a row that opens them,
+    // closed until clicked, with how many dungeons have their own setting on the right.
+    private static void DrawBonusOverrides(Configuration configuration)
+    {
+        var custom = configuration.DungeonPreferBonusOverrides.Count;
+        var summary = custom == 0 ? Loc.T(L.Dungeon.PerDungeonNone) : Loc.Plural(L.Dungeon.PerDungeonCustom, custom);
+        if (SettingsRow.Disclosure("##atm_dungeon_bonus_each", Loc.T(L.Dungeon.PerDungeonBonus), summary, bonusOverridesOpen))
+        {
+            bonusOverridesOpen = !bonusOverridesOpen;
+        }
+
+        using var body = Motion.PushSection("atm_dungeon_bonus_each_body", bonusOverridesOpen);
+        if (body is null)
+        {
+            return;
+        }
+
+        var handlers = DungeonRegistry.All;
+        for (var index = 0; index < handlers.Length; index++)
+        {
+            var profile = handlers[index].Profile;
+            if (profile.BonusNameIds.Length > 0)
+            {
+                DrawBonusOverride(configuration, profile);
+            }
+        }
     }
 
     private static void DrawBonusOverride(Configuration configuration, DungeonProfile profile)

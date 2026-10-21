@@ -16,6 +16,7 @@ internal static class SettingsRow
     private const float BlockBottomGap = 6f;
     private const float NoteTopGap = 6f;
     private const float NoteBottomGap = 8f;
+    private const float DisclosureGap = 8f;
 
     public const float ToggleHeight = 22f;
 
@@ -46,6 +47,29 @@ internal static class SettingsRow
 
         DrawControl(area, controlWidth, controlHeight, drawControl);
         EndRow(area);
+    }
+
+    // A row that opens and closes the rows under it: a chevron, the label, and a summary on the right. True when clicked.
+    public static bool Disclosure(string id, string label, string summary, bool open)
+    {
+        var area = BeginRow();
+        DrawTopDivider(area);
+
+        var scale = ImGuiHelpers.GlobalScale;
+        var hitSize = new Vector2(area.Width, RowHeight * scale);
+        ImGui.SetCursorScreenPos(area.Origin);
+        var clicked = Hit.Area(id, hitSize).Clicked;
+
+        var chevron = open ? FontAwesomeIcon.ChevronDown : FontAwesomeIcon.ChevronRight;
+        var chevronSize = TextDraw.IconSize(chevron);
+        TextDraw.Icon(chevron, new Vector2(area.Origin.X, area.MiddleY - chevronSize.Y * 0.5f),
+            area.Hovered ? Styling.TextStrong : Styling.TextDim);
+        DrawLabel(area, area.Origin.X + chevronSize.X + DisclosureGap * scale, label);
+
+        var summarySize = TextDraw.Measure(summary);
+        TextDraw.Right(summary, area.RightEdge, area.MiddleY - summarySize.Y * 0.5f, Styling.TextMuted);
+        EndRow(area);
+        return clicked;
     }
 
     // A label header (with hover help) followed by free-flowing block content for lists, radios,
