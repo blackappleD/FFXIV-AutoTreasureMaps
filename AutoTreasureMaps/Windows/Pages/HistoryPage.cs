@@ -119,7 +119,8 @@ internal sealed class HistoryPage
         totals.Runs++;
         totals.Maps += session.MapsCompleted;
         totals.MapsRun += session.MapsRun;
-        totals.Gil += session.Gil - session.GilSpentOnMaps;
+        totals.GilLooted += session.Gil;
+        totals.GilSpent += session.GilSpentOnMaps;
         totals.Portals += session.PortalsSeen;
         totals.Tomestones += session.Tomestones;
         totals.Seconds += session.Elapsed.TotalSeconds;
@@ -173,24 +174,23 @@ internal sealed class HistoryPage
         ImGui.Dummy(new Vector2(ImGui.GetContentRegionAvail().X, size.Y + 8f * scale));
     }
 
-    // The captions are rebuilt only when the number they show changes. The cost is the gil spent on maps less the gil
-    // looted; the revenue is the rare loot at today's market price, and the net puts the two together.
+    // The captions are rebuilt only when the number they show changes. The cost is the gil spent on maps; the revenue is
+    // the gil looted, plus the rare loot at today's market price while loot prices are on, with the net below it.
     private void DrawLifetime(RunHistory.LifetimeTotals totals, long lootValue)
     {
         var scale = ImGuiHelpers.GlobalScale;
         var gap = 8f * scale;
         var tileWidth = (ImGui.GetContentRegionAvail().X - gap * (TileCount - 1)) / TileCount;
-        var totalCost = -totals.Gil;
+        var priced = LootPrices.Enabled;
+        var totalRevenue = totals.GilLooted + (priced ? lootValue : 0);
         var runs = totals.Runs > 0 ? runsText.Get(totals.Runs, static key => Loc.Plural(L.History.TileRunsCount, (int)key)) : null;
-        var perMap = totals.MapsRun > 0
-            ? perMapText.Get(totalCost / totals.MapsRun, static key => Loc.T(L.History.TilePerMap, key.ToString("N0", Loc.Culture)))
+        var perMap = totals.MapsRun > 0 && totals.GilSpent > 0
+            ? perMapText.Get(totals.GilSpent / totals.MapsRun, static key => Loc.T(L.History.TilePerMap, key.ToString("N0", Loc.Culture)))
             : null;
         var maps = mapsText.Get(totals.Maps, static key => key.ToString("N0", Loc.Culture));
-        var cost = costText.Get(totalCost, static key => key.ToString("N0", Loc.Culture));
-        // With loot prices off nothing is known of the rare loot's worth, so the revenue and the net show no number.
-        var priced = LootPrices.Enabled;
-        var revenue = priced ? revenueText.Get(lootValue, static key => key.ToString("N0", Loc.Culture)) : NoValue;
-        var net = priced ? netText.Get(lootValue - totalCost, static key => Loc.T(L.History.TileNet, key.ToString("+#,0;-#,0;0", Loc.Culture))) : null;
+        var cost = costText.Get(totals.GilSpent, static key => key.ToString("N0", Loc.Culture));
+        var revenue = revenueText.Get(totalRevenue, static key => key.ToString("N0", Loc.Culture));
+        var net = netText.Get(totalRevenue - totals.GilSpent, static key => Loc.T(L.History.TileNet, key.ToString("+#,0;-#,0;0", Loc.Culture)));
         var portals = portalsText.Get(totals.Portals, static key => key.ToString("N0", Loc.Culture));
         var tomestones = tomestonesText.Get(totals.Tomestones, static key => key.ToString("N0", Loc.Culture));
 
@@ -201,7 +201,9 @@ internal sealed class HistoryPage
         StatTile.Draw(Loc.T(L.History.TileRevenue), revenue, net, Styling.AccentAmber, tileWidth);
         if (ImGui.IsItemHovered())
         {
-            Tooltip.Show(priced ? Loc.T(L.Run.TooltipCount, Loc.T(L.Stats.LootValue), revenue) : Loc.T(L.Stats.PricesOff));
+            var looted = Loc.T(L.Run.TooltipCount, Loc.T(L.Market.TooltipLooted), totals.GilLooted.ToString("N0", Loc.Culture));
+            var second = priced ? Loc.T(L.Run.TooltipCount, Loc.T(L.Stats.LootValue), lootValue.ToString("N0", Loc.Culture)) : Loc.T(L.Stats.PricesOff);
+            Tooltip.Show(looted + "\n" + second);
         }
 
         ImGui.SameLine(0, gap);
