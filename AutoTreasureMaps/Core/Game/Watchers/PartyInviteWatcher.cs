@@ -1,3 +1,4 @@
+using AutoTreasureMaps.Core.Game;
 using Dalamud.Game.Addon.Lifecycle;
 using Dalamud.Game.Addon.Lifecycle.AddonArgTypes;
 using Dalamud.Plugin.Services;
@@ -86,6 +87,13 @@ internal sealed unsafe class PartyInviteWatcher : IDisposable
         var prompt = ReadPrompt(addon);
         if (joinPrompt.Matches(prompt))
         {
+            // A party member waiting on another world for its leader takes that invite itself.
+            if (PartyHop.AwaitedInviter is { Length: > 0 } awaited && prompt.Contains(awaited, StringComparison.Ordinal))
+            {
+                RunLog.Info($"Party invite from {awaited}, the leader this character waits for; leaving it to the follower.");
+                return;
+            }
+
             ArmDecline(addon);
             return;
         }

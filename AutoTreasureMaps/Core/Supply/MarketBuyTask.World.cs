@@ -1,3 +1,4 @@
+using AutoTreasureMaps.Core.Game;
 using AutoTreasureMaps.Core.Game.Player;
 using AutoTreasureMaps.Core.Ipc;
 using AutoTreasureMaps.Core.Localization;
@@ -33,7 +34,8 @@ internal sealed partial class MarketBuyTask
 
         var reason = session is null ? "a purchase outside a run stays on this world"
             : !LifestreamIPC.Instance.IsAvailable ? "cross-world buying is on but Lifestream is not loaded; buying on this world"
-            : PartyPresence.InParty() ? "in a party, so buying on this world instead of visiting another"
+            : PartyHop.Away ? "the party waits on this world for the leader to buy and invite it back, so buying here"
+            : PartyPresence.InParty() && !(PartyPresence.LocalParty() && PartyPresence.LeadsTheParty()) ? "in a party it does not lead, so buying on this world instead of visiting another"
             : null;
         if (reason is not null && log)
         {
@@ -135,6 +137,11 @@ internal sealed partial class MarketBuyTask
             CloseBoardNow();
             // Visiting from the board's own city aetheryte lands the character next to the board it is about to use.
             var gateway = MarketBoards.Resolve(configuration.MarketBoard).AetheryteId;
+            if (!await TakePartyAlong(best.WorldId))
+            {
+                return 0;
+            }
+
             return await ChangeWorld(best.WorldId, "market-world", gateway) ? best.WorldId : 0;
         }
 

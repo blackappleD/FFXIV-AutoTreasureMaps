@@ -59,6 +59,12 @@ internal sealed unsafe class PartySpotLink : IDisposable
             return;
         }
 
+        if (PartyHop.TryNote(message.Message.TextValue, leaderName))
+        {
+            RunLog.Info($"Party: {leaderName} is taking the party to {PartyHop.Pending?.WorldName} to buy maps.");
+            return;
+        }
+
         foreach (var payload in message.Message.Payloads)
         {
             if (payload is MapLinkPayload link)

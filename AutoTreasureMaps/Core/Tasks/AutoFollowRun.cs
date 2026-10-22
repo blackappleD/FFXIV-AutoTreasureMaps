@@ -5,6 +5,7 @@ using AutoTreasureMaps.Core.Game.Ops;
 using AutoTreasureMaps.Core.Game.Player;
 using AutoTreasureMaps.Core.Game.Watchers;
 using AutoTreasureMaps.Core.Localization;
+using AutoTreasureMaps.Core.Travel;
 using AutoTreasureMaps.Core.Treasure;
 using Dalamud.Plugin.Services;
 using ECommons.DalamudServices;
@@ -43,6 +44,11 @@ internal sealed class AutoFollowRun(TreasureSession session, TreasureProgress pr
     private const float CarriedMeters = 60f;
     private const int DungeonWalkMs = 15_000;
     private const float CircleArriveMeters = 1f;
+    // The leader's word that it is buying on another world counts this long; the party breaks up right after it.
+    private const int HopValidMs = 60_000;
+    // The leader buys before it invites, and may wait out a busy board.
+    private const int InviteWaitMs = 10 * TimeUnits.MillisecondsPerMinute;
+    private const string InviteThrottleKey = "atm-follow-invite";
     // The dig spot can lie off the floor, and the leader lands wherever the floor is; a member landed farther than this
     // from the leader walks over.
     private const float BesideLeaderMeters = 8f;
@@ -107,6 +113,14 @@ internal sealed class AutoFollowRun(TreasureSession session, TreasureProgress pr
                 }
 
                 return;
+            }
+
+            // The leader broke the party up to buy on another world: go there and wait for its invite.
+            if (!PartyPresence.InParty() && PartyHop.Pending is { } hop && Environment.TickCount64 - hop.ReceivedAtMs < HopValidMs)
+            {
+                await FollowWorldHop(hop);
+                lastActiveAtMs = Environment.TickCount64;
+                continue;
             }
 
             if (!PartyPresence.LocalParty() || PartyPresence.LeadsTheParty())
@@ -374,6 +388,36 @@ internal sealed class AutoFollowRun(TreasureSession session, TreasureProgress pr
         await WaitUntilTimed(Carried, DungeonWalkMs, "carried by the circle");
     }
 
+    private async Task FollowWorldHop(WorldHop hop)
+    {
+        const string scope = "follow-world";
+        EndFollowedMap(portal: false);
+        var worldId = PartyHop.WorldIdOf(hop.WorldName);
+        if (worldId == 0)
+        {
+            Warn($"{scope}: the leader named {hop.WorldName}, which is no world of this data centre.");
+            PartyHop.ForgetPending();
+            return;
+        }
+
+        PartyHop.AwaitedInviter = hop.LeaderName;
+        Svc.Chat.Print($"{AtmConstants.LogPrefix} {Loc.T(L.Run.ChatFollowWorld, hop.WorldName)}");
+        progress.SetPhase(TreasurePhase.Travelling);
+        await HoldCombatMovementAndSettle(scope);
+        var started = Environment.TickCount64;
+        if (!await ChangeWorld(worldId, scope))
+        {
+            Warn($"{scope}: could not travel to {hop.WorldName}; waiting for the invite where it stands.");
+        }
+
+        Diag($"{scope}: on {Worlds.NameOf(Worlds.Current)} {(Environment.TickCount64 - started) / 1000.0:F1}s after the word; waiting for {hop.LeaderName}'s invite.");
+        progress.SetPhase(TreasurePhase.Preparing);
+        Status = "Waiting for the leader's invite";
+        var joined = await WaitUntilTimed(PartyPresence.LocalParty, InviteWaitMs, "leader's invite");
+        PartyHop.ForgetPending();
+        Diag($"{scope}: {(joined ? "back in the leader's party" : "no invite came")}.");
+    }
+
     // The leader's position, while it stands in the character's zone.
     private static Vector3? LeaderInZone()
         => PartyPresence.Leader() is { } leader && leader.Territory.RowId == Svc.ClientState.TerritoryType ? leader.Position : null;
@@ -390,6 +434,17 @@ internal sealed class AutoFollowRun(TreasureSession session, TreasureProgress pr
         }
 
         var prompt = NpcInteraction.SelectYesnoText();
+        if (PartyHop.AwaitedInviter is { Length: > 0 } inviter && ForeignPrompts.IsPartyInvite(prompt) && prompt.Contains(inviter, StringComparison.Ordinal))
+        {
+            if (EzThrottler.Throttle(InviteThrottleKey, DeclineThrottleMs))
+            {
+                RunLog.Info($"Follow: accepting {inviter}'s invite.");
+                DialogDriver.Confirm();
+            }
+
+            return;
+        }
+
         if (ForeignPrompts.IsTeleportOffer(prompt))
         {
             if (EzThrottler.Throttle(DeclineThrottleKey, DeclineThrottleMs))

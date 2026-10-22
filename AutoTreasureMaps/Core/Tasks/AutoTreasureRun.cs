@@ -114,6 +114,13 @@ internal sealed class AutoTreasureRun(TreasureSession session, TreasureProgress 
             }
         }
 
+        // A party broken up to buy on another world is invited back there before the map.
+        await RegroupParty();
+        if (CancelToken.IsCancellationRequested)
+        {
+            return LoopStep.Stop;
+        }
+
         var result = await RunHeldMap(session, progress);
         if (MapFault is { } fault)
         {

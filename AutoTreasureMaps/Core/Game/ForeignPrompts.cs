@@ -13,6 +13,7 @@ internal static class ForeignPrompts
 
     private static string[][]? templates;
     private static string[]? teleportOffer;
+    private static string[]? partyInvite;
 
     public static bool Matches(string prompt)
     {
@@ -35,6 +36,13 @@ internal static class ForeignPrompts
     {
         teleportOffer ??= Fragments(TeleportOfferRow);
         return teleportOffer.Length > 0 && AllIn(GameText.Fold(prompt), teleportOffer);
+    }
+
+    // "Join X's party?", a party invite.
+    public static bool IsPartyInvite(string prompt)
+    {
+        partyInvite ??= Fragments(JoinPartyRow);
+        return partyInvite.Length > 0 && AllIn(GameText.Fold(prompt), partyInvite);
     }
 
     private static string[] Fragments(uint row)

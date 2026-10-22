@@ -142,6 +142,9 @@ internal static partial class L
         public static readonly LocString ChatFollowStarted = new("run.chat.followStarted", "Party mode: following the party leader to each dig spot it posts.");
         public static readonly LocString ChatFollowNeedsParty = new("run.chat.followNeedsParty", "Party mode needs a party on your own world. The party leader runs the maps; press Start on the other members to follow it.");
         public static readonly LocString ChatFollowEnded = new("run.chat.followEnded", "The party or its leader is gone, or no spot came for a long while, so following ends.");
+        public static readonly LocString ChatFollowWorld = new("run.chat.followWorld", "The leader is buying maps on {0}; travelling there and waiting for its invite.");
+        public static readonly LocString ChatRegroupFailed = new("run.chat.regroupFailed", "The party did not join again after the trip to buy maps, so the run goes on alone.");
+        public static readonly LocString ChatRegroupCrossWorld = new("run.chat.regroupCrossWorld", "The party formed again as a cross-world party, whose members cannot fight the leader's guards. Open the party list and change it to a party on this world.");
         public static readonly LocString ChatOutOfMaps = new("run.chat.outOfMaps", "Run over: no maps left to run.");
         public static readonly LocString ChatOutOfMapsReason = new("run.chat.outOfMapsReason", "Run over: no maps left to run. {0}");
         public static readonly LocPlural ChatMapLimit = new("run.chat.mapLimit", "Run over: {0} map run, the limit you set.", "Run over: {0} maps run, the limit you set.");
