@@ -50,8 +50,15 @@ internal sealed class MapLog
     // Bumped on every change, so text built from the log knows when to rebuild.
     public int Revision { get; private set; }
 
-    private static string FilePath
-        => Path.Combine(Plugin.PluginInterface.ConfigDirectory.FullName, FileName);
+    private static string FilePath => CharacterData.PathOf(FileName);
+
+    // The character that logged in has a log of its own.
+    public void Reload()
+    {
+        Entries = [];
+        Load();
+        Revision++;
+    }
 
     public MapLogEntry Add(uint mapItemId, bool portal, int deaths, TimeSpan duration, ImmutableArray<ItemGain> gains)
     {
@@ -159,11 +166,7 @@ internal sealed class MapLog
     {
         try
         {
-            var directory = Plugin.PluginInterface.ConfigDirectory;
-            if (!directory.Exists)
-            {
-                directory.Create();
-            }
+            CharacterData.EnsureFolder();
 
             // Written beside the log and moved over it, so a crash mid-write cannot leave half a file behind.
             var temporary = FilePath + ".tmp";

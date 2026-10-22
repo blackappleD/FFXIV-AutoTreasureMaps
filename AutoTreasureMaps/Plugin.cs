@@ -46,7 +46,8 @@ public sealed class Plugin : IDalamudPlugin
 
     internal static Plugin Instance { get; private set; } = null!;
 
-    internal Configuration Configuration { get; }
+    // The logged-in character's own settings; the shared ones until a character logs in.
+    internal Configuration Configuration { get; private set; }
     internal WindowSystem WindowSystem { get; } = new("AutoTreasureMaps");
     internal RunHistory History { get; }
 
@@ -64,6 +65,8 @@ public sealed class Plugin : IDalamudPlugin
     private readonly AppWindow appWindow;
     private readonly CommandInfo primaryCommand;
     private readonly CommandInfo aliasCommand;
+    private readonly Configuration sharedConfiguration;
+    private bool showOnLogin;
 
     public Plugin()
     {
@@ -78,6 +81,8 @@ public sealed class Plugin : IDalamudPlugin
         {
             Configuration.Save();
         }
+
+        sharedConfiguration = Configuration;
 
         History = new RunHistory();
         MapLog = new MapLog();
@@ -280,6 +285,7 @@ public sealed class Plugin : IDalamudPlugin
 
     private void OnFrameworkUpdate(IFramework framework)
     {
+        BindCharacter();
         Controller.Tick();
         MapAllowance.Tick(Configuration);
         GatherGearsetReturn.Tick();
@@ -354,15 +360,46 @@ public sealed class Plugin : IDalamudPlugin
     }
 
     // The noted loot belongs to the character that looted it, so it never carries over to the next login.
-    private static void OnLogout(int type, int code) => LootCleanup.Clear();
-
-    private void OnLogin()
+    private void OnLogout(int type, int code)
     {
-        if (!Configuration.AutoShowOnLogin)
+        LootCleanup.Clear();
+        Configuration.SaveIfPending();
+    }
+
+    // The window is shown once the character's own settings are in, since they say whether to.
+    private void OnLogin() => showOnLogin = true;
+
+    // Once a character is logged in, its own settings, run history and map log replace whatever was loaded before.
+    private void BindCharacter()
+    {
+        var contentId = Svc.ClientState.IsLoggedIn ? Svc.PlayerState.ContentId : 0;
+        if (contentId == 0)
         {
             return;
         }
 
-        appWindow.Show(AppWindow.Page.Treasure);
+        if (contentId != CharacterData.ContentId && !Controller.Running)
+        {
+            Configuration.SaveIfPending();
+            CharacterData.Bind(contentId);
+            Configuration = CharacterData.LoadConfig(sharedConfiguration);
+            History.Reload();
+            MapLog.Reload();
+            if (!string.IsNullOrEmpty(Configuration.Language))
+            {
+                Loc.SetLanguage(Configuration.Language);
+            }
+
+            RunLog.Info($"Settings, run history and map log now come from {CharacterData.Folder}.");
+        }
+
+        if (showOnLogin && contentId == CharacterData.ContentId)
+        {
+            showOnLogin = false;
+            if (Configuration.AutoShowOnLogin)
+            {
+                appWindow.Show(AppWindow.Page.Treasure);
+            }
+        }
     }
 }

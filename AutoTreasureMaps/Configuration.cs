@@ -14,6 +14,10 @@ public sealed partial class Configuration : IPluginConfiguration
     [JsonIgnore]
     private bool savePending;
 
+    // The character these settings belong to, saved in its own folder; 0 for the shared settings used before one logs in.
+    [JsonIgnore]
+    internal ulong OwnerContentId { get; set; }
+
     public int Version { get; set; }
 
     public bool AutoShowOnLogin { get; set; } = false;
@@ -66,6 +70,12 @@ public sealed partial class Configuration : IPluginConfiguration
     public void Save()
     {
         savePending = false;
+        if (OwnerContentId != 0)
+        {
+            CharacterData.SaveConfig(this);
+            return;
+        }
+
         Plugin.PluginInterface.SavePluginConfig(this);
     }
 

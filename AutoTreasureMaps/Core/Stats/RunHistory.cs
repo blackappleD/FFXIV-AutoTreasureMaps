@@ -26,8 +26,15 @@ internal sealed class RunHistory
     // Bumped on every change, so captions built from the history know when to rebuild.
     public int Revision { get; private set; }
 
-    private static string FilePath
-        => Path.Combine(Plugin.PluginInterface.ConfigDirectory.FullName, FileName);
+    private static string FilePath => CharacterData.PathOf(FileName);
+
+    // The character that logged in has a history of its own.
+    public void Reload()
+    {
+        Records = [];
+        Load();
+        RecomputeLifetime();
+    }
 
     public void Append(RunRecord record)
     {
@@ -111,11 +118,7 @@ internal sealed class RunHistory
     {
         try
         {
-            var directory = Plugin.PluginInterface.ConfigDirectory;
-            if (!directory.Exists)
-            {
-                directory.Create();
-            }
+            CharacterData.EnsureFolder();
 
             File.WriteAllText(FilePath, JsonConvert.SerializeObject(Records, Formatting.Indented));
         }
