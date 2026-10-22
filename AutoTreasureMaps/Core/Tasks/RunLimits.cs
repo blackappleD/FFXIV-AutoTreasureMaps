@@ -24,7 +24,7 @@ internal static class RunLimits
             return null;
         }
 
-        if (session.StopAfterMap)
+        if (session.StopAfterMapDue)
         {
             return RunEnd.StopAfterMap;
         }

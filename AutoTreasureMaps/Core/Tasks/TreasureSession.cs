@@ -102,7 +102,22 @@ public sealed class TreasureSession
     // The player asked the run to end once the map under way, and the dungeon behind it, is over.
     internal bool StopAfterMap { get; private set; }
 
-    internal void ToggleStopAfterMap() => StopAfterMap = !StopAfterMap;
+    // Maps the run carried through to the end of their dungeon, and how many of them were done when the stop after this
+    // map was asked for. MapsRun will not do: a map counts there once its coffer opens, before its dungeon, and a map being
+    // bought, deciphered or held undug, or waiting on the party, has no ActiveMap yet.
+    private int mapsCarriedThrough;
+    private int stopAfterMapMark;
+
+    // The stop after this map is due once a map has been carried through since it was asked for.
+    internal bool StopAfterMapDue => StopAfterMap && mapsCarriedThrough > stopAfterMapMark;
+
+    internal void NoteMapCarriedThrough() => mapsCarriedThrough++;
+
+    internal void ToggleStopAfterMap()
+    {
+        StopAfterMap = !StopAfterMap;
+        stopAfterMapMark = mapsCarriedThrough;
+    }
 
     internal bool Recorded;
     internal bool AfterActionDispatched;

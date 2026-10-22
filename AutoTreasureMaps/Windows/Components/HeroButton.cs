@@ -65,9 +65,9 @@ internal static class HeroButton
 
         // A sublabel that would run into the title is left out, as on a narrow button.
         var sub = enabled ? sublabel : disabledReason ?? sublabel;
-        if (!string.IsNullOrEmpty(sub) && max.X - padX - TextDraw.Measure(sub).X >= titleEnd + 10f * scale)
+        var subSize = string.IsNullOrEmpty(sub) ? Vector2.Zero : TextDraw.Measure(sub);
+        if (!string.IsNullOrEmpty(sub) && max.X - padX - subSize.X >= titleEnd + 10f * scale)
         {
-            var subSize = TextDraw.Measure(sub);
             TextDraw.At(sub, new Vector2(max.X - padX - subSize.X, midY - subSize.Y * 0.5f),
                 enabled ? Styling.WithAlpha(textColor, 0.8f) : Styling.TextDim);
         }

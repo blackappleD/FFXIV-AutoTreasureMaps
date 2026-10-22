@@ -46,7 +46,8 @@ internal sealed partial class TreasureController
     // it anyway.
     public void ToggleStopAfterMap()
     {
-        if (session is null)
+        // A run that has ended but is still on its after-run action or cleanup has nothing left to stop after.
+        if (session is null || session.EndedBy is not null)
         {
             ECommons.DalamudServices.Svc.Chat.Print($"{AtmConstants.LogPrefix} {Loc.T(L.Run.ChatNothingToStop)}");
             return;

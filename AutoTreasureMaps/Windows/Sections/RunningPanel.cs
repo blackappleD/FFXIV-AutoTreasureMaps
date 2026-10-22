@@ -103,7 +103,7 @@ internal static class RunningPanel
         var y = origin.Y + 16f * scale;
 
         var chip = DrawPhaseChip(columnX, y, label, accent, accentSoft);
-        if (controller.StopAfterMap)
+        if (controller.StopAfterMap && controller.CanStopAfterMap)
         {
             DrawPhaseChip(columnX + chip.X + 6f * scale, y, Loc.T(L.Run.StopAfterMapChip), Styling.AccentMint, Styling.AccentMintSoft);
         }
