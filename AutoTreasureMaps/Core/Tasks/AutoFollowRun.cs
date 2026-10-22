@@ -1,3 +1,4 @@
+using AutoTreasureMaps.Core.Cleanup;
 using AutoTreasureMaps.Core.Dungeon;
 using AutoTreasureMaps.Core.Game;
 using AutoTreasureMaps.Core.Game.Ops;
@@ -8,6 +9,7 @@ using AutoTreasureMaps.Core.Treasure;
 using Dalamud.Plugin.Services;
 using ECommons.DalamudServices;
 using ECommons.Throttlers;
+using System.Collections.Immutable;
 using System.Numerics;
 using System.Threading.Tasks;
 
@@ -41,11 +43,19 @@ internal sealed class AutoFollowRun(TreasureSession session, TreasureProgress pr
     private const float CarriedMeters = 60f;
     private const int DungeonWalkMs = 15_000;
     private const float CircleArriveMeters = 1f;
+    // The dig spot can lie off the floor, and the leader lands wherever the floor is; a member landed farther than this
+    // from the leader walks over.
+    private const float BesideLeaderMeters = 8f;
+    private const float LeaderInReachMeters = 60f;
+    // The leader's coffer is looted once the fight is this long over with nothing left to roll on.
+    private const int MapSettledMs = 8_000;
+    private const int CleanupWaitMs = 60_000;
 
     private static long portalPromptSeenAtMs;
 
     private long handledSpotAtMs;
     private long lastActiveAtMs;
+    private FollowedMap? followed;
 
     private protected override bool KeepsPace => true;
 
@@ -103,12 +113,14 @@ internal sealed class AutoFollowRun(TreasureSession session, TreasureProgress pr
             {
                 Diag("Follow: the party or its leader is gone; following ends.");
                 Svc.Chat.Print($"{AtmConstants.LogPrefix} {Loc.T(L.Run.ChatFollowEnded)}");
+                EndFollowedMap(portal: false);
                 session.Finish(RunEnd.PartyEnded);
                 return;
             }
 
             if (DungeonRegistry.Find(Svc.ClientState.TerritoryType) is { } handler)
             {
+                EndFollowedMap(portal: true);
                 await FollowInDungeon(handler.Profile);
                 lastActiveAtMs = Environment.TickCount64;
                 continue;
@@ -120,12 +132,18 @@ internal sealed class AutoFollowRun(TreasureSession session, TreasureProgress pr
                 progress.SetPhase(TreasurePhase.Fighting);
                 await FightAlong("follow-fight");
                 lastActiveAtMs = Environment.TickCount64;
+                if (followed is not null)
+                {
+                    followed.FoughtAtMs = lastActiveAtMs;
+                }
+
                 continue;
             }
 
             if (PartySpotLink.Latest is { } posted && posted.ReceivedAtMs > handledSpotAtMs)
             {
                 handledSpotAtMs = posted.ReceivedAtMs;
+                EndFollowedMap(portal: false);
                 await GoToSpot(posted);
                 lastActiveAtMs = Environment.TickCount64;
                 continue;
@@ -135,8 +153,17 @@ internal sealed class AutoFollowRun(TreasureSession session, TreasureProgress pr
             {
                 Diag($"Follow: no spot from the leader for {IdleLimitMs / TimeUnits.MillisecondsPerMinute} minutes; following ends.");
                 Svc.Chat.Print($"{AtmConstants.LogPrefix} {Loc.T(L.Run.ChatFollowEnded)}");
+                EndFollowedMap(portal: false);
                 session.Finish(RunEnd.PartyEnded);
                 return;
+            }
+
+            if (followed is { FoughtAtMs: > 0 } settling && Environment.TickCount64 - settling.FoughtAtMs >= MapSettledMs
+                && LootRolls.Pending(static _ => true) == 0 && !PortalNear())
+            {
+                EndFollowedMap(portal: false);
+                await CleanUpLoot("Follow");
+                continue;
             }
 
             progress.SetPhase(TreasurePhase.Preparing);
@@ -145,12 +172,62 @@ internal sealed class AutoFollowRun(TreasureSession session, TreasureProgress pr
         }
     }
 
+    // The leader's map, as this member took part in it: what the bags gained from the trip there to the loot settling is
+    // counted as the map's, recorded on the session and noted for the cleanup like a map of its own. A map whose fight
+    // never came (the leader's dig was refused) is not counted.
+    private void EndFollowedMap(bool portal)
+    {
+        if (followed is not { } map)
+        {
+            return;
+        }
+
+        followed = null;
+        if (map.FoughtAtMs == 0)
+        {
+            Diag($"Follow: the {map.Tier.Name} map ended without a fight; not counted.");
+            return;
+        }
+
+        var (gil, items) = BagSnapshot.Gains(map.BagsBefore, BagSnapshot.Capture());
+        var result = new MapResult(map.Tier, MapOutcome.Looted, MapRefusal.None, portal, gil, items, TimeSpan.FromMilliseconds(Environment.TickCount64 - map.StartedAtMs));
+        session.RecordMap(result);
+        progress.FinishMap(result);
+        LootCleanup.Note(map.BagsBefore);
+        Diag($"Follow: the {map.Tier.Name} map gave {gil} gil and {result.ItemCount} items in {items.Length} stacks{(portal ? ", and a portal" : string.Empty)}.");
+    }
+
+    // The discards answer their own questions, so the vault call is not watched for meanwhile.
+    private async Task CleanUpLoot(string scope)
+    {
+        await DiscardNotedLoot(CleanupWaitMs, scope);
+        lastActiveAtMs = Environment.TickCount64;
+    }
+
+    private sealed class FollowedMap(TreasureTier tier)
+    {
+        public TreasureTier Tier { get; } = tier;
+
+        public Dictionary<uint, int> BagsBefore { get; } = BagSnapshot.Capture();
+
+        public long StartedAtMs { get; } = Environment.TickCount64;
+
+        // When the last fight at the spot ended; 0 until one did.
+        public long FoughtAtMs { get; set; }
+    }
+
     private async Task GoToSpot(PostedSpot posted)
     {
         if (!DigSpotResolver.TryFindNear(posted.TerritoryId, posted.At, SpotMatchMeters, out var spot))
         {
             Warn($"Follow: the leader's spot in territory {posted.TerritoryId} at ({posted.At.X:F1}, {posted.At.Y:F1}) is no dig spot this plugin knows; staying here.");
             return;
+        }
+
+        if (Plugin.Instance.Catalog.TryGetByRank(spot.Rank, out var tier))
+        {
+            followed = new FollowedMap(tier);
+            progress.BeginMap(tier, spot);
         }
 
         Diag($"Follow: going to the leader's spot in {spot.ZoneName} at ({spot.Position.X:F1}, {spot.Position.Y:F1}, {spot.Position.Z:F1}), {(Environment.TickCount64 - posted.ReceivedAtMs) / 1000.0:F1}s after it was posted.");
@@ -167,6 +244,12 @@ internal sealed class AutoFollowRun(TreasureSession session, TreasureProgress pr
         }
 
         await LandAndDismount(spot.Position, StandOffMeters, "follow-land");
+        if (LeaderInZone() is { } leader && Vector3.Distance(leader, PlayerPosition()) is > BesideLeaderMeters and < LeaderInReachMeters)
+        {
+            Diag($"Follow: landed {Vector3.Distance(leader, PlayerPosition()):F0}m from the leader; walking over.");
+            await TravelTo(spot.TerritoryId, leader, StandOffMeters);
+        }
+
         var tookMs = Environment.TickCount64 - posted.ReceivedAtMs;
         Diag($"Follow: at the leader's spot {tookMs / 1000.0:F1}s after it was posted.");
         await TopUpConsumables();
@@ -181,8 +264,9 @@ internal sealed class AutoFollowRun(TreasureSession session, TreasureProgress pr
         await WaitUntilTimed(() => !Zoning(), DungeonWalkMs, "dungeon settled");
         await WaitForNavmeshReady(DungeonWalkMs);
         await HoldCombatMovementAndSettle(scope);
-        var dungeon = new DungeonInProgress(profile);
+        var dungeon = new DungeonInProgress(profile) { BagsBefore = BagSnapshot.Capture() };
         var context = new DungeonContext(this, dungeon);
+        var chamber = 1;
         // Where the leader last stood near this member, which is by the gate it took once it is carried on.
         var leaderNear = Vector3.Zero;
         while (!CancelToken.IsCancellationRequested && Svc.ClientState.TerritoryType == profile.TerritoryId)
@@ -213,6 +297,11 @@ internal sealed class AutoFollowRun(TreasureSession session, TreasureProgress pr
             {
                 progress.SetPhase(TreasurePhase.Fighting);
                 await FightAlong($"{scope}-fight");
+                if (profile.Kind == DungeonKind.Slot)
+                {
+                    chamber++;
+                }
+
                 continue;
             }
 
@@ -230,6 +319,7 @@ internal sealed class AutoFollowRun(TreasureSession session, TreasureProgress pr
                 {
                     await TakeCircleAfter(context, leaderNear, scope);
                     leaderNear = Vector3.Zero;
+                    chamber++;
                 }
                 else if (distance > RejoinBeyondMeters && distance < CarriedMeters)
                 {
@@ -240,7 +330,20 @@ internal sealed class AutoFollowRun(TreasureSession session, TreasureProgress pr
             await NextFrame(TickFrames);
         }
 
-        Diag($"{scope}: out of {profile.Key}.");
+        if (CancelToken.IsCancellationRequested)
+        {
+            return;
+        }
+
+        // A slot dungeon's count went up with every fight, the bonus round's included; the draws are counted near enough.
+        var round = profile.Kind == DungeonKind.Slot ? Math.Min(chamber - 1, (int)profile.Rounds) : chamber;
+        var (gil, items) = BagSnapshot.Gains(dungeon.BagsBefore, BagSnapshot.Capture());
+        var result = new DungeonResult(profile, HowItEnded(dungeon), round, gil, items, TimeSpan.FromMilliseconds(Environment.TickCount64 - dungeon.StartedAtMs));
+        session.RecordDungeon(result);
+        LootCleanup.Note(dungeon.BagsBefore);
+        Diag($"{scope}: out of {profile.Key} ({result.Outcome}, round {round}), {gil} gil, {result.ItemCount} items in {items.Length} stacks.");
+        await WaitUntilTimed(() => !Zoning() && NpcInteraction.PlayerReady(), DungeonWalkMs, "back outside");
+        await CleanUpLoot("Follow");
     }
 
     // The leader stepped into the circle behind the gate it opened and was carried on; the member walks into the circle
@@ -270,7 +373,7 @@ internal sealed class AutoFollowRun(TreasureSession session, TreasureProgress pr
     // after a moment, while a portal stands near; its text is logged.
     private static void AnswerPrompts(IFramework framework)
     {
-        if (!NpcInteraction.SelectYesnoOpen())
+        if (!NpcInteraction.SelectYesnoOpen() || LootCleanup.Running)
         {
             portalPromptSeenAtMs = 0;
             return;

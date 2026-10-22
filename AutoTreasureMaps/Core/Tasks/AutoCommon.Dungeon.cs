@@ -398,7 +398,7 @@ public abstract partial class AutoCommon
         }
     }
 
-    private DungeonOutcome HowItEnded(DungeonInProgress dungeon)
+    private protected DungeonOutcome HowItEnded(DungeonInProgress dungeon)
     {
         if (dungeon.LeaveRequested)
         {

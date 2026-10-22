@@ -57,8 +57,8 @@ public abstract partial class AutoCommon
 
         var arrivedAt = Environment.TickCount64;
         Status = "Waiting for the party";
-        var gathered = PartyPresence.FarthestMemberFrom(spot.Position) <= FollowersNearMeters
-            || await WaitUntilTimed(() => PartyPresence.FarthestMemberFrom(spot.Position) <= FollowersNearMeters, FollowersWaitMs, "party at the spot");
+        var gathered = PartyPresence.FarthestMemberFrom(PlayerPosition()) <= FollowersNearMeters
+            || await WaitUntilTimed(() => PartyPresence.FarthestMemberFrom(PlayerPosition()) <= FollowersNearMeters, FollowersWaitMs, "party at the spot");
         if (CancelToken.IsCancellationRequested)
         {
             return false;
@@ -67,7 +67,7 @@ public abstract partial class AutoCommon
         var lagMs = Environment.TickCount64 - arrivedAt;
         if (!gathered)
         {
-            Warn($"Party: the members did not reach the spot within {FollowersWaitMs / TimeUnits.MillisecondsPerSecond}s (farthest {PartyPresence.FarthestMemberFrom(spot.Position):F0}m); digging anyway.");
+            Warn($"Party: the members did not reach the spot within {FollowersWaitMs / TimeUnits.MillisecondsPerSecond}s (farthest {PartyPresence.FarthestMemberFrom(PlayerPosition()):F0}m); digging anyway.");
         }
         else if (lagMs > FollowerLagWarnMs)
         {
