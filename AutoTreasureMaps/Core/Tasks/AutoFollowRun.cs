@@ -60,7 +60,8 @@ internal sealed class AutoFollowRun(TreasureSession session, TreasureProgress pr
 
     private static long portalPromptSeenAtMs;
 
-    private long handledSpotAtMs;
+    // Kept from one following to the next: a spot gone to once is not gone to again when the member starts over.
+    private static long handledSpotAtMs;
     private long lastActiveAtMs;
     private FollowedMap? followed;
 
@@ -82,8 +83,8 @@ internal sealed class AutoFollowRun(TreasureSession session, TreasureProgress pr
 
     protected override async Task Execute()
     {
-        // A spot posted before Start is the leader's current one, which is still worth going to.
-        handledSpotAtMs = 0;
+        // A spot posted before Start and not gone to yet is the leader's current one, which is still worth going to; one
+        // from a party left behind was forgotten when it broke up.
         lastActiveAtMs = Environment.TickCount64;
         Svc.Framework.Update += AnswerPrompts;
         try

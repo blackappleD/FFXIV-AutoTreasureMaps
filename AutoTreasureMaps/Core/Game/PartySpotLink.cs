@@ -1,8 +1,10 @@
 using AutoTreasureMaps.Core.Game.Player;
 using AutoTreasureMaps.Core.Treasure;
 using Dalamud.Game.Chat;
+using Dalamud.Game.ClientState.Conditions;
 using Dalamud.Game.Text;
 using Dalamud.Game.Text.SeStringHandling.Payloads;
+using Dalamud.Plugin.Services;
 using ECommons.Automation;
 using ECommons.DalamudServices;
 using FFXIVClientStructs.FFXIV.Client.UI.Agent;
@@ -15,7 +17,8 @@ internal readonly record struct PostedSpot(uint TerritoryId, uint MapId, Vector2
 
 // In party mode the leader flags each dig spot and posts the flag in party chat as it sets off; every other member reads
 // the link and travels to the spot on its own, so all of them leave together. Only a map link the party leader posted
-// in the party channel counts. Read and written only on the framework thread.
+// in the party channel counts, and only while that party and its leader last: a spot from a party left behind is the
+// last map's, so a member that joins again would go back to it. Read and written only on the framework thread.
 internal sealed unsafe class PartySpotLink : IDisposable
 {
     private const string PostCommand = "/p <flag>";
@@ -23,13 +26,18 @@ internal sealed unsafe class PartySpotLink : IDisposable
     public PartySpotLink()
     {
         Svc.Chat.ChatMessage += OnChatMessage;
+        Svc.Framework.Update += OnUpdate;
     }
 
     public static PostedSpot? Latest { get; private set; }
 
     public static void Forget() => Latest = null;
 
-    public void Dispose() => Svc.Chat.ChatMessage -= OnChatMessage;
+    public void Dispose()
+    {
+        Svc.Chat.ChatMessage -= OnChatMessage;
+        Svc.Framework.Update -= OnUpdate;
+    }
 
     // Flags the spot without opening the map, and posts the flag.
     public static bool Post(DigSpot spot)
@@ -43,6 +51,21 @@ internal sealed unsafe class PartySpotLink : IDisposable
         agent->SetFlagMapMarker(spot.TerritoryId, spot.MapId, spot.Position);
         Chat.SendMessage(PostCommand);
         return true;
+    }
+
+    // The party list may read empty between areas, so it is only looked at once the character stands in a zone.
+    private static void OnUpdate(IFramework _)
+    {
+        if (Latest is not { } spot || !Svc.ClientState.IsLoggedIn || Svc.Condition[ConditionFlag.BetweenAreas] || Svc.Condition[ConditionFlag.BetweenAreas51])
+        {
+            return;
+        }
+
+        if (PartyPresence.Leader() is not { } leader || leader.Name.TextValue is { Length: > 0 } name && name != spot.Sender)
+        {
+            RunLog.Info($"Party: the party {spot.Sender} led is gone; its last spot is forgotten.");
+            Latest = null;
+        }
     }
 
     private static void OnChatMessage(IHandleableChatMessage message)
