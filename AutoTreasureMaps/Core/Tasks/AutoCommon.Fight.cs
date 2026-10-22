@@ -2,6 +2,7 @@ using AutoTreasureMaps.Core.Game.Ops;
 using AutoTreasureMaps.Core.Game.Player;
 using AutoTreasureMaps.Core.Gather;
 using AutoTreasureMaps.Core.Ipc;
+using AutoTreasureMaps.Core.Localization;
 using Dalamud.Game.ClientState.Conditions;
 using ECommons.DalamudServices;
 using System.Threading.Tasks;
@@ -38,7 +39,7 @@ public abstract partial class AutoCommon
         }
 
         EnsureCombatPreset();
-        Status = "Fighting off what is still attacking";
+        Status = Loc.T(L.Status.FightingStragglers);
         Diag($"{scope}: still in combat ({ConditionTag()}); fighting off whatever is attacking");
         var deadline = Environment.TickCount64 + capMs;
         ReleaseCombatMovement(scope);

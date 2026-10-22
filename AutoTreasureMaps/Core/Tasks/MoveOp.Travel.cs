@@ -1,4 +1,5 @@
 using AutoTreasureMaps.Core.Ipc;
+using AutoTreasureMaps.Core.Localization;
 using clib.Enums;
 using clib.Extensions;
 using clib.TaskSystem;
@@ -50,7 +51,7 @@ internal sealed partial class MoveOp
             await Mount();
         }
 
-        Status = "Waiting for Navmesh";
+        Status = Loc.T(L.Status.WaitingNavmesh);
         await WaitUntil(() => Navmesh.IsReady() || Navmesh.BuildProgress() >= 0f, "WaitingForNavmesh");
         await WaitWhile(() => Navmesh.BuildProgress() >= 0f, "BuildingNavmesh");
         ErrorIf(!Navmesh.IsReady(), $"Could not load the navmesh for territory {Svc.ClientState.TerritoryType}");
@@ -62,7 +63,7 @@ internal sealed partial class MoveOp
         {
             var fly = Player.InFlight || (config.Movement.HasFlag(MovementOptions.Fly) && Control.CanFly);
             ErrorIf(!Navmesh.PathfindAndMoveCloseTo(destination, fly, config.Tolerance ?? DefaultArriveMeters), $"Could not start pathfinding to {destination}");
-            Status = $"Moving to {destination}";
+            Status = Loc.T(L.Status.MovingTo, destination);
             await NextFrame();
             await WaitWhile(
                 () => !Player.WithinRange(destination, tolerance) && stopCondition?.Invoke() != true && Navmesh.IsBusy(),
@@ -96,7 +97,7 @@ internal sealed partial class MoveOp
         var aetheryte = Svc.Data.GetExcelSheet<Lumina.Excel.Sheets.Aetheryte>().GetRow(aetheryteId);
         if (Svc.ClientState.TerritoryType != aetheryte.Territory.RowId || allowSameZoneTeleport)
         {
-            Status = $"Teleporting to {aetheryte.PlaceName.Value.Name}";
+            Status = Loc.T(L.Status.TeleportingTo, aetheryte.PlaceName.Value.Name);
             await CastTeleport(aetheryteId);
         }
 
@@ -169,7 +170,7 @@ internal sealed partial class MoveOp
             source = primary;
         }
 
-        Status = $"Riding the aethernet to territory {territoryId}";
+        Status = Loc.T(L.Status.RidingAethernetToTerritory, territoryId);
         await ApproachAetheryte(source);
         var isMainAetheryte = Svc.Data.GetExcelSheet<Lumina.Excel.Sheets.Aetheryte>().GetRow(source).IsAetheryte;
         await WaitForTravelMenu(isMainAetheryte ? SelectStringAddon : AethernetAddon);
@@ -216,7 +217,7 @@ internal sealed partial class MoveOp
             await Navigate(gameObject.Position, MovementConfig.Default.WithTolerance(InteractRange.EventObj), gameObject.IsInInteractRange);
         }
 
-        Status = $"Interacting with {gameObject.Name}";
+        Status = Loc.T(L.Status.InteractingWith, gameObject.Name);
         await WaitWhile(() => Player.IsJumping, "WaitingToInteract");
         for (var attempt = 0; attempt < InteractAttempts; attempt++)
         {
@@ -257,7 +258,7 @@ internal sealed partial class MoveOp
             return;
         }
 
-        Status = "Mounting";
+        Status = Loc.T(L.Status.Mounting);
         while (!Player.Mounted)
         {
             CancelToken.ThrowIfCancellationRequested();
@@ -289,7 +290,7 @@ internal sealed partial class MoveOp
             }
         }
 
-        Status = "Dismounting";
+        Status = Loc.T(L.Status.Dismounting);
         while (Player.Mounted)
         {
             CancelToken.ThrowIfCancellationRequested();

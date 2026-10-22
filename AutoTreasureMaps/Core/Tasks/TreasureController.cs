@@ -24,9 +24,9 @@ internal sealed partial class TreasureController
 
     public string Status => PauseReason switch
     {
-        PauseReason.InContent => "Paused while you are in content",
-        PauseReason.Manual    => "Paused",
-        _                     => Svc.Automation.CurrentTask?.Status ?? "Idle",
+        PauseReason.InContent => Loc.T(L.Status.PausedInContent),
+        PauseReason.Manual    => Loc.T(L.Shell.StatusPaused),
+        _                     => Svc.Automation.CurrentTask?.Status ?? Loc.T(L.Shell.StatusIdle),
     };
 
     public TreasurePhase Phase => progress.Phase;

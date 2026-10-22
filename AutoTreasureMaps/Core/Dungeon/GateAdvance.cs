@@ -1,3 +1,4 @@
+using AutoTreasureMaps.Core.Localization;
 using AutoTreasureMaps.Core.Treasure;
 using Dalamud.Game.ClientState.Conditions;
 using Dalamud.Game.ClientState.Objects.Types;
@@ -48,7 +49,7 @@ internal sealed class GateAdvance : IAdvanceStrategy
         var gateBaseId = gate.BaseId;
         var gatePosition = gate.Position;
         context.Diag($"{Scope}: {gates.Count} gate(s) left to right {Describe(gates)}; taking #{index + 1} ({reason}).");
-        context.Status = "Opening a gate";
+        context.Status = Loc.T(L.Status.OpeningGate);
 
         var before = DungeonField.EventObjectIds();
         if (!await context.Delay(HumanAction.OpenCoffer, Scope))

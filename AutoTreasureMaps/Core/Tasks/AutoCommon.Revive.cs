@@ -1,4 +1,5 @@
 using AutoTreasureMaps.Core.Ipc;
+using AutoTreasureMaps.Core.Localization;
 using Dalamud.Game.ClientState.Conditions;
 using ECommons.DalamudServices;
 using FFXIVClientStructs.FFXIV.Client.Game;
@@ -44,7 +45,7 @@ public abstract partial class AutoCommon
             return false;
         }
 
-        Status = "Knocked out, returning to the home point";
+        Status = Loc.T(L.Status.KnockedOutHome);
         Diag($"Revive: knocked out {(inParty ? "with no raise coming" : "while solo")}; answering the return prompt");
         SendReviveCommand(ReviveReturn);
         var deadline = Environment.TickCount64 + ReviveTransitionMs;
@@ -107,7 +108,7 @@ public abstract partial class AutoCommon
 
     private async Task<bool> WaitForRaise()
     {
-        Status = "Knocked out, waiting for a raise";
+        Status = Loc.T(L.Status.KnockedOutRaise);
         Diag($"Revive: knocked out in a party; waiting up to {RaiseWaitMs / TimeUnits.MillisecondsPerSecond}s for a raise");
         var deadline = Environment.TickCount64 + RaiseWaitMs;
         while (Environment.TickCount64 < deadline)

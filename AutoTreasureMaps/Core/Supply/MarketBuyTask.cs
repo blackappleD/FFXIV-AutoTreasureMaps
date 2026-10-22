@@ -332,7 +332,7 @@ internal sealed partial class MarketBuyTask(TreasureSession? session, byte onlyR
 
     private async Task<(ListingsRead Read, int Count)> ReadListings(TreasureTier tier)
     {
-        Status = $"Reading the listings of {tier.Name}";
+        Status = Loc.T(L.Status.ReadingListings, tier.Name);
         var waitMs = MarketRequestGate.WaitMs();
         if (waitMs > 0)
         {
@@ -417,7 +417,7 @@ internal sealed partial class MarketBuyTask(TreasureSession? session, byte onlyR
         }
 
         Diag($"Market: the board asked to wait ({throttles}/{ThrottleRetries}); trying again in {ThrottleRetryMs} ms.");
-        Status = "Waiting for the market board";
+        Status = Loc.T(L.Status.WaitingMarket);
         await DelayMs(ThrottleRetryMs);
         return !CancelToken.IsCancellationRequested;
     }
@@ -463,7 +463,7 @@ internal sealed partial class MarketBuyTask(TreasureSession? session, byte onlyR
 
     private async Task<Attempt> Buy(Configuration configuration, TreasureTier tier, MarketListing listing)
     {
-        Status = $"Buying {tier.Name}";
+        Status = Loc.T(L.Status.Buying, tier.Name);
         await DelayMs(Random.Shared.Next(ReadPauseMinMs, ReadPauseMaxMs + 1));
         if (CancelToken.IsCancellationRequested)
         {
@@ -638,7 +638,7 @@ internal sealed partial class MarketBuyTask(TreasureSession? session, byte onlyR
         if (!BoardNearby())
         {
             var city = TerritoryNames.Of(board.TerritoryId);
-            Status = $"Travelling to the market board in {city}";
+            Status = Loc.T(L.Status.TravellingToMarket, city);
             Diag($"Market: heading to the board in {city} ({board.TerritoryId}).");
             if (!await TravelTo(board.TerritoryId, board.Position, BoardArrivalMeters))
             {
@@ -670,7 +670,7 @@ internal sealed partial class MarketBuyTask(TreasureSession? session, byte onlyR
 
     private async Task<bool> InteractWithBoard()
     {
-        Status = "Opening the market board";
+        Status = Loc.T(L.Status.OpeningMarket);
         for (var attempt = 1; attempt <= BoardInteractAttempts; attempt++)
         {
             var scope = $"{Scope}-board#{attempt}";

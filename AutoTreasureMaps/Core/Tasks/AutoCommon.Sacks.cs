@@ -1,5 +1,6 @@
 using AutoTreasureMaps.Core.Dungeon;
 using AutoTreasureMaps.Core.Ipc;
+using AutoTreasureMaps.Core.Localization;
 using AutoTreasureMaps.Core.Treasure;
 using ECommons.DalamudServices;
 using FFXIVClientStructs.FFXIV.Client.Game;
@@ -43,7 +44,7 @@ public abstract partial class AutoCommon
         }
 
         EnterStep(TreasurePhase.Fighting);
-        Status = "Bonus round: picking up sacks";
+        Status = Loc.T(L.Status.BonusSacks);
         HoldCombatMovement(scope);
         var field = new SackField(dungeon.Profile);
         using var capture = new SackRoundCapture(dungeon.Profile);

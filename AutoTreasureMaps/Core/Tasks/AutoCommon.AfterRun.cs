@@ -1,3 +1,4 @@
+using AutoTreasureMaps.Core.Localization;
 using Dalamud.Game.ClientState.Conditions;
 using ECommons.Automation;
 using ECommons.DalamudServices;
@@ -26,7 +27,7 @@ public abstract partial class AutoCommon
             return;
         }
 
-        Status = "Sending your chat commands";
+        Status = Loc.T(L.Status.SendingChatCommands);
         var lines = commandBlock.Split('\n');
         for (var lineIndex = 0; lineIndex < lines.Length; lineIndex++)
         {

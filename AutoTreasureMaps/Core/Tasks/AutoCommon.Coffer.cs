@@ -1,4 +1,5 @@
 using AutoTreasureMaps.Core.Game.Ops;
+using AutoTreasureMaps.Core.Localization;
 using AutoTreasureMaps.Core.Treasure;
 using ECommons.DalamudServices;
 using System.Threading.Tasks;
@@ -58,7 +59,7 @@ public abstract partial class AutoCommon
     private async Task<CofferStep> OpenCoffer(MapInProgress map, bool fresh)
     {
         EnterStep(TreasurePhase.Opening);
-        Status = "Looking for the coffer";
+        Status = Loc.T(L.Status.LookingForCoffer);
         var spotPosition = map.Spot.Position;
         ulong[] skip = fresh ? coffersBeforeDig.AsSpan(0, coffersBeforeDigCount).ToArray() : [];
         await WaitUntilTimed(() => TreasureCoffers.FindNearest(spotPosition, CofferSearchMeters, skip) is not null, CofferSpawnWaitMs, "coffer spawn");
@@ -107,7 +108,7 @@ public abstract partial class AutoCommon
     private async Task<CofferStep> TryOpenCoffer(MapInProgress map, int attempt)
     {
         const string scope = "map-coffer";
-        Status = "Opening the coffer";
+        Status = Loc.T(L.Status.OpeningCoffer);
         await FightOffAttackers(scope);
         var target = await ApproachObject(() => Svc.Objects.SearchById(map.CofferId), $"coffer {map.CofferId:X}", scope);
         if (target is null || !await ReadyToInteract(scope))
@@ -267,7 +268,7 @@ public abstract partial class AutoCommon
                 return UnlockStep.Gone;
             }
 
-            Status = "Opening the coffer's lock";
+            Status = Loc.T(L.Status.OpeningCofferLock);
             ReadHuntClock();
             await FightOffAttackers(scope, HuntFightCapMs);
             var target = await ApproachObject(() => Svc.Objects.SearchById(map.CofferId), $"coffer {map.CofferId:X}", scope);
@@ -356,7 +357,7 @@ public abstract partial class AutoCommon
     // measured once everything has arrived. Items of a chest that was already waiting before the unlock are left alone.
     private async Task LootCoffer(MapInProgress map)
     {
-        Status = "Looting the coffer";
+        Status = Loc.T(L.Status.LootingCoffer);
         var otherChests = chestsBeforeUnlock;
         var otherCount = chestsBeforeUnlockCount;
         var chestEntityId = map.CofferEntityId;

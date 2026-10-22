@@ -1,4 +1,5 @@
 using AutoTreasureMaps.Core.Game.Ops;
+using AutoTreasureMaps.Core.Localization;
 using ECommons.Automation;
 using System.Threading.Tasks;
 
@@ -55,7 +56,7 @@ public sealed class AutoAfterRun(AfterRunAction action, string postRunCommands) 
 
     private async Task LogOut()
     {
-        Status = "Logging out";
+        Status = Loc.T(L.Status.LoggingOut);
         for (var attempt = 1; attempt <= LogoutAttempts; attempt++)
         {
             await DelayMs(PreCommandSettleMs);
@@ -86,7 +87,7 @@ public sealed class AutoAfterRun(AfterRunAction action, string postRunCommands) 
 
     private async Task CloseGame()
     {
-        Status = "Closing the game";
+        Status = Loc.T(L.Status.ClosingGame);
         await DelayMs(PreCommandSettleMs);
         if (CancelToken.IsCancellationRequested)
         {

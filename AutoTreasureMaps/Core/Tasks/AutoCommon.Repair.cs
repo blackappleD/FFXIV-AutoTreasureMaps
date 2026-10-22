@@ -1,4 +1,5 @@
 using AutoTreasureMaps.Core.Game.Ops;
+using AutoTreasureMaps.Core.Localization;
 using AutoTreasureMaps.Core.Travel;
 using clib.TaskSystem;
 using Dalamud.Game.ClientState.Conditions;
@@ -65,7 +66,7 @@ public abstract partial class AutoCommon
             await SafeDismount("repair-dismount");
         }
 
-        Status = "Opening Repair";
+        Status = Loc.T(L.Status.OpeningRepair);
         Diag("Repair: using the Repair action");
         if (!RepairOps.TriggerRepairAction())
         {
@@ -115,7 +116,7 @@ public abstract partial class AutoCommon
             return false;
         }
 
-        Status = $"Talking to {mender.Name}";
+        Status = Loc.T(L.Status.TalkingTo, mender.Name);
         Diag($"Repair: interacting with {mender.Name}");
         var interact = new MoveOp(move => move.Interact(npc, RepairOps.MenuOrWindowOpen, UiSkipOptions.Talk));
         await RunCancellable(interact, RepairInteractWaitMs, "repair-interact");
@@ -163,7 +164,7 @@ public abstract partial class AutoCommon
     // True when the gear ended above the threshold.
     private async Task<bool> DriveRepairWindow()
     {
-        Status = "Repairing gear";
+        Status = Loc.T(L.Status.Repairing);
         if (!RepairOps.ClickRepairAll())
         {
             Diag("Repair: Repair All was not clicked; the window closed or the click was throttled");

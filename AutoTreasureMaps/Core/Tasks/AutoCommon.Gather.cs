@@ -149,7 +149,7 @@ public abstract partial class AutoCommon
 
     private async Task<GatherAnswer> SwitchAndGather(DailyMapPlan plan, int maxVisits, string scope)
     {
-        Status = "Switching to the gatherer";
+        Status = Loc.T(L.Status.SwitchingToGatherer);
         var switched = await GearsetSwitcher.EquipFor(plan.ClassJobId, plan.GearsetIndex, CancelToken);
         switch (switched)
         {
@@ -177,7 +177,7 @@ public abstract partial class AutoCommon
             return await LeaveAttackers($"{scope}-start");
         }
 
-        Status = "Travelling to the gathering area";
+        Status = Loc.T(L.Status.TravellingToGatherArea);
         var arrived = await TravelTo(area.TerritoryId, start, GatherAreaArriveMeters);
         if (UnderAttack())
         {
@@ -241,7 +241,7 @@ public abstract partial class AutoCommon
             }
 
             MarkSearched(nodes.AsSpan(), searched, next);
-            Status = "Looking for a gathering node";
+            Status = Loc.T(L.Status.LookingForNode);
             await TravelTo(area.TerritoryId, nodes[next], GatherSweepArriveMeters);
             if (await WaitUntilTimed(() => GatherOps.FindLiveNode(area, standing) is not null, GatherNodeLookMs, $"{scope}-look"))
             {
@@ -256,7 +256,7 @@ public abstract partial class AutoCommon
     {
         var key = GatherOps.KeyOf(node);
         var objectId = node.GameObjectId;
-        Status = "Heading to a gathering node";
+        Status = Loc.T(L.Status.HeadingToNode);
         Diag($"{scope}: node {node.BaseId} at {FormatPosition(node.Position)}, {DistanceTo(node.Position):F0}m away");
         if (DistanceTo(node.Position) > GatherNodeArriveMeters)
         {
@@ -346,7 +346,7 @@ public abstract partial class AutoCommon
                 break;
             }
 
-            Status = "Gathering out a node without the map";
+            Status = Loc.T(L.Status.GatheringOutNode);
             var since = TreasureMessageWatcher.Now;
             GatherOps.GatherSlot(slot);
             if (!await WaitUntilTimed(() => GatherOps.ActionUnderWay() || !GatherOps.WindowOpen(), GatherActionStartWaitMs, $"{scope}-gather-start", 1))
@@ -374,7 +374,7 @@ public abstract partial class AutoCommon
 
     private async Task<GatherAnswer> GatherMap(int slot, uint mapItemId, string scope)
     {
-        Status = "Gathering the map";
+        Status = Loc.T(L.Status.GatheringMap);
         var answer = GatherAnswer.Failed(L.Gather.ReasonNotConfirmed);
         for (var attempt = 1; attempt <= MaxMapAttempts; attempt++)
         {
@@ -489,7 +489,7 @@ public abstract partial class AutoCommon
             return;
         }
 
-        Status = "Leaving the area: under attack";
+        Status = Loc.T(L.Status.LeavingUnderAttack);
         var movement = !Svc.Condition[ConditionFlag.Mounted]
             ? walkMovement
             : Svc.Condition[ConditionFlag.InFlight] ? flightMovement : groundMountMovement;
@@ -514,7 +514,7 @@ public abstract partial class AutoCommon
             return true;
         }
 
-        Status = "Switching back to your gearset";
+        Status = Loc.T(L.Status.SwitchingBackGearset);
         await CloseGatherWindow(scope);
         await LeaveCombat(scope);
         var result = await GearsetSwitcher.EquipFor(memory.ClassJobId, memory.GearsetIndex, CancelToken);

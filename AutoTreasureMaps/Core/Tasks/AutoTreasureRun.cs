@@ -265,7 +265,7 @@ internal sealed class AutoTreasureRun(TreasureSession session, TreasureProgress 
         }
 
         progress.SetPhase(TreasurePhase.Preparing);
-        Status = "Waiting for the party to reach the area";
+        Status = Loc.T(L.Status.WaitingPartyArea);
         var shortest = now + PartyRetryShortestMs;
         var waitMs = (int)(Math.Min(deadline, now + PartyRetryLongestMs) - now);
         var gathered = await WaitUntilTimed(() => Environment.TickCount64 >= shortest && PartyPresence.AllInZone(), waitMs, "party in the area");
@@ -378,7 +378,7 @@ internal sealed class AutoTreasureRun(TreasureSession session, TreasureProgress 
             return;
         }
 
-        Status = "Waiting for the treasure hunt to wind down";
+        Status = Loc.T(L.Status.WaitingHuntWindDown);
         Diag("Run: still bound by the treasure hunt's duty; waiting for it to end before the next one.");
         if (!await WaitUntilTimed(() => !DutyWatcher.InContent(), HuntDutyWaitMs, "hunt duty over"))
         {

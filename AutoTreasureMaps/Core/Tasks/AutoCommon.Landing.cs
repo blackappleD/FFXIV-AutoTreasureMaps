@@ -1,4 +1,5 @@
 using AutoTreasureMaps.Core.Ipc;
+using AutoTreasureMaps.Core.Localization;
 using AutoTreasureMaps.Core.Travel;
 using Dalamud.Game.ClientState.Conditions;
 using ECommons.DalamudServices;
@@ -64,7 +65,7 @@ public abstract partial class AutoCommon
             return await GroundDismount(scope);
         }
 
-        Status = "Landing";
+        Status = Loc.T(L.Status.Landing);
         var from = Svc.Objects.LocalPlayer?.Position ?? around;
         var found = FindLandingSpots(around, standOffMeters, from, allowUnlandable: false, landingSpots);
         if (found == 0)

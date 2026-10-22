@@ -111,7 +111,7 @@ internal sealed class AutoGoto(uint territoryId, Vector3 destination, float arri
                 return;
             }
 
-            Status = "Arrived";
+            Status = Loc.T(L.Status.Arrived);
             Diag($"Goto: arrived {Vector3.Distance(Svc.Objects.LocalPlayer?.Position ?? destination, destination):F1}m from the point.");
             Svc.Chat.Print($"{AtmConstants.LogPrefix} {Loc.T(L.Goto.Arrived, zoneName)}");
         }

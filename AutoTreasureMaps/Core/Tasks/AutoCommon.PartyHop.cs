@@ -72,7 +72,7 @@ public abstract partial class AutoCommon
         }
 
         var partners = PartyHop.Partners;
-        Status = "Inviting the party back";
+        Status = Loc.T(L.Status.InvitingPartyBack);
         Diag($"Party: inviting {partners.Count} member(s) back on {Worlds.NameOf(Worlds.Current)}.");
         var startedAt = Environment.TickCount64;
         var nextInviteAt = 0L;

@@ -25,7 +25,7 @@ internal sealed class BagDecipherTask : MapSupplyTask
         }
 
         var tier = pick.Tier;
-        Status = $"Deciphering {tier.Name}";
+        Status = Loc.T(L.Status.Deciphering, tier.Name);
         await FightOffAttackers(Scope);
         if (Svc.Condition[ConditionFlag.Mounted])
         {

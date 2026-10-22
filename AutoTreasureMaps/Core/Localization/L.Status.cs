@@ -1,0 +1,98 @@
+namespace AutoTreasureMaps.Core.Localization;
+
+internal static partial class L
+{
+    // The line under the phase chip that says what the run is doing right now.
+    internal static class Status
+    {
+        public static readonly LocString NextChamber = new("status.nextChamber", "Moving on to the next chamber");
+        public static readonly LocString WaitingDraw = new("status.waitingDraw", "Waiting for the draw");
+        public static readonly LocString OpeningGate = new("status.openingGate", "Opening a gate");
+        public static readonly LocString DrawingNextRound = new("status.drawingNextRound", "Drawing the next round");
+        public static readonly LocString WaitingDungeon = new("status.waitingDungeon", "Waiting for the dungeon");
+        public static readonly LocString BonusUpToYou = new("status.bonusUpToYou", "Bonus round: up to you");
+        public static readonly LocString BonusSacks = new("status.bonusSacks", "Bonus round: picking up sacks");
+        public static readonly LocString Fighting = new("status.fighting", "Fighting");
+        public static readonly LocString LureWaitingEnd = new("status.lureWaitingEnd", "Gambler's Lure: waiting for it to end");
+        public static readonly LocString LureUpToYou = new("status.lureUpToYou", "Gambler's Lure: up to you");
+        public static readonly LocString LureWaitingGuess = new("status.lureWaitingGuess", "Gambler's Lure: waiting for the guess");
+        public static readonly LocString LureGuessing = new("status.lureGuessing", "Gambler's Lure: guessing");
+        public static readonly LocString LureChallenging = new("status.lureChallenging", "Gambler's Lure: challenging");
+        public static readonly LocString OpeningCofferAsIs = new("status.openingCofferAsIs", "Opening the coffer as it is");
+        public static readonly LocString Looting = new("status.looting", "Looting");
+        public static readonly LocString LeavingDungeon = new("status.leavingDungeon", "Leaving the dungeon");
+        public static readonly LocString EnteringPortal = new("status.enteringPortal", "Entering the portal");
+        public static readonly LocString DungeonUpToYou = new("status.dungeonUpToYou", "The dungeon is up to you; the run waits outside");
+        public static readonly LocString Deciphering = new("status.deciphering", "Deciphering {0}");
+        public static readonly LocString CheckingDailyMap = new("status.checkingDailyMap", "Checking the daily map");
+        public static readonly LocString ReadingListings = new("status.readingListings", "Reading the listings of {0}");
+        public static readonly LocString WaitingMarket = new("status.waitingMarket", "Waiting for the market board");
+        public static readonly LocString Buying = new("status.buying", "Buying {0}");
+        public static readonly LocString TravellingToMarket = new("status.travellingToMarket", "Travelling to the market board in {0}");
+        public static readonly LocString OpeningMarket = new("status.openingMarket", "Opening the market board");
+        public static readonly LocString ComparingPrices = new("status.comparingPrices", "Comparing map prices across {0}");
+        public static readonly LocString LoggingOut = new("status.loggingOut", "Logging out");
+        public static readonly LocString ClosingGame = new("status.closingGame", "Closing the game");
+        public static readonly LocString SendingChatCommands = new("status.sendingChatCommands", "Sending your chat commands");
+        public static readonly LocString LookingForCoffer = new("status.lookingForCoffer", "Looking for the coffer");
+        public static readonly LocString OpeningCoffer = new("status.openingCoffer", "Opening the coffer");
+        public static readonly LocString OpeningCofferLock = new("status.openingCofferLock", "Opening the coffer's lock");
+        public static readonly LocString LootingCoffer = new("status.lootingCoffer", "Looting the coffer");
+        public static readonly LocString WaitingDig = new("status.waitingDig", "Waiting for Dig to be ready");
+        public static readonly LocString Digging = new("status.digging", "Digging for the coffer");
+        public static readonly LocString SteppingOntoSpot = new("status.steppingOntoSpot", "Stepping onto the dig spot");
+        public static readonly LocString FightingStragglers = new("status.fightingStragglers", "Fighting off what is still attacking");
+        public static readonly LocString FightingGuards = new("status.fightingGuards", "Fighting the coffer's guards");
+        public static readonly LocString SwitchingToGatherer = new("status.switchingToGatherer", "Switching to the gatherer");
+        public static readonly LocString TravellingToGatherArea = new("status.travellingToGatherArea", "Travelling to the gathering area");
+        public static readonly LocString LookingForNode = new("status.lookingForNode", "Looking for a gathering node");
+        public static readonly LocString HeadingToNode = new("status.headingToNode", "Heading to a gathering node");
+        public static readonly LocString GatheringOutNode = new("status.gatheringOutNode", "Gathering out a node without the map");
+        public static readonly LocString GatheringMap = new("status.gatheringMap", "Gathering the map");
+        public static readonly LocString LeavingUnderAttack = new("status.leavingUnderAttack", "Leaving the area: under attack");
+        public static readonly LocString SwitchingBackGearset = new("status.switchingBackGearset", "Switching back to your gearset");
+        public static readonly LocString Idling = new("status.idling", "Idling in {0}");
+        public static readonly LocString Wandering = new("status.wandering", "Wandering in {0} (~{1}s left)");
+        public static readonly LocString Landing = new("status.landing", "Landing");
+        public static readonly LocString WaitingParty = new("status.waitingParty", "Waiting for the party");
+        public static readonly LocString LettingTank = new("status.lettingTank", "Letting the tank take the enemies");
+        public static readonly LocString FightingBesideLeader = new("status.fightingBesideLeader", "Fighting beside the leader");
+        public static readonly LocString InvitingPartyBack = new("status.invitingPartyBack", "Inviting the party back");
+        public static readonly LocString OpeningRepair = new("status.openingRepair", "Opening Repair");
+        public static readonly LocString TalkingTo = new("status.talkingTo", "Talking to {0}");
+        public static readonly LocString Repairing = new("status.repairing", "Repairing gear");
+        public static readonly LocString KnockedOutHome = new("status.knockedOutHome", "Knocked out, returning to the home point");
+        public static readonly LocString KnockedOutRaise = new("status.knockedOutRaise", "Knocked out, waiting for a raise");
+        public static readonly LocString WaitingCast = new("status.waitingCast", "Waiting for the cast to end before teleporting");
+        public static readonly LocString ReturningHomeStuck = new("status.returningHomeStuck", "Returning home to clear a stuck teleport");
+        public static readonly LocString ReturningSolidGround = new("status.returningSolidGround", "Returning to solid ground before teleporting");
+        public static readonly LocString RidingAethernetFrom = new("status.ridingAethernetFrom", "Riding the aethernet from {0}");
+        public static readonly LocString RidingAethernetTo = new("status.ridingAethernetTo", "Riding the aethernet to {0}");
+        public static readonly LocString RidingAethernetToTerritory = new("status.ridingAethernetToTerritory", "Riding the aethernet to territory {0}");
+        public static readonly LocString WaitingCharacter = new("status.waitingCharacter", "Waiting for the character to be ready");
+        public static readonly LocString GettingUnstuck = new("status.gettingUnstuck", "Getting unstuck");
+        public static readonly LocString SwimmingUp = new("status.swimmingUp", "Swimming up to the surface");
+        public static readonly LocString SwimmingToSpot = new("status.swimmingToSpot", "Swimming to the spot in {0}");
+        public static readonly LocString RidingToSpot = new("status.ridingToSpot", "Riding to the spot in {0}");
+        public static readonly LocString WalkingToSpot = new("status.walkingToSpot", "Walking to the spot in {0}");
+        public static readonly LocString DiscardingLoot = new("status.discardingLoot", "Discarding loot");
+        public static readonly LocString Consuming = new("status.consuming", "Consuming {0}");
+        public static readonly LocString TravellingTo = new("status.travellingTo", "Travelling to {0}");
+        public static readonly LocString WaitingLeaderSpot = new("status.waitingLeaderSpot", "Waiting for the leader's next spot");
+        public static readonly LocString KeepingByLeader = new("status.keepingByLeader", "Keeping by the leader");
+        public static readonly LocString WaitingLeaderInvite = new("status.waitingLeaderInvite", "Waiting for the leader's invite");
+        public static readonly LocString Arrived = new("status.arrived", "Arrived");
+        public static readonly LocString EnteringInn = new("status.enteringInn", "Entering the inn in {0}");
+        public static readonly LocString WaitingPartyArea = new("status.waitingPartyArea", "Waiting for the party to reach the area");
+        public static readonly LocString WaitingHuntWindDown = new("status.waitingHuntWindDown", "Waiting for the treasure hunt to wind down");
+        public static readonly LocString WaitingNavmesh = new("status.waitingNavmesh", "Waiting for Navmesh");
+        public static readonly LocString MovingTo = new("status.movingTo", "Moving to {0}");
+        public static readonly LocString TeleportingTo = new("status.teleportingTo", "Teleporting to {0}");
+        public static readonly LocString InteractingWith = new("status.interactingWith", "Interacting with {0}");
+        public static readonly LocString Mounting = new("status.mounting", "Mounting");
+        public static readonly LocString Dismounting = new("status.dismounting", "Dismounting");
+        public static readonly LocString NavmeshLoadingPercent = new("status.navmeshLoadingPercent", "Please wait, the navmesh is loading ({0}%)");
+        public static readonly LocString NavmeshLoading = new("status.navmeshLoading", "Please wait, the navmesh is loading…");
+        public static readonly LocString PausedInContent = new("status.pausedInContent", "Paused while you are in content");
+    }
+}

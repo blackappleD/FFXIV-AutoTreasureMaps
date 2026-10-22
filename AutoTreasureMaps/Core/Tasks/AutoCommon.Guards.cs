@@ -1,5 +1,6 @@
 using AutoTreasureMaps.Core.Game.Player;
 using AutoTreasureMaps.Core.Ipc;
+using AutoTreasureMaps.Core.Localization;
 using AutoTreasureMaps.Core.Treasure;
 using Dalamud.Game.ClientState.Conditions;
 using ECommons.DalamudServices;
@@ -31,7 +32,7 @@ public abstract partial class AutoCommon
     {
         const string scope = "map-fight";
         EnterStep(TreasurePhase.Fighting);
-        Status = "Fighting the coffer's guards";
+        Status = Loc.T(L.Status.FightingGuards);
         var openedAt = map.CofferOpenedAtMs;
         if (Messages.ArrivedSince(TreasureLogMessages.GuardsDefeated, openedAt))
         {

@@ -1,5 +1,6 @@
 using AutoTreasureMaps.Core.Game.Ops;
 using AutoTreasureMaps.Core.Ipc;
+using AutoTreasureMaps.Core.Localization;
 using AutoTreasureMaps.Core.Travel;
 using AutoTreasureMaps.Core.Treasure;
 using Dalamud.Game.ClientState.Conditions;
@@ -105,7 +106,7 @@ public abstract partial class AutoCommon
         await FightOffAttackers("map-dig");
         if (DigOps.RecastActive())
         {
-            Status = "Waiting for Dig to be ready";
+            Status = Loc.T(L.Status.WaitingDig);
             await WaitUntilTimed(() => !DigOps.RecastActive(), DigRecastWaitMs, "dig recast", MessagePollFrames);
         }
 
@@ -124,7 +125,7 @@ public abstract partial class AutoCommon
             return new DigResult(DigAnswer.Cancelled);
         }
 
-        Status = "Digging for the coffer";
+        Status = Loc.T(L.Status.Digging);
         LogOffsetFrom("Dig", map.Spot.Position);
         var since = TreasureMessageWatcher.Now;
         var status = DigOps.ActionStatus();
@@ -176,7 +177,7 @@ public abstract partial class AutoCommon
     private async Task StepOntoSpot(Vector3 point)
     {
         var floor = NavmeshIPC.Instance.PointOnFloor(point with { Y = point.Y + DigStepLiftMeters }, allowUnlandable: true, DigStepFloorHalfExtentMeters) ?? point;
-        Status = "Stepping onto the dig spot";
+        Status = Loc.T(L.Status.SteppingOntoSpot);
         Diag($"Dig: nothing here; stepping {DistanceTo(floor):F1}m onto the spot's own point at {FormatPosition(floor)}.");
         const string scope = "map-dig-step";
         var step = new MoveOp(move => move.MoveInZone(floor, walkMovement.WithTolerance(DigStepToleranceMeters), null));

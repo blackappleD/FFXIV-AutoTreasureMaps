@@ -151,7 +151,7 @@ internal sealed partial class MarketBuyTask
     // Null when Universalis could not be asked; the run then buys where it stands.
     private async Task<Dictionary<uint, ItemListings>?> QueryPrices(string dataCenter, List<TreasureTier> tiers)
     {
-        Status = $"Comparing map prices across {dataCenter}";
+        Status = Loc.T(L.Status.ComparingPrices, dataCenter);
         var itemIds = tiers.Select(static tier => tier.TimewornItemId).Distinct().ToList();
         var request = Universalis.Listings(dataCenter, itemIds, CancelToken);
         await WaitUntilTimed(() => request.IsCompleted, PriceQueryTimeoutMs, "universalis prices");

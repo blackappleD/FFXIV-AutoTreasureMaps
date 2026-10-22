@@ -1,5 +1,6 @@
 using AutoTreasureMaps.Core.Cleanup;
 using AutoTreasureMaps.Core.Game.Ops;
+using AutoTreasureMaps.Core.Localization;
 using AutoTreasureMaps.Core.Travel;
 using Dalamud.Game.ClientState.Conditions;
 using ECommons.DalamudServices;
@@ -123,7 +124,7 @@ public abstract partial class AutoCommon
             return;
         }
 
-        Status = "Discarding loot";
+        Status = Loc.T(L.Status.DiscardingLoot);
         Diag($"{scope}: discarding {LootCleanup.Pending.Count} kinds of noted loot");
         LootCleanup.Start();
         if (!await WaitUntilTimed(() => !LootCleanup.Running, timeoutMs, "loot-cleanup") && LootCleanup.Running)
@@ -211,7 +212,7 @@ public abstract partial class AutoCommon
                 continue;
             }
 
-            Status = $"Consuming {entry.Name}";
+            Status = Loc.T(L.Status.Consuming, entry.Name);
             Diag($"Upkeep: consuming {entry.Name} (status {entry.StatusId} missing or under {configuration.AutoConsumeMinMinutes}m)");
             await WaitUntilTimed(() => ConsumeUntilBuffed(entry, minimumSeconds), UpkeepConsumeWaitMs, $"consume-{entry.ItemId}", UpkeepConsumeCheckFrames);
         }

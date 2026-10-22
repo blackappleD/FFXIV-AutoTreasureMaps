@@ -1,4 +1,5 @@
 using AutoTreasureMaps.Core.Ipc;
+using AutoTreasureMaps.Core.Localization;
 using AutoTreasureMaps.Core.Travel;
 using clib.TaskSystem;
 using Dalamud.Game.ClientState.Conditions;
@@ -35,7 +36,7 @@ public abstract partial class AutoCommon
         {
             var reached = false;
             await RunWithStatusPinned(
-                $"Teleporting to {cityName}",
+                Loc.T(L.Status.TeleportingTo, cityName),
                 async () => reached = await TeleportToTerritory(cityTerritoryId, Vector3.Zero, "humanize-teleport", HumanizeTeleportWatchdogMs));
             if (!reached)
             {
@@ -86,7 +87,7 @@ public abstract partial class AutoCommon
 
             if (destination is not { } spot)
             {
-                Status = $"Idling in {cityName}";
+                Status = Loc.T(L.Status.Idling, cityName);
                 await IdleUntil(HumanizeIdleWithoutRouteMs, deadline);
                 continue;
             }
@@ -98,7 +99,7 @@ public abstract partial class AutoCommon
             }
 
             walks++;
-            Status = $"Wandering in {cityName} (~{(deadline - Environment.TickCount64) / TimeUnits.MillisecondsPerSecond}s left)";
+            Status = Loc.T(L.Status.Wandering, cityName, (deadline - Environment.TickCount64) / TimeUnits.MillisecondsPerSecond);
             Diag($"Humanize walk {walks}: {Vector3.Distance(from, spot):F0}m to {spot}");
             var scope = $"humanize-walk#{walks}";
             var move = new MoveOp(operation => operation.MoveInZone(

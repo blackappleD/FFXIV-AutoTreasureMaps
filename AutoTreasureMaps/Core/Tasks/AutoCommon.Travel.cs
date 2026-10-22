@@ -1,4 +1,5 @@
 using AutoTreasureMaps.Core.Ipc;
+using AutoTreasureMaps.Core.Localization;
 using AutoTreasureMaps.Core.Travel;
 using clib.TaskSystem;
 using Dalamud.Game.ClientState.Conditions;
@@ -112,7 +113,7 @@ public abstract partial class AutoCommon
             return true;
         }
 
-        Status = "Waiting for the character to be ready";
+        Status = Loc.T(L.Status.WaitingCharacter);
         var ready = await WaitUntilTimed(PlayerReady, TravelPlayerReadyWaitMs, "travel-player-ready");
         if (!ready && !CancelToken.IsCancellationRequested)
         {
@@ -127,7 +128,7 @@ public abstract partial class AutoCommon
         Diag($"Travel: in territory {Svc.ClientState.TerritoryType}, teleporting toward {zoneName}");
         var reached = false;
         await RunWithStatusPinned(
-            $"Teleporting to {zoneName}",
+            Loc.T(L.Status.TeleportingTo, zoneName),
             async () => reached = await TeleportToTerritory(territoryId, destination, "travel-teleport", TravelTeleportWatchdogMs));
         if (reached)
         {
@@ -282,9 +283,9 @@ public abstract partial class AutoCommon
         var canRemount = mountingAllowed && !ride;
         var label = plan.Mode switch
         {
-            LegMode.Dive => $"Swimming to the spot in {zoneName}",
-            LegMode.GroundMount or LegMode.Flight => $"Riding to the spot in {zoneName}",
-            _ => $"Walking to the spot in {zoneName}",
+            LegMode.Dive => Loc.T(L.Status.SwimmingToSpot, zoneName),
+            LegMode.GroundMount or LegMode.Flight => Loc.T(L.Status.RidingToSpot, zoneName),
+            _ => Loc.T(L.Status.WalkingToSpot, zoneName),
         };
         var remount = false;
 
@@ -554,7 +555,7 @@ public abstract partial class AutoCommon
     private async Task<bool> TeleportToAetheryte(uint territoryId, ZoneAetheryte aetheryte, string label)
     {
         var moved = false;
-        await RunWithStatusPinned($"Teleporting to {aetheryte.Name}", async () =>
+        await RunWithStatusPinned(Loc.T(L.Status.TeleportingTo, aetheryte.Name), async () =>
         {
             await PrepareForTeleport(label);
             if (!await HumanDelay(HumanAction.Teleport, label) || Svc.Objects.LocalPlayer is not { } current)
@@ -599,7 +600,7 @@ public abstract partial class AutoCommon
         }
 
         Diag($"Travel: riding the aethernet from {shortcut.Source.Name} to {shortcut.Destination.Name}, about {shortcut.SavedMeters:F0}m shorter than walking");
-        await RunWithStatusPinned($"Riding the aethernet to {shortcut.Destination.Name}", async () =>
+        await RunWithStatusPinned(Loc.T(L.Status.RidingAethernetTo, shortcut.Destination.Name), async () =>
         {
             // Aiming at the chosen stop itself makes the library ride to exactly that one.
             var operation = new MoveOp(move => move.Aethernet(territoryId, shortcut.Destination.Position));
@@ -637,7 +638,7 @@ public abstract partial class AutoCommon
             return;
         }
 
-        Status = "Getting unstuck";
+        Status = Loc.T(L.Status.GettingUnstuck);
         Diag($"{scope}: stuck ({ConditionTag()}); jumping and stepping off the snag");
         UseGeneralAction(JumpGeneralActionId);
         await DelayMs(UnstickSettleMs);
@@ -680,7 +681,7 @@ public abstract partial class AutoCommon
             return;
         }
 
-        Status = "Swimming up to the surface";
+        Status = Loc.T(L.Status.SwimmingUp);
         var riseScope = $"{scope}-surface";
         Diag($"{riseScope}: stuck under water ({ConditionTag()}); rising {surface.Y - position.Y:F0}m to {FormatPosition(surface)}");
         var operation = new MoveOp(move => move.DiveInZone(surface, SurfaceArriveMeters, static () => !Svc.Condition[ConditionFlag.Diving]));

@@ -1,4 +1,5 @@
 using AutoTreasureMaps.Core.Ipc;
+using AutoTreasureMaps.Core.Localization;
 using Dalamud.Plugin.Services;
 using ECommons.DalamudServices;
 using System.Runtime.CompilerServices;
@@ -159,8 +160,8 @@ public abstract partial class AutoCommon : AutoTask
 
             var progress = navmesh.BuildProgress();
             Status = progress is >= 0f and <= 1f
-                ? $"Please wait, the navmesh is loading ({progress * 100f:F0}%)"
-                : "Please wait, the navmesh is loading…";
+                ? Loc.T(L.Status.NavmeshLoadingPercent, (int)MathF.Round(progress * 100f))
+                : Loc.T(L.Status.NavmeshLoading);
             await NextFrame(pollFrames);
         }
     }

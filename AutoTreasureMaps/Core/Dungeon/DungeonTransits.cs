@@ -1,4 +1,5 @@
 using AutoTreasureMaps.Core.Ipc;
+using AutoTreasureMaps.Core.Localization;
 using ECommons;
 using System.Numerics;
 using System.Threading.Tasks;
@@ -39,7 +40,7 @@ internal sealed class WalkIntoCircleTransit : ITransitStrategy
 
     public async Task<bool> Run(DungeonContext context, AdvanceOutcome advance)
     {
-        context.Status = "Moving on to the next chamber";
+        context.Status = Loc.T(L.Status.NextChamber);
         if (context.Profile.CircleBehind(advance.BaseId) is { } placed)
         {
             return await WalkIntoPlacedCircle(context, advance, placed);
@@ -167,7 +168,7 @@ internal sealed class StayInPlaceTransit : ITransitStrategy
 
     public async Task<bool> Run(DungeonContext context, AdvanceOutcome advance)
     {
-        context.Status = "Waiting for the draw";
+        context.Status = Loc.T(L.Status.WaitingDraw);
         var shown = await context.WaitUntil(
             () => context.TryGetMessage(Results, advance.SinceMs, out _) || context.FieldBusy() || context.Zoning || !context.InDungeon,
             DrawResultMs,

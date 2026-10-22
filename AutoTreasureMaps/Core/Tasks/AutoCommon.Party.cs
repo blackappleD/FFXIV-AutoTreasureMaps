@@ -2,6 +2,7 @@ using AutoTreasureMaps.Core.Game;
 using AutoTreasureMaps.Core.Game.Ops;
 using AutoTreasureMaps.Core.Game.Player;
 using AutoTreasureMaps.Core.Ipc;
+using AutoTreasureMaps.Core.Localization;
 using AutoTreasureMaps.Core.Treasure;
 using Dalamud.Game.ClientState.Conditions;
 using Dalamud.Game.ClientState.Objects.Enums;
@@ -59,7 +60,7 @@ public abstract partial class AutoCommon
         }
 
         var arrivedAt = Environment.TickCount64;
-        Status = "Waiting for the party";
+        Status = Loc.T(L.Status.WaitingParty);
         var gathered = PartyPresence.FarthestMemberFrom(PlayerPosition()) <= FollowersNearMeters
             || await WaitUntilTimed(() => PartyPresence.FarthestMemberFrom(PlayerPosition()) <= FollowersNearMeters, FollowersWaitMs, "party at the spot");
         if (CancelToken.IsCancellationRequested)
@@ -94,7 +95,7 @@ public abstract partial class AutoCommon
         }
 
         var startedAt = Environment.TickCount64;
-        Status = "Waiting for the party";
+        Status = Loc.T(L.Status.WaitingParty);
         var gathered = await WaitUntilTimed(() => PartyPresence.FarthestMemberFrom(PlayerPosition()) <= MembersInRoomMeters, MembersInRoomWaitMs, "party in the room");
         var waitedMs = Environment.TickCount64 - startedAt;
         if (!gathered && !CancelToken.IsCancellationRequested)
@@ -120,7 +121,7 @@ public abstract partial class AutoCommon
         }
 
         Diag($"{scope}: letting the tank take the enemies for {LetTankPullMs / 1000.0:F1}s.");
-        Status = "Letting the tank take the enemies";
+        Status = Loc.T(L.Status.LettingTank);
         await DelayMs(LetTankPullMs);
     }
 
@@ -156,7 +157,7 @@ public abstract partial class AutoCommon
     private protected async Task FightAlong(string scope)
     {
         EnsureCombatPreset();
-        Status = "Fighting beside the leader";
+        Status = Loc.T(L.Status.FightingBesideLeader);
         Diag($"{scope}: the party is fighting ({ConditionTag()}); joining in.");
         ReleaseCombatMovement(scope);
         await LetTankPull(scope);

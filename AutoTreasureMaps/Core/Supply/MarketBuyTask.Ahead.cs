@@ -45,7 +45,7 @@ internal sealed partial class MarketBuyTask
             return;
         }
 
-        Status = $"Deciphering {tier.Name}";
+        Status = Loc.T(L.Status.Deciphering, tier.Name);
         Diag($"Market: deciphering {tier.Name} at the board, so a second map can be bought ahead.");
         Svc.Chat.Print($"{AtmConstants.LogPrefix} {Loc.T(L.Decipher.ChatStarted, tier.Name)}");
         if (!NpcInteraction.PlayerReady())

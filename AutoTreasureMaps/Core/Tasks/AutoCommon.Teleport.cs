@@ -1,4 +1,5 @@
 using AutoTreasureMaps.Core.Ipc;
+using AutoTreasureMaps.Core.Localization;
 using AutoTreasureMaps.Core.Travel;
 using clib.TaskSystem;
 using Dalamud.Game.ClientState.Conditions;
@@ -84,7 +85,7 @@ public abstract partial class AutoCommon
 
         if (Svc.Condition[ConditionFlag.Casting])
         {
-            Status = "Waiting for the cast to end before teleporting";
+            Status = Loc.T(L.Status.WaitingCast);
             Diag($"{scope}: casting ({ConditionTag()}), waiting up to {TeleportCastClearMs / TimeUnits.MillisecondsPerSecond}s for it to end");
             await WaitUntilTimed(static () => !Svc.Condition[ConditionFlag.Casting], TeleportCastClearMs, $"{scope}-wait-castable");
         }
@@ -114,7 +115,7 @@ public abstract partial class AutoCommon
     {
         var startTerritory = Svc.ClientState.TerritoryType;
         Diag($"{scope}: teleport not starting ({ConditionTag()}); casting Return to the home aetheryte to clear a stuck teleport");
-        Status = "Returning home to clear a stuck teleport";
+        Status = Loc.T(L.Status.ReturningHomeStuck);
 
         var deadline = Environment.TickCount64 + ReturnHomeWaitMs;
         var nextCastAt = 0L;
@@ -313,7 +314,7 @@ public abstract partial class AutoCommon
             return;
         }
 
-        Status = "Returning to solid ground before teleporting";
+        Status = Loc.T(L.Status.ReturningSolidGround);
         Diag($"{scope}: off solid ground ({ConditionTag()}); relocating ~{distance:F0}m to a reachable point before teleport");
         var groundingScope = $"{scope}-ground";
         var move = new MoveOp(operation => operation.MoveInZone(solidGround, MovementConfig.Everything.WithTolerance(GroundArrivalToleranceMeters), null));
@@ -324,7 +325,7 @@ public abstract partial class AutoCommon
     // guard, because the walk-up, the menu and the hop all hold the character still in ways it reads as a stuck teleport.
     private async Task RideAethernetInto(uint territoryId, Vector3 destination, ZoneGateway gateway, string scope)
     {
-        Status = $"Riding the aethernet from {gateway.Name}";
+        Status = Loc.T(L.Status.RidingAethernetFrom, gateway.Name);
         await WaitForNavmeshReady(AethernetNavmeshWaitMs, AethernetNavmeshPollFrames);
         if (CancelToken.IsCancellationRequested)
         {

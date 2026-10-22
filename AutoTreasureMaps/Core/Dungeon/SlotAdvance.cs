@@ -1,3 +1,4 @@
+using AutoTreasureMaps.Core.Localization;
 using AutoTreasureMaps.Core.Treasure;
 using ECommons.DalamudServices;
 using System.Threading.Tasks;
@@ -32,7 +33,7 @@ internal sealed class SlotAdvance : IAdvanceStrategy
         var machineId = machine.GameObjectId;
         var machineBaseId = machine.BaseId;
         var position = machine.Position;
-        context.Status = "Drawing the next round";
+        context.Status = Loc.T(L.Status.DrawingNextRound);
         if (!await context.Delay(HumanAction.OpenCoffer, Scope))
         {
             return AdvanceOutcome.Of(AdvanceResult.Cancelled);

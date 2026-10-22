@@ -194,7 +194,7 @@ internal sealed class AutoFollowRun(TreasureSession session, TreasureProgress pr
 
             await KeepGap("follow-gap");
             progress.SetPhase(TreasurePhase.Preparing);
-            Status = "Waiting for the leader's next spot";
+            Status = Loc.T(L.Status.WaitingLeaderSpot);
             await NextFrame(TickFrames);
         }
     }
@@ -365,7 +365,7 @@ internal sealed class AutoFollowRun(TreasureSession session, TreasureProgress pr
             // A raise may come from the leader, and returning home would leave the dungeon, so a knockout is waited out.
             if (IsKnockedOut())
             {
-                Status = "Knocked out, waiting for a raise";
+                Status = Loc.T(L.Status.KnockedOutRaise);
                 await NextFrame(TickFrames);
                 continue;
             }
@@ -397,7 +397,7 @@ internal sealed class AutoFollowRun(TreasureSession session, TreasureProgress pr
             }
 
             progress.SetPhase(TreasurePhase.Preparing);
-            Status = "Keeping by the leader";
+            Status = Loc.T(L.Status.KeepingByLeader);
             if (LeaderInZone() is { } leader)
             {
                 var distance = Vector3.Distance(leader, PlayerPosition());
@@ -481,7 +481,7 @@ internal sealed class AutoFollowRun(TreasureSession session, TreasureProgress pr
 
         Diag($"{scope}: on {Worlds.NameOf(Worlds.Current)} {(Environment.TickCount64 - started) / 1000.0:F1}s after the word; waiting for {hop.LeaderName}'s invite.");
         progress.SetPhase(TreasurePhase.Preparing);
-        Status = "Waiting for the leader's invite";
+        Status = Loc.T(L.Status.WaitingLeaderInvite);
         var joined = await WaitUntilTimed(PartyPresence.LocalParty, InviteWaitMs, "leader's invite");
         PartyHop.ForgetPending();
         Diag($"{scope}: {(joined ? "back in the leader's party" : "no invite came")}.");

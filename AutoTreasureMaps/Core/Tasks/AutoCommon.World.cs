@@ -1,5 +1,6 @@
 using AutoTreasureMaps.Core.Game.Ops;
 using AutoTreasureMaps.Core.Ipc;
+using AutoTreasureMaps.Core.Localization;
 using AutoTreasureMaps.Core.Travel;
 using Dalamud.Game.ClientState.Conditions;
 using ECommons.DalamudServices;
@@ -44,7 +45,7 @@ public abstract partial class AutoCommon
 
         // The waits below end on a stop by throwing, which would skip the Abort after them, so the stop aborts the visit.
         using var stopRegistration = CancelToken.Register(lifestream.Abort);
-        Status = $"Travelling to {name}";
+        Status = Loc.T(L.Status.TravellingTo, name);
         Diag($"{scope}: asking Lifestream to visit {name} ({worldId}) from {Worlds.NameOf(Worlds.Current)}, gateway aetheryte {(LifestreamIPC.IsGateway(gatewayAetheryteId) ? gatewayAetheryteId.ToString() : "Lifestream default")}.");
         lifestream.ChangeWorld(name, gatewayAetheryteId);
         var arrived = await WaitUntilTimed(

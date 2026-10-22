@@ -279,7 +279,7 @@ public abstract partial class AutoCommon
                         return DungeonOutcome.Stuck;
                     }
 
-                    Status = "Waiting for the dungeon";
+                    Status = Loc.T(L.Status.WaitingDungeon);
                     await NextFrame(DungeonTickFrames);
                     break;
             }
@@ -427,7 +427,7 @@ public abstract partial class AutoCommon
             Svc.Chat.Print($"{AtmConstants.LogPrefix} {Loc.T(L.Dungeon.ChatBonusRound)}");
         }
 
-        Status = "Bonus round: up to you";
+        Status = Loc.T(L.Status.BonusUpToYou);
         await WaitUntilTimed(() => !BonusRoundOn(dungeon) || !context.InDungeon, BonusRoundCapMs, "bonus round over");
     }
 
@@ -436,7 +436,7 @@ public abstract partial class AutoCommon
     {
         const string scope = "dungeon-coffer";
         EnterStep(TreasurePhase.Opening);
-        Status = "Opening the coffer";
+        Status = Loc.T(L.Status.OpeningCoffer);
         var cofferId = coffer.GameObjectId;
         // The dungeon's own coffers ask their own question ("Open the coffer?" rather than the dug-up coffer's), which no
         // sheet row gives; a question that opens right after asking one of them is that coffer's.
@@ -475,7 +475,7 @@ public abstract partial class AutoCommon
     {
         const string scope = "dungeon-fight";
         EnterStep(TreasurePhase.Fighting);
-        Status = "Fighting";
+        Status = Loc.T(L.Status.Fighting);
         if (!Svc.Condition[ConditionFlag.InCombat])
         {
             await HumanDelay(HumanAction.Engage, scope, EngageAtOnce);
@@ -689,7 +689,7 @@ public abstract partial class AutoCommon
         if (policy != LurePolicy.AskMe && !LureDialog.Open())
         {
             // The window is answered; the coffer is opening, or the cards are out for the player to guess.
-            Status = "Gambler's Lure: waiting for it to end";
+            Status = Loc.T(L.Status.LureWaitingEnd);
             await NextFrame(DungeonTickFrames);
             return;
         }
@@ -711,7 +711,7 @@ public abstract partial class AutoCommon
             Svc.Chat.Print($"{AtmConstants.LogPrefix} {Loc.T(L.Dungeon.ChatLure)}");
         }
 
-        Status = "Gambler's Lure: up to you";
+        Status = Loc.T(L.Status.LureUpToYou);
         while (LureOngoing(dungeon) && !CancelToken.IsCancellationRequested && context.InDungeon)
         {
             await NextFrame(DungeonTickFrames);
@@ -790,7 +790,7 @@ public abstract partial class AutoCommon
     // to guess before the run tosses a coin, and the run stops challenging for the rest of it.
     private async Task AwaitLureGuess(string scope, DungeonContext context, LurePolicy policy)
     {
-        Status = "Gambler's Lure: waiting for the guess";
+        Status = Loc.T(L.Status.LureWaitingGuess);
         var dealtAt = Environment.TickCount64;
         var (shown, raw) = await WaitForShownCard(context);
 
@@ -860,7 +860,7 @@ public abstract partial class AutoCommon
         var choiceId = choice.GameObjectId;
         var name = high ? "high" : "low";
         Diag($"{scope}: guessing {name} ({reason}).");
-        Status = "Gambler's Lure: guessing";
+        Status = Loc.T(L.Status.LureGuessing);
         var promptBefore = context.PromptOpen();
         var interacted = await context.Interact(() => Svc.Objects.SearchById(choiceId), $"lure choice {name}", NpcInteraction.SelectYesnoOpen, scope);
         if (await WaitUntilTimed(NpcInteraction.SelectYesnoOpen, LureGuessAnswerMs, "lure guess question"))
@@ -881,7 +881,7 @@ public abstract partial class AutoCommon
     // True once the window took the choice and closed, or the run was stopped before it chose.
     private async Task<bool> AnswerLureWindow(string scope, bool challenge)
     {
-        Status = challenge ? "Gambler's Lure: challenging" : "Opening the coffer as it is";
+        Status = challenge ? Loc.T(L.Status.LureChallenging) : Loc.T(L.Status.OpeningCofferAsIs);
         if (!await HumanDelay(HumanAction.OpenCoffer, scope))
         {
             return true;
@@ -910,7 +910,7 @@ public abstract partial class AutoCommon
     private async Task SettleDungeonLoot(DungeonContext context)
     {
         EnterStep(TreasurePhase.Looting);
-        Status = "Looting";
+        Status = Loc.T(L.Status.Looting);
         var choice = Plugin.Instance.Configuration.LootRoll;
         Func<uint, bool> any = static _ => true;
         var rounds = 0;
@@ -947,7 +947,7 @@ public abstract partial class AutoCommon
         const string scope = "dungeon-leave";
         var dungeon = context.Dungeon;
         EnterStep(TreasurePhase.Finishing);
-        Status = "Leaving the dungeon";
+        Status = Loc.T(L.Status.LeavingDungeon);
         // Items still waiting on a roll would be lost with the duty, so the player gets a minute to roll them by hand, and
         // if they still wait after that, the dungeon is handed back rather than left with them.
         if (LootRolls.Pending(static _ => true) > 0)

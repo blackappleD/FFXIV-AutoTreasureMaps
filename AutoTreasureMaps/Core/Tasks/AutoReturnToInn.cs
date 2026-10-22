@@ -1,5 +1,6 @@
 using AutoTreasureMaps.Core.Game.Ops;
 using AutoTreasureMaps.Core.Ipc;
+using AutoTreasureMaps.Core.Localization;
 using AutoTreasureMaps.Core.Travel;
 using clib.TaskSystem;
 using Dalamud.Game.ClientState.Conditions;
@@ -115,7 +116,7 @@ public sealed class AutoReturnToInn(string postRunCommands) : AutoCommon
 
     private async Task EnterInn(CityInn inn, string cityName)
     {
-        Status = $"Entering the inn in {cityName}";
+        Status = Loc.T(L.Status.EnteringInn, cityName);
         var deadline = Environment.TickCount64 + EnterInnTimeoutMs;
         while (Environment.TickCount64 < deadline && !CancelToken.IsCancellationRequested)
         {

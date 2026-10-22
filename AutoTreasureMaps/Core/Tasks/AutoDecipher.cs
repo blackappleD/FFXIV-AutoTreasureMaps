@@ -63,7 +63,7 @@ internal sealed class AutoDecipher(TreasureTier tier, DecipherRoute route) : Aut
 
     protected override async Task Execute()
     {
-        Status = $"Deciphering {tier.Name}";
+        Status = Loc.T(L.Status.Deciphering, tier.Name);
         var issue = await DecipherMap(tier, route);
         if (issue == DecipherIssue.None)
         {

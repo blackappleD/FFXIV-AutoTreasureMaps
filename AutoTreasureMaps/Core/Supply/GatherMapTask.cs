@@ -46,7 +46,7 @@ internal sealed class GatherMapTask(bool forRun) : MapSupplyTask
     protected override async Task<MapSupplyAnswer> Supply()
     {
         var plugin = Plugin.Instance;
-        Status = "Checking the daily map";
+        Status = Loc.T(L.Status.CheckingDailyMap);
         var refusal = DailyMapPlanner.Plan(plugin, honourSwitch: forRun, honourAllowance: false, out var plan, out _);
         if (refusal != DailyMapRefusal.None)
         {

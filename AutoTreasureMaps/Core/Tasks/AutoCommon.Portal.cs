@@ -159,7 +159,7 @@ public abstract partial class AutoCommon
     {
         const string scope = "portal";
         var startTerritory = Svc.ClientState.TerritoryType;
-        Status = "Entering the portal";
+        Status = Loc.T(L.Status.EnteringPortal);
         IGameObject? Ours() => TreasurePortals.FindNew(lead.Near, PortalSearchMeters, lead.Before);
         await WaitUntilTimed(() => Ours() is not null, PortalAppearWaitMs, "portal object");
         DutyWatcher.HoldForDungeonEntry();
@@ -216,7 +216,7 @@ public abstract partial class AutoCommon
 
     private protected async Task<PortalStep> WaitForPlayerToLeave(TreasureSession session)
     {
-        Status = "The dungeon is up to you; the run waits outside";
+        Status = Loc.T(L.Status.DungeonUpToYou);
         var deadline = Environment.TickCount64 + HandedBackWaitMs;
         while (DutyWatcher.InContent() && Environment.TickCount64 < deadline)
         {
