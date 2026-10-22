@@ -41,6 +41,13 @@ internal sealed unsafe class SackField(DungeonProfile profile)
 
     public bool SackSeen => SacksMin.X <= SacksMax.X;
 
+    // The room as far as it is known: the chargers appear on its edges, and the sacks lie inside them.
+    public Vector2 RoomMin { get; private set; } = new(float.MaxValue);
+
+    public Vector2 RoomMax { get; private set; } = new(float.MinValue);
+
+    public bool RoomSeen => RoomMin.X < RoomMax.X && RoomMin.Y < RoomMax.Y;
+
     public void Read(long nowMs)
     {
         Sacks.Clear();
@@ -113,6 +120,8 @@ internal sealed unsafe class SackField(DungeonProfile profile)
             stillHere.Add(sack.Id);
             SacksMin = Vector2.Min(SacksMin, sack.At);
             SacksMax = Vector2.Max(SacksMax, sack.At);
+            RoomMin = Vector2.Min(RoomMin, sack.At);
+            RoomMax = Vector2.Max(RoomMax, sack.At);
             if (!sacksSeen.TryGetValue(sack.Id, out var before))
             {
                 Changes.Add($"sack {sack.Id:X} {(points == 3 ? "gold" : "silver")} at {Format(sack.At)}");
@@ -159,6 +168,8 @@ internal sealed unsafe class SackField(DungeonProfile profile)
             {
                 charger = new Charger(nowMs, at);
                 chargers[id] = charger;
+                RoomMin = Vector2.Min(RoomMin, at);
+                RoomMax = Vector2.Max(RoomMax, at);
                 Changes.Add($"charger {id:X} at {Format(at)} facing {candidate.Rotation.ToString("F2", CultureInfo.InvariantCulture)}");
             }
 

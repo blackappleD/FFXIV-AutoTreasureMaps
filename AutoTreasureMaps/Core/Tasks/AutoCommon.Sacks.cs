@@ -174,35 +174,53 @@ public abstract partial class AutoCommon
                 // same one; with none of its own left it takes any.
                 KeepOwnSacks(at, choices);
 
-                // Out of a lane first, when what the walk would do next stands in it as the charge lands.
-                var best = SackPlanner.Choose(at, speed, choices, field.Lanes);
-                var threatened = SackPlanner.Threatened(at, field.Lanes);
-                if (threatened && (best is null || best.Value.Risky))
+                // Every plan the planner gives keeps the character out of each lane while its charge lands, on the way,
+                // on the sack and stepping off it. A plan under way that a new charge would catch is dropped at once,
+                // a stand on its sack included; with no safe plan, a character standing in a lane that is due walks to
+                // the nearest clear spot, and otherwise waits where it is.
+                var walkingThere = onTopSinceMs == 0;
+                var standLeft = walkingThere ? SackPlanner.StandSeconds : Math.Max(0f, SackPlanner.StandSeconds - (now - onTopSinceMs) / 1000f);
+                if (plan is { } kept && PlanScore(kept, at, speed, field, choices, standLeft) is null)
                 {
-                    // Worked out afresh every tick, since a charger that appears on the way can close the spot.
-                    // A new spot only once the one under way is threatened itself, so the walk does not dither.
-                    if ((escape is not { } going || SackPlanner.Threatened(going, field.Lanes))
-                        && SackPlanner.Escape(at, field.Lanes, RoomMin(field, at), RoomMax(field, at)) is { } spot)
+                    capture.Note($"a charge would catch the plan for {kept.FirstId:X}; dropping it{(walkingThere ? string.Empty : " and stepping off")}");
+                    plan = null;
+                    onTopSinceMs = 0;
+                    navmesh.Stop();
+                }
+
+                var best = SackPlanner.Choose(at, speed, choices, field.Lanes);
+                var danger = SackPlanner.Danger(at, speed, field.Lanes);
+                if (best is null && plan is null && danger is { } due)
+                {
+                    // Worked out afresh once the spot under way is covered too, since a charger that appears on the way
+                    // can close it.
+                    if ((escape is not { } going || !SackPlanner.Clear(going, field.Lanes))
+                        && SackPlanner.Escape(at, speed, field.Lanes, RoomMin(field, at), RoomMax(field, at)) is { } spot)
                     {
                         escape = spot;
-                        plan = null;
-                        capture.Note($"escape to {SackRoundCapture.Format(spot)}");
+                        capture.Note($"in a lane landing in {due.ImpactIn:F1}s, {due.MetersToLeave(at):F1}m from its edge; escape to {SackRoundCapture.Format(spot)}");
                         MoveStraight(navmesh, [spot]);
                     }
                 }
                 else
                 {
-                    escape = null;
+                    if (best is null && plan is null && escape is not null)
+                    {
+                        escape = null;
+                        navmesh.Stop();
+                    }
+
                     if (best is { } chosen && (plan is not { } current || onTopSinceMs == 0 && Replaces(chosen, current, at, speed, field, choices)))
                     {
+                        escape = null;
                         plan = chosen;
                         planShown = Find(choices, chosen.FirstId)?.Shown ?? true;
                         nearestSoFar = float.MaxValue;
                         onTopSinceMs = 0;
-                        capture.Note($"plan {chosen.FirstId:X} at {SackRoundCapture.Format(chosen.First)}{(chosen.HasSecond ? $" then {chosen.SecondId:X}" : string.Empty)}, score {chosen.Score:F2}{(chosen.Risky ? ", risky" : string.Empty)}");
+                        capture.Note($"plan {chosen.FirstId:X} at {SackRoundCapture.Format(chosen.First)}{(chosen.HasSecond ? $" then {chosen.SecondId:X}" : string.Empty)}, score {chosen.Score:F2}, {field.Lanes.Count} lanes");
                         MoveStraight(navmesh, [chosen.First]);
                     }
-                    else if (plan is null)
+                    else if (plan is null && escape is null)
                     {
                         navmesh.Stop();
                     }
@@ -321,14 +339,20 @@ public abstract partial class AutoCommon
             return false;
         }
 
-        var first = Find(choices, current.FirstId);
+        return PlanScore(current, at, speed, field, choices, SackPlanner.StandSeconds) is not { } score || chosen.Score > score * SackRetargetGain;
+    }
+
+    // The score of a plan as it stands now; null when its sack is gone or a charge would catch it.
+    private static float? PlanScore(SackPlan plan, Vector2 at, float speed, SackField field, List<SackSpot> choices, float standLeft)
+    {
+        var first = Find(choices, plan.FirstId) ?? Find(field.Sacks, plan.FirstId);
         if (first is null)
         {
-            return true;
+            return null;
         }
 
-        var second = current.HasSecond ? Find(choices, current.SecondId) : null;
-        return chosen.Score > SackPlanner.Rescore(at, speed, first.Value, second, field.Lanes) * SackRetargetGain;
+        var second = plan.HasSecond ? Find(choices, plan.SecondId) : null;
+        return SackPlanner.Rescore(at, speed, first.Value, second, standLeft, field.Lanes);
     }
 
     private static SackSpot? Find(List<SackSpot> sacks, ulong id)
@@ -361,12 +385,15 @@ public abstract partial class AutoCommon
         navmesh.MoveAlong(waypoints, fly: false);
     }
 
-    // The sacks have been seen across the room by the time a charge matters; before that, a stretch around the character.
+    // The room from the chargers' spawn points on its edges and the sacks inside, a metre in from the edge; before any is
+    // seen, a stretch around the character.
+    private const float RoomInsetMeters = 1f;
+
     private static Vector2 RoomMin(SackField field, Vector2 at)
-        => field.SackSeen ? field.SacksMin : at - new Vector2(10f);
+        => field.RoomSeen ? field.RoomMin + new Vector2(RoomInsetMeters) : at - new Vector2(10f);
 
     private static Vector2 RoomMax(SackField field, Vector2 at)
-        => field.SackSeen ? field.SacksMax : at + new Vector2(10f);
+        => field.RoomSeen ? field.RoomMax - new Vector2(RoomInsetMeters) : at + new Vector2(10f);
 
     private static unsafe void TrySprint()
     {
