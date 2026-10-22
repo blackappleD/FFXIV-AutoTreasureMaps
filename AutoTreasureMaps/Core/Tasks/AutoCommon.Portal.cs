@@ -38,8 +38,12 @@ public abstract partial class AutoCommon
     private static string[] PortalPromptFragments
         => portalPromptFragments ??= Svc.Data.GetExcelSheet<Addon>().GetRowOrDefault(PortalPromptAddonRow) is { } row ? GameText.FixedFragments(row.Text) : [];
 
-    // Whether a portal the last map left would be walked into: the setting is on and the character is solo.
-    private protected static bool WillEnterPortal() => Plugin.Instance.Configuration.DungeonEnterPortal && !PartyPresence.InParty();
+    // Whether a portal the last map left would be walked into: the setting is on and the character is solo, or leads a
+    // party whose members follow it in.
+    private protected static bool WillEnterPortal() => Plugin.Instance.Configuration.DungeonEnterPortal && ClearsDungeonsHere();
+
+    // Solo, or as the leader of a party on its own world, the run clears dungeons; in any other party they are the party's.
+    private protected static bool ClearsDungeonsHere() => !PartyPresence.InParty() || LeadsPartyMode();
 
     // Enters the portal the last map left behind and clears the dungeon behind it. Stop when the run must end here: a
     // stop, a pause, or a fault already handed to the session.
@@ -52,7 +56,7 @@ public abstract partial class AutoCommon
             return PortalStep.Skipped;
         }
 
-        if (PartyPresence.InParty())
+        if (!ClearsDungeonsHere())
         {
             Diag("Portal: in a party; the dungeon is left to the party.");
             Svc.Chat.Print($"{AtmConstants.LogPrefix} {Loc.T(L.Dungeon.ChatPortalInParty)}");
@@ -255,7 +259,7 @@ public abstract partial class AutoCommon
         return true;
     }
 
-    private static bool Zoning() => Svc.Condition[ConditionFlag.BetweenAreas] || Svc.Condition[ConditionFlag.BetweenAreas51];
+    private protected static bool Zoning() => Svc.Condition[ConditionFlag.BetweenAreas] || Svc.Condition[ConditionFlag.BetweenAreas51];
 
-    private static System.Numerics.Vector3 PlayerPosition() => Svc.Objects.LocalPlayer?.Position ?? default;
+    private protected static System.Numerics.Vector3 PlayerPosition() => Svc.Objects.LocalPlayer?.Position ?? default;
 }

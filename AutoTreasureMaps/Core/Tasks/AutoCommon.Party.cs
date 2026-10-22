@@ -25,11 +25,14 @@ public abstract partial class AutoCommon
     // A treasure hunt runs about five minutes at most.
     private const int FightAlongCapMs = 330_000;
     private const int FightAlongQuietMs = 3_000;
+    private const float MembersInRoomMeters = 25f;
+    private const int MembersInRoomWaitMs = 60_000;
     private const string PartyRollThrottleKey = "atm-party-roll";
     private const int PartyRollThrottleMs = 1_000;
 
-    private static bool LeadsPartyMode()
-        => Plugin.Instance.Configuration.PartyMode && PartyPresence.LocalParty() && PartyPresence.LeadsTheParty();
+    // Party mode needs no setting: a party on the character's own world is taken to be members that all run this plugin.
+    private protected static bool LeadsPartyMode()
+        => PartyPresence.LocalParty() && PartyPresence.LeadsTheParty();
 
     // The leader posts the spot as it sets off, so the members leave at the same moment.
     private void PostSpotToParty(DigSpot spot)
@@ -76,6 +79,33 @@ public abstract partial class AutoCommon
         }
 
         return true;
+    }
+
+    // In a dungeon the leader opens the next coffer or moves the run on only once every member is in the room with it,
+    // so no one is left behind a gate or out of a fight; the wait is capped.
+    private async Task WaitForMembersInRoom(string scope)
+    {
+        if (!LeadsPartyMode() || PartyPresence.FarthestMemberFrom(PlayerPosition()) <= MembersInRoomMeters)
+        {
+            return;
+        }
+
+        var startedAt = Environment.TickCount64;
+        Status = "Waiting for the party";
+        var gathered = await WaitUntilTimed(() => PartyPresence.FarthestMemberFrom(PlayerPosition()) <= MembersInRoomMeters, MembersInRoomWaitMs, "party in the room");
+        var waitedMs = Environment.TickCount64 - startedAt;
+        if (!gathered && !CancelToken.IsCancellationRequested)
+        {
+            Warn($"{scope}: the members did not join within {MembersInRoomWaitMs / TimeUnits.MillisecondsPerSecond}s (farthest {PartyPresence.FarthestMemberFrom(PlayerPosition()):F0}m); going on.");
+        }
+        else if (waitedMs > FollowerLagWarnMs)
+        {
+            Warn($"{scope}: the members joined {waitedMs / 1000.0:F1}s later.");
+        }
+        else
+        {
+            Diag($"{scope}: the members joined {waitedMs / 1000.0:F1}s later.");
+        }
     }
 
     // Whether the follower has a fight to join: its own, or the leader's close by. A member standing next to the leader

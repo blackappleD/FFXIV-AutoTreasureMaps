@@ -249,7 +249,7 @@ public abstract partial class AutoCommon
 
         map.PortalSeen = true;
         var found = portal is null ? "no portal object nearby" : $"portal object {portal.BaseId} at {FormatPosition(portal.Position)}";
-        var entering = Plugin.Instance.Configuration.DungeonEnterPortal && !PartyPresence.InParty();
+        var entering = WillEnterPortal();
         Diag($"Map: a portal appeared (message {(announced ? "seen" : "not seen")}, {found}); {(entering ? "it is entered once the coffer is looted" : "it is left alone")}.");
         if (!entering)
         {

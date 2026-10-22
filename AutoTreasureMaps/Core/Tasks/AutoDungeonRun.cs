@@ -20,9 +20,9 @@ internal sealed class AutoDungeonRun(TreasureSession session, TreasureProgress p
             return false;
         }
 
-        if (PartyPresence.InParty())
+        if (PartyPresence.InParty() && !(PartyPresence.LocalParty() && PartyPresence.LeadsTheParty()))
         {
-            RunLog.Info("Dungeon run refused: the character is in a party.");
+            RunLog.Info("Dungeon run refused: the character is in a party it does not lead.");
             Svc.Chat.PrintError($"{AtmConstants.LogPrefix} {Loc.T(L.Dungeon.ChatInParty)}");
             return false;
         }

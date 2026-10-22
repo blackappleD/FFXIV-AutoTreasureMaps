@@ -168,9 +168,9 @@ public abstract partial class AutoCommon
 
             lootFingerprint = PreviewDungeonLoot(dungeon, lootFingerprint);
 
-            if (PartyPresence.InParty())
+            if (!ClearsDungeonsHere())
             {
-                Warn("Dungeon: the character is in a party; the run only clears dungeons solo.");
+                Warn("Dungeon: the character is in a party it does not lead; the run only clears dungeons solo or as the leader.");
                 return DungeonOutcome.InParty;
             }
 
@@ -223,6 +223,7 @@ public abstract partial class AutoCommon
                     await handler.SettleLoot(context);
                     break;
                 case DungeonStep.Coffer:
+                    await WaitForMembersInRoom("dungeon-coffer");
                     if (DungeonField.NearestCoffer(dungeon, MaxCofferInteractions) is { } coffer)
                     {
                         dungeon.NoteCofferInteraction(coffer.GameObjectId);
@@ -231,6 +232,7 @@ public abstract partial class AutoCommon
 
                     break;
                 case DungeonStep.Advance:
+                    await WaitForMembersInRoom("dungeon-advance");
                     await TopUpConsumables();
                     var advanced = await AdvanceDungeon(handler, context);
                     if (advanced is AdvanceResult.Expelled)
@@ -408,7 +410,7 @@ public abstract partial class AutoCommon
         return expelled ? DungeonOutcome.Expelled : DungeonOutcome.Left;
     }
 
-    private static bool BonusRoundOn(DungeonInProgress dungeon)
+    private protected static bool BonusRoundOn(DungeonInProgress dungeon)
         => Messages.TryGetLatest(DungeonLogMessages.BonusRoundStarted, dungeon.RoundStartedAtMs, out var started)
         && Environment.TickCount64 - started.AtMs < BonusRoundCapMs
         && !Messages.ArrivedSince(DungeonLogMessages.BonusRoundEnded, started.AtMs)

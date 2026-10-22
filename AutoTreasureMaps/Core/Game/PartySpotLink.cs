@@ -47,8 +47,7 @@ internal sealed unsafe class PartySpotLink : IDisposable
 
     private static void OnChatMessage(IHandleableChatMessage message)
     {
-        if (message.LogKind != XivChatType.Party || !Plugin.Instance.Configuration.PartyMode
-            || PartyPresence.Leader() is not { } leader || PartyPresence.IsLocal(leader))
+        if (message.LogKind != XivChatType.Party || PartyPresence.Leader() is not { } leader || PartyPresence.IsLocal(leader))
         {
             return;
         }

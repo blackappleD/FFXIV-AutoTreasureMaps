@@ -32,7 +32,7 @@ public abstract partial class AutoCommon
     // The bonus round scatters sacks over the room for ninety seconds, each picked up by walking onto it, and every ten
     // seconds chargers rush across it. The walk goes straight from sack to sack with the next one already queued, so it
     // never stops on a sack, steps out of a lane before its charge lands, and writes the round down for later.
-    private async Task CollectBonusSacks(DungeonContext context)
+    private protected async Task CollectBonusSacks(DungeonContext context)
     {
         const string scope = "dungeon-sacks";
         var dungeon = context.Dungeon;

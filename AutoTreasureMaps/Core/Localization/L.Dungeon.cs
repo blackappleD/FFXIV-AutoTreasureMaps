@@ -46,7 +46,7 @@ internal static partial class L
         public static readonly LocString CatSub = new("dungeon.catSub", "Gates and the Gambler's Lure inside treasure dungeons");
         public static readonly LocString GroupPortal = new("dungeon.group.portal", "Portal");
         public static readonly LocString EnterPortal = new("dungeon.enterPortal", "Enter the portal");
-        public static readonly LocString EnterPortalHelp = new("dungeon.enterPortalHelp", "When a coffer leaves a portal behind, or a dig turns one up, walk into it and clear the treasure dungeon, then carry on with the next map. Solo only; in a party the portal is left to you. Off by default.");
+        public static readonly LocString EnterPortalHelp = new("dungeon.enterPortalHelp", "When a coffer leaves a portal behind, or a dig turns one up, walk into it and clear the treasure dungeon, then carry on with the next map. Solo, or as the leader of a party on your own world whose members run this plugin; in any other party the portal is left to you. Off by default.");
         public static readonly LocString GroupGates = new("dungeon.group.gates", "Gates");
         public static readonly LocString GatePolicy = new("dungeon.gatePolicy", "Gate to try");
         public static readonly LocString GatePolicyHelp = new("dungeon.gatePolicyHelp", "Which gate the run opens in a dungeon that makes you choose one. It applies to every gate dungeon unless one is set on its own below.");

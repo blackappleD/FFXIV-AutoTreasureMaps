@@ -83,9 +83,9 @@ internal sealed class DutyWatcher : IDisposable
     {
         var progress = controller.Progress;
         var inMapZone = progress.HasMap && Svc.ClientState.TerritoryType == progress.Spot.TerritoryId;
-        // A party member following its leader has no map of its own: outside a dungeon, the duty it is in is the leader's
-        // hunt.
-        var following = controller.Following && !DungeonRegistry.IsDungeon(Svc.ClientState.TerritoryType);
+        // A party member following its leader has no map of its own: any duty it is in is the leader's hunt or the
+        // dungeon the leader took the party into.
+        var following = controller.Following;
         var ownDungeon = controller.SessionSnapshot is { InOwnDungeon: true } && DungeonRegistry.IsDungeon(Svc.ClientState.TerritoryType);
         var reason = ownDungeon || Environment.TickCount64 < dungeonEntryHeldUntilMs
             ? HuntDuty.Dungeon
