@@ -16,8 +16,9 @@ namespace AutoTreasureMaps.Core.Tasks;
 
 public abstract partial class AutoCommon
 {
-    // The members land a few metres off the spot, so the leader digs once all of them are this close.
-    private const float FollowersNearMeters = 10f;
+    // The members land a few metres off the spot, and the spot's point can lie off the floor, so the leader digs once
+    // all of them are this close.
+    private const float FollowersNearMeters = 20f;
     private const int FollowersWaitMs = 90_000;
     // A member that comes later than this after the leader is reported, so the lag can be checked run by run.
     private protected const int FollowerLagWarnMs = 5_000;
