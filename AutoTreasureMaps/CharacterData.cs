@@ -1,4 +1,6 @@
 using AutoTreasureMaps.Core;
+using AutoTreasureMaps.Core.Travel;
+using ECommons.DalamudServices;
 using Newtonsoft.Json;
 using System.Globalization;
 using System.IO;
@@ -14,6 +16,8 @@ internal static class CharacterData
 {
     private const string CharactersFolder = "characters";
     private const string ConfigFileName = "config.json";
+    // The folder is named by the content id, which a rename or a world transfer never changes; this file says whose it is.
+    private const string LabelFileName = "character.txt";
     private static readonly string[] legacyStatsFiles = ["run-history.json", "map-log.json"];
 
     // Dalamud writes type names into the shared settings file; the per-character files carry none, and lists are
@@ -29,6 +33,9 @@ internal static class CharacterData
     // The character the files belong to; 0 before one logs in.
     public static ulong ContentId { get; private set; }
 
+    // Set once the folder's label was written for this login.
+    private static bool labelled;
+
     private static string Root => Plugin.PluginInterface.ConfigDirectory.FullName;
 
     public static string Folder
@@ -42,8 +49,32 @@ internal static class CharacterData
     public static void Bind(ulong contentId)
     {
         ContentId = contentId;
+        labelled = false;
         EnsureFolder();
         ClaimLegacyStats();
+    }
+
+    // Writes the character's name and home world into its folder once a login, as soon as the character is loaded, so
+    // a rename shows there at the next login.
+    public static void Label()
+    {
+        if (labelled || ContentId == 0 || Svc.Objects.LocalPlayer is not { } player)
+        {
+            return;
+        }
+
+        labelled = true;
+        var text = $"{player.Name.TextValue}@{Worlds.NameOf(player.HomeWorld.RowId)}\n"
+            + $"content id {ContentId.ToString(CultureInfo.InvariantCulture)}\n"
+            + $"last login {DateTime.Now.ToString("yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture)}\n";
+        try
+        {
+            File.WriteAllText(PathOf(LabelFileName), text);
+        }
+        catch (Exception exception)
+        {
+            RunLog.Warning(exception, "Settings: the character's folder could not be labelled.");
+        }
     }
 
     // The character's own settings, or, the first time it logs in, a copy of the shared ones, saved as its own.

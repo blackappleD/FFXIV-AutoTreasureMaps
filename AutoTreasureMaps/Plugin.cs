@@ -393,6 +393,7 @@ public sealed class Plugin : IDalamudPlugin
             RunLog.Info($"Settings, run history and map log now come from {CharacterData.Folder}.");
         }
 
+        CharacterData.Label();
         if (showOnLogin && contentId == CharacterData.ContentId)
         {
             showOnLogin = false;
