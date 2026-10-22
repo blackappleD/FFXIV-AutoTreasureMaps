@@ -41,6 +41,9 @@ internal sealed class AutoFollowRun(TreasureSession session, TreasureProgress pr
     // more apart, and the leader waits for the members before anything else in a chamber.
     private const float CarriedMeters = 60f;
     private const int DungeonWalkMs = 15_000;
+    // A way out that did not take the member out, such as one held back by loot still waiting on a roll, is tried again
+    // after this long.
+    private const int LeaveRetryMs = 30_000;
     private const float CircleArriveMeters = 1f;
     // The leader's word that it is buying on another world counts this long; the party breaks up right after it.
     private const int HopValidMs = 60_000;
@@ -280,7 +283,7 @@ internal sealed class AutoFollowRun(TreasureSession session, TreasureProgress pr
     }
 
     // Inside the dungeon the leader's run does the dungeon's own steps; this member stays by the leader, fights, rolls and
-    // picks up the bonus round's sacks, until the dungeon is behind it.
+    // picks up the bonus round's sacks, until the dungeon is behind it; once the leader has left, it leaves on its own.
     private async Task FollowInDungeon(TreasureDungeonHandler handler)
     {
         var profile = handler.Profile;
@@ -296,6 +299,9 @@ internal sealed class AutoFollowRun(TreasureSession session, TreasureProgress pr
         var listed = 0;
         // Where the leader last stood near this member, which is by the gate it took once it is carried on.
         var leaderNear = Vector3.Zero;
+        // The leader may still be on its way in as the member arrives, so its absence only counts once it was here.
+        var leaderSeenInside = false;
+        var leaveNotBeforeMs = 0L;
         while (!CancelToken.IsCancellationRequested && Svc.ClientState.TerritoryType == profile.TerritoryId)
         {
             if (Zoning())
@@ -303,6 +309,8 @@ internal sealed class AutoFollowRun(TreasureSession session, TreasureProgress pr
                 await NextFrame(TickFrames);
                 continue;
             }
+
+            leaderSeenInside |= LeaderInZone() is not null;
 
             // A raise may come from the leader, and returning home would leave the dungeon, so a knockout is waited out.
             if (IsKnockedOut())
@@ -333,6 +341,19 @@ internal sealed class AutoFollowRun(TreasureSession session, TreasureProgress pr
                 if (profile.Kind == DungeonKind.Slot)
                 {
                     chamber++;
+                }
+
+                continue;
+            }
+
+            // The final chamber's exit takes out only the one who uses it, so once the leader has gone the member leaves
+            // too, through the exit where the dungeon has one and through the duty list otherwise.
+            if (leaderSeenInside && LeaderInZone() is null && Environment.TickCount64 >= leaveNotBeforeMs)
+            {
+                Diag($"{scope}: the leader has left {profile.Key}; leaving too.");
+                if (!await context.LeaveDuty())
+                {
+                    leaveNotBeforeMs = Environment.TickCount64 + LeaveRetryMs;
                 }
 
                 continue;
