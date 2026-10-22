@@ -87,6 +87,11 @@ internal static partial class L
         public static readonly LocString StateRunning = new("treasure.state.running", "running");
         public static readonly LocString StatePaused = new("treasure.state.paused", "paused");
         public static readonly LocString StopSub = new("treasure.stopSub", "{0} · {1}");
+        public static readonly LocString StopAfterMap = new("treasure.stopAfterMap", "AFTER MAP");
+        public static readonly LocString StopAfterMapSub = new("treasure.stopAfterMapSub", "stop after this one");
+        public static readonly LocString StopAfterMapArmedSub = new("treasure.stopAfterMapArmedSub", "set · click to undo");
+        public static readonly LocString StopAfterMapTooltip = new("treasure.stopAfterMapTooltip", "Stop once this map is done");
+        public static readonly LocString StopAfterMapArmedTooltip = new("treasure.stopAfterMapArmedTooltip", "Stops once this map is done. Click to keep going.");
     }
 
     internal static class Run
@@ -101,6 +106,7 @@ internal static partial class L
         public static readonly LocString PhaseReady = new("run.phase.ready", "Ready");
         public static readonly LocString PhasePaused = new("run.phase.paused", "Paused");
         public static readonly LocString PhasePausedInContent = new("run.phase.pausedInContent", "Paused (in content)");
+        public static readonly LocString StopAfterMapChip = new("run.stopAfterMapChip", "Last map");
         public static readonly LocString SomewhereElse = new("run.somewhereElse", "Somewhere else");
         public static readonly LocPlural MapsDone = new("run.mapsDone", "{0} map done", "{0} maps done");
         public static readonly LocString MapsOfLimit = new("run.mapsOfLimit", "{0} of {1} maps done");
@@ -129,6 +135,9 @@ internal static partial class L
         public static readonly LocString ChatCannotStart = new("run.chat.cannotStart", "Cannot start the run. {0}");
         public static readonly LocString ChatStopped = new("run.chat.stopped", "Stopped.");
         public static readonly LocString ChatNothingToStop = new("run.chat.nothingToStop", "Nothing to stop.");
+        public static readonly LocPlural ChatStopAfterMapOn = new("run.chat.stopAfterMapOn", "The run stops once this map is done, its treasure dungeon included ({0} map run so far).", "The run stops once this map is done, its treasure dungeon included ({0} maps run so far).");
+        public static readonly LocString ChatStopAfterMapOff = new("run.chat.stopAfterMapOff", "Taken back: the run goes on after this map.");
+        public static readonly LocString ChatStopAfterMapSingle = new("run.chat.stopAfterMapSingle", "This run is a single map or dungeon and stops after it anyway.");
         public static readonly LocString ChatPartyWait = new("run.chat.partyWait", "A party member is not in the area, so the game will not allow the dig. Waiting up to {0} seconds for the party.");
         public static readonly LocString ChatFollowStarted = new("run.chat.followStarted", "Party mode: following the party leader to each dig spot it posts.");
         public static readonly LocString ChatFollowNeedsParty = new("run.chat.followNeedsParty", "Party mode needs a party on your own world. The party leader runs the maps; press Start on the other members to follow it.");
@@ -138,6 +147,7 @@ internal static partial class L
         public static readonly LocPlural ChatMapLimit = new("run.chat.mapLimit", "Run over: {0} map run, the limit you set.", "Run over: {0} maps run, the limit you set.");
         public static readonly LocPlural ChatTimeLimit = new("run.chat.timeLimit", "Run over: the {0} minute limit you set is up.", "Run over: the {0} minute limit you set is up.");
         public static readonly LocPlural ChatFailureStreak = new("run.chat.failureStreak", "Run over: {0} map in a row failed, so the run stops before it loops on a bad spot.", "Run over: {0} maps in a row failed, so the run stops before it loops on a bad spot.");
+        public static readonly LocPlural ChatStopAfterMapDone = new("run.chat.stopAfterMapDone", "Run over: stopped after the map as you asked, {0} map run.", "Run over: stopped after the map as you asked, {0} maps run.");
         public static readonly LocString ChatKnockedOutTwice = new("run.chat.knockedOutTwice", "Run over: knocked out twice in one run.");
         public static readonly LocString ChatRefused = new("run.chat.refused", "Run over: the map was refused, for the reason above.");
         public static readonly LocString ChatSupplyFailed = new("run.chat.supplyFailed", "Run over: the next map could not be readied.");
@@ -157,6 +167,7 @@ internal static partial class L
         public static readonly LocString EndDungeon = new("run.end.dungeon", "Treasure dungeon");
         public static readonly LocString EndDungeonHandedBack = new("run.end.dungeonHandedBack", "Dungeon left to you");
         public static readonly LocString EndPartyEnded = new("run.end.partyEnded", "Following ended");
+        public static readonly LocString EndStopAfterMap = new("run.end.stopAfterMap", "Stopped after the map");
     }
 
     internal static class History
@@ -421,7 +432,7 @@ internal static partial class L
 
     internal static class Plugin
     {
-        public static readonly LocString CommandHelp = new("plugin.commandHelp", "Toggle the TreasureHelper window.\n/atm start - run your maps until a stop condition: decipher, travel, dig, fight and loot\n/atm stop - stop the run\n/atm pause - pause or resume the run\n/atm dig - run the held map: travel, dig, fight the guards and loot the coffer\n/atm decipher [map] - decipher the next timeworn map in your bags, or the one named\n/atm buy [map] - buy the next map under its price cap on the market board, or the one named\n/atm spot - show the held map's dig spot\n/atm flag - flag the dig spot on the map\n/atm goto spot - travel to the dig spot\n/atm goto <territory> <x> <y> <z> - travel to a point (debug helper)\n/atm goto stop - stop that travel\n/atm tiers - list every map tier in the console\n/atm target - dump the current target's BaseId\n/atm config - open the settings\n/atm stats - open the history\n/atm log - open the console\n/atm deps - open the plugins page\n/atm changelog - open the changelog\n/atm about - open the about page");
+        public static readonly LocString CommandHelp = new("plugin.commandHelp", "Toggle the TreasureHelper window.\n/atm start - run your maps until a stop condition: decipher, travel, dig, fight and loot\n/atm stop - stop the run\n/atm stopafter - stop once the map under way is done, or take that back\n/atm pause - pause or resume the run\n/atm dig - run the held map: travel, dig, fight the guards and loot the coffer\n/atm decipher [map] - decipher the next timeworn map in your bags, or the one named\n/atm buy [map] - buy the next map under its price cap on the market board, or the one named\n/atm spot - show the held map's dig spot\n/atm flag - flag the dig spot on the map\n/atm goto spot - travel to the dig spot\n/atm goto <territory> <x> <y> <z> - travel to a point (debug helper)\n/atm goto stop - stop that travel\n/atm tiers - list every map tier in the console\n/atm target - dump the current target's BaseId\n/atm config - open the settings\n/atm stats - open the history\n/atm log - open the console\n/atm deps - open the plugins page\n/atm changelog - open the changelog\n/atm about - open the about page");
         public static readonly LocString CommandHelpAlias = new("plugin.commandHelpAlias", "Alias for /atm.");
     }
 }

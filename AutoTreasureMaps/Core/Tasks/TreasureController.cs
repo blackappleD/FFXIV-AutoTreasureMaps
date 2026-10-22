@@ -38,6 +38,34 @@ internal sealed partial class TreasureController
     // Set while the run is a party member following its leader in party mode.
     public bool Following { get; private set; }
 
+    public bool CanStopAfterMap => session is { ManyMaps: true, EndedBy: null };
+
+    public bool StopAfterMap => session?.StopAfterMap == true;
+
+    // Asks the run to end once the map under way is over, or takes that back. A run of one map or one dungeon ends after
+    // it anyway.
+    public void ToggleStopAfterMap()
+    {
+        if (session is null)
+        {
+            ECommons.DalamudServices.Svc.Chat.Print($"{AtmConstants.LogPrefix} {Loc.T(L.Run.ChatNothingToStop)}");
+            return;
+        }
+
+        if (!CanStopAfterMap)
+        {
+            ECommons.DalamudServices.Svc.Chat.Print($"{AtmConstants.LogPrefix} {Loc.T(L.Run.ChatStopAfterMapSingle)}");
+            return;
+        }
+
+        session.ToggleStopAfterMap();
+        Diag(session.StopAfterMap ? "Stop after this map requested." : "Stop after this map taken back.");
+        var line = session.StopAfterMap
+            ? Loc.Plural(L.Run.ChatStopAfterMapOn, session.MapsRun)
+            : Loc.T(L.Run.ChatStopAfterMapOff);
+        ECommons.DalamudServices.Svc.Chat.Print($"{AtmConstants.LogPrefix} {line}");
+    }
+
     private static void Diag(string message)
         => RunLog.Info(message);
 
@@ -83,7 +111,7 @@ internal sealed partial class TreasureController
         }
 
         // Start pressed inside a treasure dungeon asks for that dungeon to be cleared first, so it counts as the run's own.
-        var newSession = new TreasureSession();
+        var newSession = new TreasureSession { ManyMaps = true };
         if (DungeonRegistry.IsDungeon(ECommons.DalamudServices.Svc.ClientState.TerritoryType))
         {
             newSession.MarkOwnDungeon();

@@ -363,7 +363,7 @@ internal sealed class HistoryPage
 
     private static Vector4 EndColor(RunEnd ending) => ending switch
     {
-        RunEnd.OutOfMaps or RunEnd.MapLimit or RunEnd.TimeLimit or RunEnd.SingleMap or RunEnd.Dungeon => Styling.AccentMint,
+        RunEnd.OutOfMaps or RunEnd.MapLimit or RunEnd.TimeLimit or RunEnd.SingleMap or RunEnd.Dungeon or RunEnd.StopAfterMap => Styling.AccentMint,
         RunEnd.Stopped => Styling.TextDim,
         RunEnd.Faulted => Styling.AccentRose,
         _ => Styling.AccentAmber,

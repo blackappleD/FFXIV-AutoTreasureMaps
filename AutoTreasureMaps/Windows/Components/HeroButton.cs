@@ -54,14 +54,18 @@ internal static class HeroButton
 
         var iconSize = TextDraw.IconSize(glyph);
         TextDraw.Icon(glyph, new Vector2(min.X + padX, midY - iconSize.Y * 0.5f), textColor);
+        var titleX = min.X + padX + iconSize.X + 12f * scale;
+        float titleEnd;
         using (Fonts.PushHeadline())
         {
             var titleSize = TextDraw.Measure(title);
-            TextDraw.At(title, new Vector2(min.X + padX + iconSize.X + 12f * scale, midY - titleSize.Y * 0.5f), textColor);
+            TextDraw.At(title, new Vector2(titleX, midY - titleSize.Y * 0.5f), textColor);
+            titleEnd = titleX + titleSize.X;
         }
 
+        // A sublabel that would run into the title is left out, as on a narrow button.
         var sub = enabled ? sublabel : disabledReason ?? sublabel;
-        if (!string.IsNullOrEmpty(sub))
+        if (!string.IsNullOrEmpty(sub) && max.X - padX - TextDraw.Measure(sub).X >= titleEnd + 10f * scale)
         {
             var subSize = TextDraw.Measure(sub);
             TextDraw.At(sub, new Vector2(max.X - padX - subSize.X, midY - subSize.Y * 0.5f),

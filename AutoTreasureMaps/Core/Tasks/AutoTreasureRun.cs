@@ -168,9 +168,9 @@ internal sealed class AutoTreasureRun(TreasureSession session, TreasureProgress 
             return LoopStep.Continue;
         }
 
-        if (configuration.RunMapLimit > 0 && session.MapsRun + 2 > configuration.RunMapLimit)
+        if (session.StopAfterMap || (configuration.RunMapLimit > 0 && session.MapsRun + 2 > configuration.RunMapLimit))
         {
-            Diag("Run: a deciphered map is held, and the map limit leaves no room for a spare.");
+            Diag("Run: a deciphered map is held, and the run ends after it, so no spare is bought.");
             return LoopStep.Continue;
         }
 
@@ -419,6 +419,9 @@ internal sealed class AutoTreasureRun(TreasureSession session, TreasureProgress 
         {
             case RunEnd.MapLimit:
                 Svc.Chat.Print($"{AtmConstants.LogPrefix} {Loc.Plural(L.Run.ChatMapLimit, session.MapsRun)}");
+                break;
+            case RunEnd.StopAfterMap:
+                Svc.Chat.Print($"{AtmConstants.LogPrefix} {Loc.Plural(L.Run.ChatStopAfterMapDone, session.MapsRun)}");
                 break;
             case RunEnd.TimeLimit:
                 Svc.Chat.Print($"{AtmConstants.LogPrefix} {Loc.Plural(L.Run.ChatTimeLimit, Plugin.Instance.Configuration.RunMinuteLimit)}");

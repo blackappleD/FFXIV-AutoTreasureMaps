@@ -102,7 +102,13 @@ internal static class RunningPanel
         var columnWidth = end.X - padX - columnX;
         var y = origin.Y + 16f * scale;
 
-        y += DrawPhaseChip(columnX, y, label, accent, accentSoft) + 10f * scale;
+        var chip = DrawPhaseChip(columnX, y, label, accent, accentSoft);
+        if (controller.StopAfterMap)
+        {
+            DrawPhaseChip(columnX + chip.X + 6f * scale, y, Loc.T(L.Run.StopAfterMapChip), Styling.AccentMint, Styling.AccentMintSoft);
+        }
+
+        y += chip.Y + 10f * scale;
         y = DrawStatus(controller.Status, columnX, columnWidth, y);
 
         var barHeight = 8f * scale;
@@ -182,7 +188,7 @@ internal static class RunningPanel
         return mapsOfLimitText.Get(((long)limit << 32) | (uint)maps, static key => Loc.T(L.Run.MapsOfLimit, (int)(key & uint.MaxValue), (int)(key >> 32)));
     }
 
-    private static float DrawPhaseChip(float x, float y, string text, Vector4 accent, Vector4 accentSoft)
+    private static Vector2 DrawPhaseChip(float x, float y, string text, Vector4 accent, Vector4 accentSoft)
     {
         var scale = ImGuiHelpers.GlobalScale;
         var drawList = ImGui.GetWindowDrawList();
@@ -197,7 +203,7 @@ internal static class RunningPanel
             var chipMax = chipMin + new Vector2(padX * 2f + textSize.X, textSize.Y + padY * 2f);
             Paint.Pill(drawList, chipMin, chipMax, Styling.WithAlpha(accent, 0.28f), Styling.WithAlpha(accent, 0.65f));
             TextDraw.At(label, new Vector2(x + padX, y + padY), accentSoft);
-            return chipMax.Y - chipMin.Y;
+            return chipMax - chipMin;
         }
     }
 

@@ -96,6 +96,14 @@ public sealed class TreasureSession
 
     public bool CompletedByStopCondition { get; private set; }
 
+    // A run of maps until a stop condition, the only kind the player can ask to end once the map under way is over.
+    internal bool ManyMaps { get; init; }
+
+    // The player asked the run to end once the map under way, and the dungeon behind it, is over.
+    internal bool StopAfterMap { get; private set; }
+
+    internal void ToggleStopAfterMap() => StopAfterMap = !StopAfterMap;
+
     internal bool Recorded;
     internal bool AfterActionDispatched;
 

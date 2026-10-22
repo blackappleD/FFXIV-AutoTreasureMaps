@@ -21,13 +21,14 @@ internal enum RunEnd : byte
     DungeonHandedBack,
     // A party member's following ended with the party, its leader, or a long wait for the next spot.
     PartyEnded,
+    StopAfterMap,
 }
 
 internal static class RunEnds
 {
     // A run that ended any of these ways did what it was set to do, so the after-run action may follow it.
     public static bool MetStopCondition(RunEnd end)
-        => end is RunEnd.OutOfMaps or RunEnd.MapLimit or RunEnd.TimeLimit or RunEnd.FailureStreak or RunEnd.KnockedOutTwice or RunEnd.SingleMap or RunEnd.Dungeon or RunEnd.PartyEnded;
+        => end is RunEnd.OutOfMaps or RunEnd.MapLimit or RunEnd.TimeLimit or RunEnd.FailureStreak or RunEnd.KnockedOutTwice or RunEnd.SingleMap or RunEnd.Dungeon or RunEnd.PartyEnded or RunEnd.StopAfterMap;
 
     // The player's chat commands promise never to follow a failure, which a failure streak or two knockouts are.
     public static bool Succeeded(RunEnd end)
@@ -48,6 +49,7 @@ internal static class RunEnds
         RunEnd.Dungeon => L.Run.EndDungeon,
         RunEnd.DungeonHandedBack => L.Run.EndDungeonHandedBack,
         RunEnd.PartyEnded => L.Run.EndPartyEnded,
+        RunEnd.StopAfterMap => L.Run.EndStopAfterMap,
         _ => L.Run.EndStopped,
     };
 }

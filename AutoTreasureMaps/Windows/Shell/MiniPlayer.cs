@@ -30,7 +30,8 @@ internal static class MiniPlayer
 
         var padX = PadX * scale;
         var buttonSize = ButtonSize * scale;
-        var buttonsWidth = buttonSize * 2f + ButtonGap * scale;
+        var buttonCount = controller.CanStopAfterMap ? 3 : 2;
+        var buttonsWidth = buttonSize * buttonCount + ButtonGap * scale * (buttonCount - 1);
         ImGui.SetCursorScreenPos(origin);
         var hit = Hit.Area("##atm_mini_open", new Vector2(size.X - padX - buttonsWidth - 8f * scale, size.Y));
         var hover = Motion.Hover(Motion.Key("##atm_mini_open"), hit.Hovered);
@@ -67,13 +68,25 @@ internal static class MiniPlayer
         TextDraw.At(TextDraw.Truncate(detail, barX - 16f * scale - textX), new Vector2(textX, top + phaseSize.Y + gap), Styling.TextStrong);
 
         var resumeBlocked = controller.Paused && controller.PauseReason == PauseReason.InContent;
-        ImGui.SetCursorScreenPos(new Vector2(end.X - padX - buttonSize * 2f - ButtonGap * scale, midY - buttonSize * 0.5f));
+        ImGui.SetCursorScreenPos(new Vector2(end.X - padX - buttonsWidth, midY - buttonSize * 0.5f));
         if (IconButton.Draw(controller.Paused ? FontAwesomeIcon.Play : FontAwesomeIcon.Pause, "##atm_mini_pause", buttonSize,
                 controller.Paused ? Styling.AccentMintSoft : Styling.AccentAmberSoft,
                 resumeBlocked ? Loc.T(L.Shell.ResumeBlocked) : controller.Paused ? Loc.T(L.Common.Resume) : Loc.T(L.Common.Pause),
                 enabled: !resumeBlocked))
         {
             controller.TogglePause();
+        }
+
+        if (buttonCount == 3)
+        {
+            var armed = controller.StopAfterMap;
+            ImGui.SetCursorScreenPos(new Vector2(end.X - padX - buttonSize * 2f - ButtonGap * scale, midY - buttonSize * 0.5f));
+            if (IconButton.Draw(FontAwesomeIcon.FlagCheckered, "##atm_mini_stop_after", buttonSize,
+                    armed ? Styling.AccentMint : Styling.AccentBlueSoft,
+                    Loc.T(armed ? L.Treasure.StopAfterMapArmedTooltip : L.Treasure.StopAfterMapTooltip)))
+            {
+                controller.ToggleStopAfterMap();
+            }
         }
 
         ImGui.SetCursorScreenPos(new Vector2(end.X - padX - buttonSize, midY - buttonSize * 0.5f));

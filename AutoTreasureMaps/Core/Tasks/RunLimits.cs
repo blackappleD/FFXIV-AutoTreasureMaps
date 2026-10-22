@@ -1,7 +1,8 @@
 namespace AutoTreasureMaps.Core.Tasks;
 
 // The stop conditions a run checks before each map. A map under way is always finished first, so after a pause or a
-// fault restart the map and time limits wait for it; the knockouts and the failure streak do not.
+// fault restart the player's stop after this map and the map and time limits wait for it; the knockouts and the failure
+// streak do not.
 internal static class RunLimits
 {
     private const int KnockoutsBeforeStop = 2;
@@ -21,6 +22,11 @@ internal static class RunLimits
         if (session.ActiveMap is not null)
         {
             return null;
+        }
+
+        if (session.StopAfterMap)
+        {
+            return RunEnd.StopAfterMap;
         }
 
         if (configuration.RunMapLimit > 0 && session.MapsRun >= configuration.RunMapLimit)

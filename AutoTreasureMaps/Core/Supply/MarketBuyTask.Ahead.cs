@@ -27,9 +27,9 @@ internal sealed partial class MarketBuyTask
         }
 
         // The map bought now is the run's next one, so a second one is only worth it when the run may go on after it.
-        if (configuration.RunMapLimit > 0 && session.MapsRun + 2 > configuration.RunMapLimit)
+        if (session.StopAfterMap || (configuration.RunMapLimit > 0 && session.MapsRun + 2 > configuration.RunMapLimit))
         {
-            Diag("Market: the map limit leaves no room for a map bought ahead.");
+            Diag("Market: the run ends after the next map, so none is bought ahead.");
             return;
         }
 
