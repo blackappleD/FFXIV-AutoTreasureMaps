@@ -267,6 +267,8 @@ internal sealed class AutoFollowRun(TreasureSession session, TreasureProgress pr
         var dungeon = new DungeonInProgress(profile) { BagsBefore = BagSnapshot.Capture() };
         var context = new DungeonContext(this, dungeon);
         var chamber = 1;
+        // The round the duty list showed, the count the record goes by; the own count only stands in when it never showed.
+        var listed = 0;
         // Where the leader last stood near this member, which is by the gate it took once it is carried on.
         var leaderNear = Vector3.Zero;
         while (!CancelToken.IsCancellationRequested && Svc.ClientState.TerritoryType == profile.TerritoryId)
@@ -283,6 +285,12 @@ internal sealed class AutoFollowRun(TreasureSession session, TreasureProgress pr
                 Status = "Knocked out, waiting for a raise";
                 await NextFrame(TickFrames);
                 continue;
+            }
+
+            if (DutyListRound.TryRead(profile.Rounds, out var shown) && shown > listed)
+            {
+                listed = shown;
+                Diag($"{scope}: the duty list shows round {listed} of {profile.Rounds}.");
             }
 
             RollPartyLoot();
@@ -335,13 +343,14 @@ internal sealed class AutoFollowRun(TreasureSession session, TreasureProgress pr
             return;
         }
 
-        // A slot dungeon's count went up with every fight, the bonus round's included; the draws are counted near enough.
-        var round = profile.Kind == DungeonKind.Slot ? Math.Min(chamber - 1, (int)profile.Rounds) : chamber;
+        // Without the duty list, a slot dungeon's count went up with every fight, the bonus round's included, so the draws
+        // are counted near enough.
+        var round = listed > 0 ? listed : profile.Kind == DungeonKind.Slot ? Math.Min(chamber - 1, (int)profile.Rounds) : chamber;
         var (gil, items) = BagSnapshot.Gains(dungeon.BagsBefore, BagSnapshot.Capture());
         var result = new DungeonResult(profile, HowItEnded(dungeon), round, gil, items, TimeSpan.FromMilliseconds(Environment.TickCount64 - dungeon.StartedAtMs));
         session.RecordDungeon(result);
         LootCleanup.Note(dungeon.BagsBefore);
-        Diag($"{scope}: out of {profile.Key} ({result.Outcome}, round {round}), {gil} gil, {result.ItemCount} items in {items.Length} stacks.");
+        Diag($"{scope}: out of {profile.Key} ({result.Outcome}, round {round}{(listed > 0 ? " from the duty list" : ", counted")}), {gil} gil, {result.ItemCount} items in {items.Length} stacks.");
         await WaitUntilTimed(() => !Zoning() && NpcInteraction.PlayerReady(), DungeonWalkMs, "back outside");
         await CleanUpLoot("Follow");
     }
