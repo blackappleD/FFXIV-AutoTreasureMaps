@@ -42,6 +42,7 @@ public abstract partial class AutoCommon
         if (map.Wave == 0)
         {
             await HumanDelay(HumanAction.Engage, scope, EngageAtOnce);
+            await LetTankPull(scope);
         }
 
         var roundStartedAt = Environment.TickCount64;

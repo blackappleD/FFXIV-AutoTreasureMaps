@@ -27,6 +27,9 @@ public abstract partial class AutoCommon
     private const int FightAlongQuietMs = 3_000;
     private const float MembersInRoomMeters = 25f;
     private const int MembersInRoomWaitMs = 60_000;
+    // A healer or damage dealer that hits at once pulls the enemies off the tank, so it lets the tank take them first.
+    private const int LetTankPullMs = 1_500;
+    private const byte TankRole = 1;
     private const string PartyRollThrottleKey = "atm-party-roll";
     private const int PartyRollThrottleMs = 1_000;
 
@@ -108,6 +111,35 @@ public abstract partial class AutoCommon
         }
     }
 
+    // In a party with a tank, a character that is not one holds its first hit for a moment as a fight starts.
+    private protected async Task LetTankPull(string scope)
+    {
+        if (!PartyPresence.InParty() || PlaysTank() || !PartyHasTank() || CancelToken.IsCancellationRequested)
+        {
+            return;
+        }
+
+        Diag($"{scope}: letting the tank take the enemies for {LetTankPullMs / 1000.0:F1}s.");
+        Status = "Letting the tank take the enemies";
+        await DelayMs(LetTankPullMs);
+    }
+
+    private static bool PlaysTank() => Svc.Objects.LocalPlayer?.ClassJob.ValueNullable?.Role == TankRole;
+
+    private static bool PartyHasTank()
+    {
+        var party = Svc.Party;
+        for (var index = 0; index < party.Length; index++)
+        {
+            if (party[index] is { } member && member.ClassJob.ValueNullable?.Role == TankRole)
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     // Whether the follower has a fight to join: its own, or the leader's close by. A member standing next to the leader
     // is not in combat until something turns on it, so the leader's fight is joined as soon as it starts.
     private protected static bool PartyFightOn()
@@ -127,6 +159,7 @@ public abstract partial class AutoCommon
         Status = "Fighting beside the leader";
         Diag($"{scope}: the party is fighting ({ConditionTag()}); joining in.");
         ReleaseCombatMovement(scope);
+        await LetTankPull(scope);
         var deadline = Environment.TickCount64 + FightAlongCapMs;
         var quietSince = 0L;
         try

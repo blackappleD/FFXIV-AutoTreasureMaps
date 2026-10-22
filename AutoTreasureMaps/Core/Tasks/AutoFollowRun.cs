@@ -214,7 +214,16 @@ internal sealed class AutoFollowRun(TreasureSession session, TreasureProgress pr
             }
         }
 
-        return null;
+        // Where the navmesh knows no floor around the leader, the spot is on the line from the leader to this member.
+        var away = PlayerPosition() - leader;
+        away.Y = 0f;
+        if (away.LengthSquared() < 0.01f)
+        {
+            away = new Vector3(MathF.Cos(besideAngle), 0f, MathF.Sin(besideAngle));
+        }
+
+        Diag($"follow-gap: no floor found around the leader at {besideMeters:F1}m; taking the spot on the way to it.");
+        return leader + Vector3.Normalize(away) * besideMeters;
     }
 
     // Moves to this member's own spot beside the leader once it stands too close to the leader, or farther than the
@@ -240,8 +249,10 @@ internal sealed class AutoFollowRun(TreasureSession session, TreasureProgress pr
             return;
         }
 
+        // The leader waits for every member to be close before it digs, so the walk is logged whatever it ends in.
         Diag($"{scope}: {distance:F1}m from the leader; moving to its own spot {Vector3.Distance(spot, leader):F1}m beside it.");
-        await TravelTo(Svc.ClientState.TerritoryType, spot, SpotArriveMeters);
+        var reached = await TravelTo(Svc.ClientState.TerritoryType, spot, SpotArriveMeters);
+        Diag($"{scope}: {(reached ? "at" : "could not reach")} its spot, {Vector3.Distance(LeaderInZone() ?? leader, PlayerPosition()):F1}m from the leader.");
     }
 
     // The leader's map, as this member took part in it: what the bags gained from the trip there to the loot settling is

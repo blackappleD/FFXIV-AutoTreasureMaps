@@ -479,6 +479,7 @@ public abstract partial class AutoCommon
         if (!Svc.Condition[ConditionFlag.InCombat])
         {
             await HumanDelay(HumanAction.Engage, scope, EngageAtOnce);
+            await LetTankPull(scope);
         }
 
         EnsureCombatPreset();
