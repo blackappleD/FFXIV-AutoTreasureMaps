@@ -4,17 +4,18 @@ using System.Text.RegularExpressions;
 
 namespace AutoTreasureMaps.Core.Dungeon;
 
-// The duty list shows the treasure dungeon's round as "N/M" ("第2/5次挑战" in the Chinese client), the same for every
-// member of the party. It is read from the list's text, as the one count that holds however the member got there. Read
-// only on the framework thread.
+// The duty list names the treasure dungeon's round, the same for every member of the party, so a member that did not
+// open the gates or pull the machine itself can still tell which round it is in. Each dungeon words it differently, so
+// the handler reads each line of the list; this walks the list and holds the shared parsers. Read only on the framework
+// thread.
 internal static unsafe partial class DutyListRound
 {
     private const string AddonName = "_ToDoList";
     private const int SearchDepth = 4;
+    private const string ChineseNumerals = "一二三四五六七八九";
+    private const string ChineseFinal = "最终";
 
-    // The round shown, when the list shows a count out of the dungeon's own number of rounds; the sack round's count
-    // (out of a hundred) and the clock do not match.
-    public static bool TryRead(int rounds, out int round)
+    public static bool TryRead(TreasureDungeonHandler handler, out int round)
     {
         round = 0;
         if (!GenericHelpers.TryGetAddonByName<AtkUnitBase>(AddonName, out var addon) || !addon->IsVisible)
@@ -22,10 +23,49 @@ internal static unsafe partial class DutyListRound
             return false;
         }
 
-        return Search(&addon->UldManager, rounds, SearchDepth, ref round);
+        return Search(&addon->UldManager, handler, SearchDepth, ref round);
     }
 
-    private static bool Search(AtkUldManager* manager, int rounds, int depth, ref int round)
+    // "N/M" with M the dungeon's own number of rounds, as the vault's "第2/5次挑战"; 0 when no such count is in the line.
+    public static int CountOutOf(string line, int rounds)
+    {
+        foreach (Match match in Count().Matches(line))
+        {
+            if (int.TryParse(match.Groups[2].ValueSpan, out var outOf) && outOf == rounds
+                && int.TryParse(match.Groups[1].ValueSpan, out var shown) && shown >= 1 && shown <= rounds)
+            {
+                return shown;
+            }
+        }
+
+        return 0;
+    }
+
+    // "第一区" to "第四区" (or the digits), and "最终区" for the last; 0 when the line names no chamber.
+    public static int ChineseChamber(string line, int rounds)
+    {
+        var match = Chamber().Match(line);
+        if (!match.Success)
+        {
+            return 0;
+        }
+
+        var name = match.Groups[1].Value;
+        if (name == ChineseFinal)
+        {
+            return rounds;
+        }
+
+        var number = ChineseNumerals.IndexOf(name, StringComparison.Ordinal) + 1;
+        if (number == 0 && !int.TryParse(name, out number))
+        {
+            return 0;
+        }
+
+        return number >= 1 && number <= rounds ? number : 0;
+    }
+
+    private static bool Search(AtkUldManager* manager, TreasureDungeonHandler handler, int depth, ref int round)
     {
         for (var index = 0; index < manager->NodeListCount; index++)
         {
@@ -38,14 +78,9 @@ internal static unsafe partial class DutyListRound
             var textNode = node->GetAsAtkTextNode();
             if (textNode is not null)
             {
-                foreach (Match match in Count().Matches(textNode->NodeText.ToString()))
+                if (handler.TryReadListedRound(textNode->NodeText.ToString(), out round))
                 {
-                    if (int.TryParse(match.Groups[2].ValueSpan, out var outOf) && outOf == rounds
-                        && int.TryParse(match.Groups[1].ValueSpan, out var shown) && shown >= 1 && shown <= rounds)
-                    {
-                        round = shown;
-                        return true;
-                    }
+                    return true;
                 }
 
                 continue;
@@ -53,7 +88,7 @@ internal static unsafe partial class DutyListRound
 
             var componentNode = node->GetAsAtkComponentNode();
             if (depth > 0 && componentNode is not null && componentNode->Component is not null
-                && Search(&componentNode->Component->UldManager, rounds, depth - 1, ref round))
+                && Search(&componentNode->Component->UldManager, handler, depth - 1, ref round))
             {
                 return true;
             }
@@ -64,4 +99,7 @@ internal static unsafe partial class DutyListRound
 
     [GeneratedRegex(@"(\d+)\s*/\s*(\d+)")]
     private static partial Regex Count();
+
+    [GeneratedRegex(@"(\d|[一二三四五六七八九]|最终)区")]
+    private static partial Regex Chamber();
 }

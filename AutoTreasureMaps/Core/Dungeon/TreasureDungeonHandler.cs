@@ -66,6 +66,14 @@ internal abstract class TreasureDungeonHandler
 
     public Task<bool> TransitRound(DungeonContext context, AdvanceOutcome advance) => Transit.Run(context, advance);
 
+    // The round one line of the duty list names, for a member that has only the list to go by. Each dungeon words it its
+    // own way, so a dungeon whose wording is known reads it; any other has nothing to read and its round is counted.
+    public virtual bool TryReadListedRound(string line, out int round)
+    {
+        round = 0;
+        return false;
+    }
+
     // The advance is tried only while rounds remain; once the last is reached the run leaves when the field is quiet.
     public virtual bool MoreRounds(DungeonInProgress dungeon) => !dungeon.FinalRound;
 
@@ -92,6 +100,14 @@ internal sealed class CenoteJaJaGuralHandler : TreasureDungeonHandler
     protected override IAdvanceStrategy Advance => GateAdvance.Instance;
 
     protected override ITransitStrategy Transit => WalkIntoCircleTransit.Instance;
+
+    // The list names the chamber to break through: "突破第一区" to "突破第四区", then "突破最终区" for the fifth. Read
+    // from the Chinese client; other clients' wording is not known yet, so their round is counted.
+    public override bool TryReadListedRound(string line, out int round)
+    {
+        round = DutyListRound.ChineseChamber(line, Profile.Rounds);
+        return round > 0;
+    }
 }
 
 internal sealed class VaultOneironHandler : TreasureDungeonHandler
@@ -101,4 +117,11 @@ internal sealed class VaultOneironHandler : TreasureDungeonHandler
     protected override IAdvanceStrategy Advance => SlotAdvance.Instance;
 
     protected override ITransitStrategy Transit => StayInPlaceTransit.Instance;
+
+    // The list counts the draws as "N/5" ("第2/5次挑战"); the bonus round's "N/100" and the clock do not match.
+    public override bool TryReadListedRound(string line, out int round)
+    {
+        round = DutyListRound.CountOutOf(line, Profile.Rounds);
+        return round > 0;
+    }
 }

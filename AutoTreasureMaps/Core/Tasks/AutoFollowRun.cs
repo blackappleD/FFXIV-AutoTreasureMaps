@@ -121,7 +121,7 @@ internal sealed class AutoFollowRun(TreasureSession session, TreasureProgress pr
             if (DungeonRegistry.Find(Svc.ClientState.TerritoryType) is { } handler)
             {
                 EndFollowedMap(portal: true);
-                await FollowInDungeon(handler.Profile);
+                await FollowInDungeon(handler);
                 lastActiveAtMs = Environment.TickCount64;
                 continue;
             }
@@ -257,8 +257,9 @@ internal sealed class AutoFollowRun(TreasureSession session, TreasureProgress pr
 
     // Inside the dungeon the leader's run does the dungeon's own steps; this member stays by the leader, fights, rolls and
     // picks up the bonus round's sacks, until the dungeon is behind it.
-    private async Task FollowInDungeon(DungeonProfile profile)
+    private async Task FollowInDungeon(TreasureDungeonHandler handler)
     {
+        var profile = handler.Profile;
         const string scope = "follow-dungeon";
         Diag($"{scope}: in {profile.Key} with the leader.");
         await WaitUntilTimed(() => !Zoning(), DungeonWalkMs, "dungeon settled");
@@ -287,7 +288,7 @@ internal sealed class AutoFollowRun(TreasureSession session, TreasureProgress pr
                 continue;
             }
 
-            if (DutyListRound.TryRead(profile.Rounds, out var shown) && shown > listed)
+            if (DutyListRound.TryRead(handler, out var shown) && shown > listed)
             {
                 listed = shown;
                 Diag($"{scope}: the duty list shows round {listed} of {profile.Rounds}.");
