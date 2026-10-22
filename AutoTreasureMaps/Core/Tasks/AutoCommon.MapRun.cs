@@ -101,10 +101,16 @@ public abstract partial class AutoCommon
         Diag($"Map: {tier.Name} (rank {tier.Rank}, spot {spot.SpotIndex}, Level {spot.LevelId}) in {spot.ZoneName} at {FormatPosition(spot.Position)}, flying {(spot.FlyingUnlocked ? "unlocked" : "locked")}.");
         Svc.Chat.Print($"{AtmConstants.LogPrefix} {Loc.T(L.MapRun.ChatStarted, tier.Name, spot.ZoneName)}");
         await TopUpConsumables();
+        PostSpotToParty(map.Spot);
 
         if (!await ReachSpot(map.Spot))
         {
             return Conclude(map, tier, CancelToken.IsCancellationRequested ? MapOutcome.Cancelled : MapOutcome.Unreachable);
+        }
+
+        if (!await WaitForFollowers(map.Spot))
+        {
+            return Conclude(map, tier, MapOutcome.Cancelled);
         }
 
         var dig = await DigUp(map);

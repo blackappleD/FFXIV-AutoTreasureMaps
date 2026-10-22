@@ -116,6 +116,12 @@ internal static class GeneralSettings
             SettingsControls.ToggleWidth,
             () => SettingsControls.DrawToggle(configuration, () => configuration.TankbusterMitigation, value => configuration.TankbusterMitigation = value, "##atm_general_tankbuster"),
             SettingsRow.ToggleHeight);
+
+        SettingsRow.Draw(Loc.T(L.Settings.PartyMode),
+            Loc.T(L.Settings.PartyModeHelp),
+            SettingsControls.ToggleWidth,
+            () => SettingsControls.DrawToggle(configuration, () => configuration.PartyMode, value => configuration.PartyMode = value, "##atm_general_partymode"),
+            SettingsRow.ToggleHeight);
     }
 
     private static void DrawAfterRunGroup(Configuration configuration)

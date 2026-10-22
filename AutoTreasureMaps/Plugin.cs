@@ -2,6 +2,7 @@ using AutoTreasureMaps.Core;
 using AutoTreasureMaps.Core.Cleanup;
 using AutoTreasureMaps.Core.Debug;
 using AutoTreasureMaps.Core.Dungeon;
+using AutoTreasureMaps.Core.Game;
 using AutoTreasureMaps.Core.Gather;
 using AutoTreasureMaps.Core.Game.Watchers;
 using AutoTreasureMaps.Core.Localization;
@@ -58,6 +59,7 @@ public sealed class Plugin : IDalamudPlugin
     private readonly GmAlertWatcher gmAlertWatcher;
     private readonly PartyInviteWatcher partyInviteWatcher;
     private readonly TankbusterWatcher tankbusterWatcher;
+    private readonly PartySpotLink partySpotLink;
     private readonly CleanupContextMenu cleanupContextMenu;
     private readonly AppWindow appWindow;
     private readonly CommandInfo primaryCommand;
@@ -86,6 +88,7 @@ public sealed class Plugin : IDalamudPlugin
         gmAlertWatcher = new GmAlertWatcher();
         partyInviteWatcher = new PartyInviteWatcher();
         tankbusterWatcher = new TankbusterWatcher();
+        partySpotLink = new PartySpotLink();
         cleanupContextMenu = new CleanupContextMenu();
 
         InitializeLocalization();
@@ -140,6 +143,7 @@ public sealed class Plugin : IDalamudPlugin
         gmAlertWatcher.Dispose();
         partyInviteWatcher.Dispose();
         tankbusterWatcher.Dispose();
+        partySpotLink.Dispose();
         cleanupContextMenu.Dispose();
         Messages.Dispose();
 

@@ -54,9 +54,12 @@ public abstract partial class AutoCommon : AutoTask
     }
 
     // True once the drawn wait ran out; false when the run was cancelled or abortIf tripped first.
+    // A task that keeps pace with another character takes no waits of its own: the one it follows has taken them.
+    private protected virtual bool KeepsPace => false;
+
     protected async Task<bool> HumanDelay(HumanAction action, string label, Func<bool>? abortIf = null)
     {
-        var delayMs = Humanizer.DrawDelayMs(action);
+        var delayMs = KeepsPace ? 0 : Humanizer.DrawDelayMs(action);
         if (delayMs <= 0)
         {
             return !CancelToken.IsCancellationRequested;

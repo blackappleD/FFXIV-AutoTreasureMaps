@@ -35,6 +35,36 @@ internal static class DigSpotResolver
         return true;
     }
 
+    // The dig spot a flag in the zone points at. A chat link carries only the ground point, so the spot's own row gives
+    // the height; the nearest spot of any tier within reach wins.
+    public static bool TryFindNear(uint territoryId, Vector2 groundPoint, float withinMeters, out DigSpot spot)
+    {
+        spot = default;
+        var best = withinMeters * withinMeters;
+        var found = false;
+        var sheet = Svc.Data.GetSubrowExcelSheet<TreasureSpot>();
+        foreach (var spots in sheet)
+        {
+            for (var spotIndex = 0; spotIndex < spots.Count; spotIndex++)
+            {
+                if (spots[spotIndex].Location.ValueNullable is not { } level || level.Territory.RowId != territoryId)
+                {
+                    continue;
+                }
+
+                var distance = Vector2.DistanceSquared(groundPoint, new Vector2(level.X, level.Z));
+                if (distance <= best && TryResolve((byte)spots.RowId, (ushort)spotIndex, out var candidate))
+                {
+                    best = distance;
+                    spot = candidate;
+                    found = true;
+                }
+            }
+        }
+
+        return found;
+    }
+
     private static bool TryResolveFromSheets(byte rank, ushort spotIndex, out DigSpot spot)
     {
         spot = default;

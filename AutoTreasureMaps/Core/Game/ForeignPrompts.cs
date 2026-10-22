@@ -12,6 +12,7 @@ internal static class ForeignPrompts
     private const uint TeleportOfferRow = 1800;
 
     private static string[][]? templates;
+    private static string[]? teleportOffer;
 
     public static bool Matches(string prompt)
     {
@@ -27,6 +28,13 @@ internal static class ForeignPrompts
         }
 
         return false;
+    }
+
+    // "Teleport to X along with Y?", the offer a party member's teleport puts to the rest of the party.
+    public static bool IsTeleportOffer(string prompt)
+    {
+        teleportOffer ??= Fragments(TeleportOfferRow);
+        return teleportOffer.Length > 0 && AllIn(GameText.Fold(prompt), teleportOffer);
     }
 
     private static string[] Fragments(uint row)

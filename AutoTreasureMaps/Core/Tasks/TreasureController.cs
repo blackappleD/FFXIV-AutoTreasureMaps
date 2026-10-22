@@ -35,6 +35,9 @@ internal sealed partial class TreasureController
 
     public TreasureSession? SessionSnapshot => session;
 
+    // Set while the run is a party member following its leader in party mode.
+    public bool Following { get; private set; }
+
     private static void Diag(string message)
         => RunLog.Info(message);
 
@@ -49,6 +52,19 @@ internal sealed partial class TreasureController
 
         if (!RequiredPluginsReady())
         {
+            return;
+        }
+
+        // In party mode every member but the leader follows it rather than running maps of its own.
+        if (Plugin.Instance.Configuration.PartyMode && Game.Player.PartyPresence.InParty() && !Game.Player.PartyPresence.LeadsTheParty())
+        {
+            if (AutoFollowRun.CanStart())
+            {
+                ECommons.DalamudServices.Svc.Chat.Print($"{AtmConstants.LogPrefix} {Loc.T(L.Run.ChatFollowStarted)}");
+                BeginRun(new TreasureSession(), owningSession => new AutoFollowRun(owningSession, progress), "following the party leader");
+                Following = true;
+            }
+
             return;
         }
 
@@ -216,6 +232,7 @@ internal sealed partial class TreasureController
 
     private void ClearRun()
     {
+        Following = false;
         session = null;
         runTaskFactory = null;
         progress.Reset();

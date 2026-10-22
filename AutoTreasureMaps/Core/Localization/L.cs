@@ -130,6 +130,9 @@ internal static partial class L
         public static readonly LocString ChatStopped = new("run.chat.stopped", "Stopped.");
         public static readonly LocString ChatNothingToStop = new("run.chat.nothingToStop", "Nothing to stop.");
         public static readonly LocString ChatPartyWait = new("run.chat.partyWait", "A party member is not in the area, so the game will not allow the dig. Waiting up to {0} seconds for the party.");
+        public static readonly LocString ChatFollowStarted = new("run.chat.followStarted", "Party mode: following the party leader to each dig spot it posts.");
+        public static readonly LocString ChatFollowNeedsParty = new("run.chat.followNeedsParty", "Party mode needs a party on your own world. The party leader runs the maps; press Start on the other members to follow it.");
+        public static readonly LocString ChatFollowEnded = new("run.chat.followEnded", "The party or its leader is gone, or no spot came for a long while, so following ends.");
         public static readonly LocString ChatOutOfMaps = new("run.chat.outOfMaps", "Run over: no maps left to run.");
         public static readonly LocString ChatOutOfMapsReason = new("run.chat.outOfMapsReason", "Run over: no maps left to run. {0}");
         public static readonly LocPlural ChatMapLimit = new("run.chat.mapLimit", "Run over: {0} map run, the limit you set.", "Run over: {0} maps run, the limit you set.");
@@ -153,6 +156,7 @@ internal static partial class L
         public static readonly LocString EndSingleMap = new("run.end.singleMap", "One map");
         public static readonly LocString EndDungeon = new("run.end.dungeon", "Treasure dungeon");
         public static readonly LocString EndDungeonHandedBack = new("run.end.dungeonHandedBack", "Dungeon left to you");
+        public static readonly LocString EndPartyEnded = new("run.end.partyEnded", "Following ended");
     }
 
     internal static class History
@@ -406,6 +410,8 @@ internal static partial class L
         public static readonly LocString LootPricesHelp = new("settings.general.lootPricesHelp", "Price the rare loot on the stat cards and in the tooltips from Universalis. While a run is going or the stats are on screen, the plugin sends Universalis your home data centre's name and the rare loot's item ids, at most every half hour. Off by default.");
         public static readonly LocString Tankbuster = new("settings.general.tankbuster", "Mitigate tankbusters");
         public static readonly LocString TankbusterHelp = new("settings.general.tankbusterHelp", "While a run is on and you play a tank, this plugin takes the personal mitigations over from the combat plugin, which then uses none by your HP. An enemy cast of 1.5 s or more aimed at you gets your job's short mitigation (Bloodwhetting, Holy Sheltron, The Blackest Night or Heart of Corundum) in the last 6 seconds of the cast. A treasure dungeon boss's tankbuster gets the short mitigation and one bigger cooldown, strongest first (Damnation before Rampart), as soon as their cooldowns allow. By your HP, the short mitigation is used under 80%, or under 50% while a boss is casting tankbusters, so it is ready for them. A bigger cooldown is used outside a tankbuster only when three or more enemies are hitting you and your HP is under 40%. Off by default.");
+        public static readonly LocString PartyMode = new("settings.general.partyMode", "Party mode");
+        public static readonly LocString PartyModeHelp = new("settings.general.partyModeHelp", "For a party where every member runs this plugin. Press Start on each character. The party leader runs the maps and, before heading to each dig spot, posts the spot in party chat; the others travel to that spot on their own, fight beside the leader and roll on the loot. The leader waits for them before it digs. Treasure dungeons are still left to you in a party. Off by default.");
 
         public static readonly LocString PostRunGroup = new("settings.postRun.group", "Chat commands");
         public static readonly LocString PostRunLabel = new("settings.postRun.label", "Run when the run finishes");
