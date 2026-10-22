@@ -84,7 +84,7 @@ internal sealed partial class TreasureController
         }
 
         // In a party every member but the leader follows it rather than running maps of its own.
-        if (Game.Player.PartyPresence.InParty() && !Game.Player.PartyPresence.LeadsTheParty())
+        if (RunReadiness.FollowsLeader())
         {
             if (AutoFollowRun.CanStart())
             {

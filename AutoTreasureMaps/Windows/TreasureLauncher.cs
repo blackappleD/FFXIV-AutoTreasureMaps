@@ -11,7 +11,7 @@ internal static class TreasureLauncher
     public static void Start() => Plugin.Instance.Controller.Start();
 
     public static string Sublabel(in RunCheck check)
-        => sublabel.Get(check.Available, static key => Loc.Plural(L.Treasure.StartMaps, (int)key));
+        => check.Follows ? Loc.T(L.Treasure.StartFollow) : sublabel.Get(check.Available, static key => Loc.Plural(L.Treasure.StartMaps, (int)key));
 
     // Shown only while Start is disabled.
     public static string Reason(in RunCheck check) => check.Blocker switch

@@ -43,6 +43,7 @@ internal static partial class L
         public static readonly LocString DetailSetupNeeded = new("treasure.detail.setupNeeded", "Install the required plugins before your first run.");
         public static readonly LocString TitleBlocked = new("treasure.title.blocked", "Not ready");
         public static readonly LocPlural DetailReady = new("treasure.detail.ready", "{0} map ready to run", "{0} maps ready to run");
+        public static readonly LocString DetailFollow = new("treasure.detail.follow", "In a party: Start follows the leader to each dig spot it posts, with no map of your own.");
         public static readonly LocString TitleRunning = new("treasure.title.running", "Hunting treasure");
         public static readonly LocString TitlePaused = new("treasure.title.paused", "Paused");
         public static readonly LocString DetailPausedInContent = new("treasure.detail.pausedInContent", "Resumes once you leave the duty");
@@ -84,6 +85,7 @@ internal static partial class L
         public static readonly LocString ReasonHeldMap = new("treasure.reason.heldMap", "the held map cannot be run");
         public static readonly LocString ReasonNotReady = new("treasure.reason.notReady", "not ready yet");
         public static readonly LocPlural StartMaps = new("treasure.startMaps", "{0} map to run", "{0} maps to run");
+        public static readonly LocString StartFollow = new("treasure.startFollow", "Follow the party leader");
         public static readonly LocString StateRunning = new("treasure.state.running", "running");
         public static readonly LocString StatePaused = new("treasure.state.paused", "paused");
         public static readonly LocString StopSub = new("treasure.stopSub", "{0} · {1}");

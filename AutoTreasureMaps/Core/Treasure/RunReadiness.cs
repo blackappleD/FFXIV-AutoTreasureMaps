@@ -1,6 +1,7 @@
 using AutoTreasureMaps.Core.Dungeon;
 using AutoTreasureMaps.Core.External;
 using AutoTreasureMaps.Core.Game.Ops;
+using AutoTreasureMaps.Core.Game.Player;
 using AutoTreasureMaps.Core.Localization;
 using AutoTreasureMaps.Core.Supply;
 using ECommons.DalamudServices;
@@ -19,8 +20,8 @@ internal enum RunBlocker : byte
 }
 
 // Available counts the held map and every map the supply chain could put in hand after it. Reason is set whenever
-// Blocker is.
-internal readonly record struct RunCheck(RunBlocker Blocker, LocString Reason, int Available)
+// Blocker is. Follows is set when the run would follow the party leader, which needs no map of its own.
+internal readonly record struct RunCheck(RunBlocker Blocker, LocString Reason, int Available, bool Follows = false)
 {
     public bool CanStart => Blocker == RunBlocker.None;
 }
@@ -53,6 +54,13 @@ internal static class RunReadiness
             return new RunCheck(RunBlocker.NotCombatClass, L.MapRun.RefusedNotCombatClass, 0);
         }
 
+        // A party member follows its leader, which runs the maps, so it may start, or start again after a stop, anywhere
+        // and with no map of its own.
+        if (FollowsLeader())
+        {
+            return new RunCheck(RunBlocker.None, default, 0, Follows: true);
+        }
+
         var supply = MapSupplyChain.Check(plugin);
 
         // A run started inside a treasure dungeon clears it first, so it needs no map to start; the maps only count
@@ -73,4 +81,6 @@ internal static class RunReadiness
             ? new RunCheck(RunBlocker.None, default, HeldMapCount + supply.Available)
             : new RunCheck(RunBlocker.HeldMap, MapOutcomes.Reason(refusal), 0);
     }
+
+    public static bool FollowsLeader() => PartyPresence.InParty() && !PartyPresence.LeadsTheParty();
 }

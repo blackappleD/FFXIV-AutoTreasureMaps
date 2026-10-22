@@ -49,6 +49,8 @@ internal static class ReadyState
         var check = RunReadiness.Check(Plugin.Instance);
         return check.Blocker switch
         {
+            RunBlocker.None when check.Follows => new Info(Kind.Ready, Styling.AccentMint, Styling.AccentMintSoft, FontAwesomeIcon.Play,
+                Loc.T(L.Run.PhaseReady), Loc.T(L.Treasure.DetailFollow), check),
             RunBlocker.None => new Info(Kind.Ready, Styling.AccentMint, Styling.AccentMintSoft, FontAwesomeIcon.Play,
                 Loc.T(L.Run.PhaseReady), readyDetail.Get(check.Available, static key => Loc.Plural(L.Treasure.DetailReady, (int)key)), check),
             RunBlocker.NeedsPlugins => new Info(Kind.SetupNeeded, Styling.AccentRose, Styling.AccentRoseSoft, FontAwesomeIcon.ExclamationTriangle,
