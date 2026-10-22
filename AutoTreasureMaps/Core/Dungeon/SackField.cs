@@ -4,13 +4,15 @@ using ECommons.DalamudServices;
 using System.Globalization;
 using System.Numerics;
 
+using NativeGameObject = FFXIVClientStructs.FFXIV.Client.Game.Object.GameObject;
+
 namespace AutoTreasureMaps.Core.Dungeon;
 
 // The bonus round's field as the sack walk sees it: the sacks on the floor and the charges that are due, read afresh on
 // every tick. A charger is followed from the moment it appears, since its lane is known from where it stands and the way
 // it faces well before its cast starts. What changed since the last read is kept as plain lines for the round's
 // recording. Read only on the framework thread.
-internal sealed class SackField(DungeonProfile profile)
+internal sealed unsafe class SackField(DungeonProfile profile)
 {
     // Read from the logs: a charger appears, starts its 3.7 s Rush about 1.9 s later, and lands about 5.9 s after it
     // appeared.
@@ -22,6 +24,7 @@ internal sealed class SackField(DungeonProfile profile)
     private readonly Dictionary<ulong, Charger> chargers = [];
     private readonly Dictionary<ulong, SackSpot> sacksSeen = [];
     private readonly HashSet<ulong> stillHere = [];
+    private readonly HashSet<ulong> described = [];
     private readonly List<ulong> gone = [];
 
     public List<SackSpot> Sacks { get; } = [];
@@ -48,11 +51,36 @@ internal sealed class SackField(DungeonProfile profile)
     }
 
 
-    // A sack handed out is moved to a new spot, or gone or untargetable on the way there.
+    // A sack handed out is moved to a new spot, or gone or hidden on the way there.
     public static bool Taken(ulong sackId, Vector2 at)
-        => Svc.Objects.SearchById(sackId) is not { IsTargetable: true } sack || Vector2.Distance(Flat(sack.Position), at) > 1f;
+        => Svc.Objects.SearchById(sackId) is not { } sack || !Shown(sack) || Vector2.Distance(Flat(sack.Position), at) > 1f;
+
+    // A sack is walked onto, not targeted, and the first round the plugin ran showed it never targetable, so a sack on
+    // the floor is one that is drawn; a targetable one counts too.
+    private static bool Shown(Dalamud.Game.ClientState.Objects.Types.IGameObject sack)
+        => sack.IsTargetable || sack.Address != 0 && ((NativeGameObject*)sack.Address)->RenderFlags == default;
 
     public static Vector2 Flat(Vector3 position) => new(position.X, position.Z);
+
+    public bool AnySackObject => described.Count > 0;
+
+    // Every object near the character that is no player, written down once a round when no sack showed, so the sacks'
+    // real ids can be found in the recording.
+    public void DescribeRoom()
+    {
+        var player = DungeonField.PlayerPosition;
+        foreach (var candidate in Svc.Objects)
+        {
+            if (candidate.ObjectKind is ObjectKind.Pc or ObjectKind.Companion
+                || Vector3.DistanceSquared(player, candidate.Position) > DungeonField.RoomMeters * DungeonField.RoomMeters)
+            {
+                continue;
+            }
+
+            var native = (NativeGameObject*)candidate.Address;
+            Changes.Add($"room object {candidate.GameObjectId:X}: {candidate.ObjectKind} base {candidate.BaseId} '{candidate.Name.TextValue}', targetable {candidate.IsTargetable}, render {(native is null ? "?" : native->RenderFlags.ToString())}, at {Format(Flat(candidate.Position))}");
+        }
+    }
 
     private void ReadSacks()
     {
@@ -61,7 +89,7 @@ internal sealed class SackField(DungeonProfile profile)
         var objects = Svc.Objects;
         for (var index = 0; index < objects.Length; index++)
         {
-            if (objects[index] is not { ObjectKind: ObjectKind.EventObj, IsTargetable: true } candidate
+            if (objects[index] is not { } candidate
                 || Vector3.DistanceSquared(player, candidate.Position) > DungeonField.RoomMeters * DungeonField.RoomMeters)
             {
                 continue;
@@ -69,6 +97,18 @@ internal sealed class SackField(DungeonProfile profile)
 
             var points = profile.IsGoldSack(candidate.BaseId) ? 3 : profile.IsSilverSack(candidate.BaseId) ? 1 : 0;
             if (points == 0)
+            {
+                continue;
+            }
+
+            // Every sack object is written down once with what the game says of it, so a round shows how sacks look.
+            if (described.Add(candidate.GameObjectId))
+            {
+                var native = (NativeGameObject*)candidate.Address;
+                Changes.Add($"sack object {candidate.GameObjectId:X}: {candidate.ObjectKind} base {candidate.BaseId}, targetable {candidate.IsTargetable}, render {(native is null ? "?" : native->RenderFlags.ToString())}, at {Format(Flat(candidate.Position))}");
+            }
+
+            if (!Shown(candidate))
             {
                 continue;
             }

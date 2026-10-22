@@ -29,6 +29,8 @@ public abstract partial class AutoCommon
     private const float SackOnTopMeters = 0.6f;
     private const int SackOnTopMs = 800;
     private const float EscapeArriveMeters = 0.5f;
+    // The sacks come a few seconds into the round; none by this time means the profile's ids are not the sacks'.
+    private const int NoSackDescribeMs = 10_000;
 
     // The bonus round scatters sacks over the room for ninety seconds, each picked up by walking onto it, and every ten
     // seconds chargers rush across it. The walk goes straight from sack to sack with the next one already queued, so it
@@ -67,6 +69,8 @@ public abstract partial class AutoCommon
         var closerAtMs = lastAtMs;
         var onTopSinceMs = 0L;
         var sprintTriedAtMs = 0L;
+        var startedAtMs = Environment.TickCount64;
+        var roomDescribed = false;
         var deadline = Environment.TickCount64 + BonusRoundCapMs;
         try
         {
@@ -86,6 +90,13 @@ public abstract partial class AutoCommon
 
                 lastAt = at;
                 lastAtMs = now;
+                if (!roomDescribed && !field.AnySackObject && now - startedAtMs >= NoSackDescribeMs)
+                {
+                    roomDescribed = true;
+                    field.DescribeRoom();
+                    Warn($"{scope}: no sack object of the profile's ids showed in {NoSackDescribeMs / 1000}s; the room's objects are written to the recording.");
+                }
+
                 capture.Record(now, field, speed);
 
                 if (plan is { } held && SackField.Taken(held.FirstId, held.First))
@@ -112,14 +123,19 @@ public abstract partial class AutoCommon
                     }
                 }
 
+                // In a party, each member takes the sacks nearer to it than to the others, so they do not run for the
+                // same one; with none of its own left it takes any.
+                KeepOwnSacks(at, choices);
+
                 // Out of a lane first, when what the walk would do next stands in it as the charge lands.
                 var best = SackPlanner.Choose(at, speed, choices, field.Lanes);
                 var threatened = SackPlanner.Threatened(at, field.Lanes);
                 if (threatened && (best is null || best.Value.Risky))
                 {
                     // Worked out afresh every tick, since a charger that appears on the way can close the spot.
-                    if (SackPlanner.Escape(at, field.Lanes, RoomMin(field, at), RoomMax(field, at)) is { } spot
-                        && (escape is not { } going || Vector2.Distance(going, spot) > EscapeArriveMeters))
+                    // A new spot only once the one under way is threatened itself, so the walk does not dither.
+                    if ((escape is not { } going || SackPlanner.Threatened(going, field.Lanes))
+                        && SackPlanner.Escape(at, field.Lanes, RoomMin(field, at), RoomMax(field, at)) is { } spot)
                     {
                         escape = spot;
                         plan = null;
@@ -197,6 +213,54 @@ public abstract partial class AutoCommon
 
         capture.Note($"over: {picked} sacks, {points} points");
         Diag($"{scope}: the bonus round is over; {picked} sack(s) picked up for {points} point(s).");
+    }
+
+    private static readonly List<Vector2> partnerSpots = [];
+    private static readonly List<SackSpot> ownSacks = [];
+
+    private static void KeepOwnSacks(Vector2 at, List<SackSpot> choices)
+    {
+        partnerSpots.Clear();
+        var party = Svc.Party;
+        var territoryId = Svc.ClientState.TerritoryType;
+        for (var index = 0; index < party.Length; index++)
+        {
+            if (party[index] is { } member && !Game.Player.PartyPresence.IsLocal(member) && member.Territory.RowId == territoryId)
+            {
+                partnerSpots.Add(SackField.Flat(member.Position));
+            }
+        }
+
+        if (partnerSpots.Count == 0)
+        {
+            return;
+        }
+
+        ownSacks.Clear();
+        foreach (var sack in choices)
+        {
+            var mine = Vector2.DistanceSquared(at, sack.At);
+            var nearest = true;
+            foreach (var partner in partnerSpots)
+            {
+                if (Vector2.DistanceSquared(partner, sack.At) < mine)
+                {
+                    nearest = false;
+                    break;
+                }
+            }
+
+            if (nearest)
+            {
+                ownSacks.Add(sack);
+            }
+        }
+
+        if (ownSacks.Count > 0)
+        {
+            choices.Clear();
+            choices.AddRange(ownSacks);
+        }
     }
 
     // The plan under way is kept unless its first sack is gone or the new one is clearly better.
