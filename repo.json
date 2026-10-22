@@ -3,8 +3,8 @@
     "Author": "XeldarAlz, blackappleD",
     "Name": "TreasureHelper",
     "InternalName": "TreasureHelper",
-    "AssemblyVersion": "1.0.0.2068",
-    "TestingAssemblyVersion": "1.0.0.2068",
+    "AssemblyVersion": "1.0.0.2069",
+    "TestingAssemblyVersion": "1.0.0.2069",
     "Description": "自动处理背包里的陈旧地图：逐张解读、前往挖宝点、挖出宝箱、击退守卫并开箱，然后继续下一张。背包里没图时，可以采集每日地图，并在价格上限和金币预算内从市场板购买。实验性：在宝物库里输入 /atm dungeon 可单人自动攻略加加财富天坑和巡梦金库。基于 XeldarAlz 的 Auto Treasure Maps 修改的国服维护版。",
     "Punchline": "自动挖宝图，解放双手。",
     "RepoUrl": "https://github.com/blackappleD/FFXIV-AutoTreasureMaps",
@@ -23,9 +23,9 @@
     ],
     "DalamudApiLevel": 15,
     "IconUrl": "https://raw.githubusercontent.com/blackappleD/FFXIV-AutoTreasureMaps/master/AutoTreasureMaps/Images/Icon.png",
-    "DownloadLinkInstall": "https://github.com/blackappleD/FFXIV-AutoTreasureMaps/releases/download/v1.0.0.2068/TreasureHelper.zip",
-    "DownloadLinkUpdate": "https://github.com/blackappleD/FFXIV-AutoTreasureMaps/releases/download/v1.0.0.2068/TreasureHelper.zip",
-    "DownloadLinkTesting": "https://github.com/blackappleD/FFXIV-AutoTreasureMaps/releases/download/v1.0.0.2068/TreasureHelper.zip",
+    "DownloadLinkInstall": "https://github.com/blackappleD/FFXIV-AutoTreasureMaps/releases/download/v1.0.0.2069/TreasureHelper.zip",
+    "DownloadLinkUpdate": "https://github.com/blackappleD/FFXIV-AutoTreasureMaps/releases/download/v1.0.0.2069/TreasureHelper.zip",
+    "DownloadLinkTesting": "https://github.com/blackappleD/FFXIV-AutoTreasureMaps/releases/download/v1.0.0.2069/TreasureHelper.zip",
     "IsTestingExclusive": false,
     "AcceptsFeedback": true
   }
