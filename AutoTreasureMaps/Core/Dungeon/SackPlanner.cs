@@ -3,7 +3,8 @@ using System.Numerics;
 namespace AutoTreasureMaps.Core.Dungeon;
 
 // A sack on the floor, on the ground plane (x, z), with the points it is worth.
-internal readonly record struct SackSpot(ulong Id, Vector2 At, int Points);
+// Shown is whether the game draws it or lets it be targeted, kept so a sack that stops showing counts as picked up.
+internal readonly record struct SackSpot(ulong Id, Vector2 At, int Points, bool Shown = true);
 
 // A charge that is due: a strip from where the charger stands along the way it faces, landing in ImpactIn seconds.
 internal readonly record struct ChargeLane(Vector2 From, Vector2 Direction, float ImpactIn)

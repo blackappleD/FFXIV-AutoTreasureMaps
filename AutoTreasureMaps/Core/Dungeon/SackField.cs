@@ -51,12 +51,12 @@ internal sealed unsafe class SackField(DungeonProfile profile)
     }
 
 
-    // A sack handed out is moved to a new spot, or gone or hidden on the way there.
-    public static bool Taken(ulong sackId, Vector2 at)
-        => Svc.Objects.SearchById(sackId) is not { } sack || !Shown(sack) || Vector2.Distance(Flat(sack.Position), at) > 1f;
+    // A sack handed out is moved to a new spot or gone, or, if it showed when it was chosen, hidden.
+    public static bool Taken(ulong sackId, Vector2 at, bool wasShown)
+        => Svc.Objects.SearchById(sackId) is not { } sack || Vector2.Distance(Flat(sack.Position), at) > 1f || wasShown && !Shown(sack);
 
-    // A sack is walked onto, not targeted, and the first round the plugin ran showed it never targetable, so a sack on
-    // the floor is one that is drawn; a targetable one counts too.
+    // Whether the game draws the sack or lets it be targeted. Not known yet which of these a sack on the floor shows, so
+    // every object of the sack ids is walked to, and this only tells a sack that vanished in place.
     private static bool Shown(Dalamud.Game.ClientState.Objects.Types.IGameObject sack)
         => sack.IsTargetable || sack.Address != 0 && ((NativeGameObject*)sack.Address)->RenderFlags == default;
 
@@ -108,12 +108,7 @@ internal sealed unsafe class SackField(DungeonProfile profile)
                 Changes.Add($"sack object {candidate.GameObjectId:X}: {candidate.ObjectKind} base {candidate.BaseId}, targetable {candidate.IsTargetable}, render {(native is null ? "?" : native->RenderFlags.ToString())}, at {Format(Flat(candidate.Position))}");
             }
 
-            if (!Shown(candidate))
-            {
-                continue;
-            }
-
-            var sack = new SackSpot(candidate.GameObjectId, Flat(candidate.Position), points);
+            var sack = new SackSpot(candidate.GameObjectId, Flat(candidate.Position), points, Shown(candidate));
             Sacks.Add(sack);
             stillHere.Add(sack.Id);
             SacksMin = Vector2.Min(SacksMin, sack.At);

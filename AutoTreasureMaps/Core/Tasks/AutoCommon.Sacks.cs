@@ -70,6 +70,8 @@ public abstract partial class AutoCommon
         var onTopSinceMs = 0L;
         var sprintTriedAtMs = 0L;
         var startedAtMs = Environment.TickCount64;
+        // Whether the sack the plan makes for showed when it was chosen.
+        var planShown = true;
         var roomDescribed = false;
         var deadline = Environment.TickCount64 + BonusRoundCapMs;
         try
@@ -99,7 +101,7 @@ public abstract partial class AutoCommon
 
                 capture.Record(now, field, speed);
 
-                if (plan is { } held && SackField.Taken(held.FirstId, held.First))
+                if (plan is { } held && SackField.Taken(held.FirstId, held.First, planShown))
                 {
                     var worth = SackWorth(held.FirstId, field, choices);
                     picked++;
@@ -149,6 +151,7 @@ public abstract partial class AutoCommon
                     if (best is { } chosen && (plan is not { } current || Replaces(chosen, current, at, speed, field, choices)))
                     {
                         plan = chosen;
+                        planShown = Find(choices, chosen.FirstId)?.Shown ?? true;
                         nearestSoFar = float.MaxValue;
                         onTopSinceMs = 0;
                         capture.Note($"plan {chosen.FirstId:X} at {SackRoundCapture.Format(chosen.First)}{(chosen.HasSecond ? $" then {chosen.SecondId:X}" : string.Empty)}, score {chosen.Score:F2}{(chosen.Risky ? ", risky" : string.Empty)}");
@@ -192,8 +195,8 @@ public abstract partial class AutoCommon
                     {
                         capture.Note($"standing on {walking.FirstId:X} did not pick it up; interacting");
                         navmesh.Stop();
-                        await InteractWithObject(still, () => SackField.Taken(walking.FirstId, walking.First), scope);
-                        if (!SackField.Taken(walking.FirstId, walking.First))
+                        await InteractWithObject(still, () => SackField.Taken(walking.FirstId, walking.First, planShown), scope);
+                        if (!SackField.Taken(walking.FirstId, walking.First, planShown))
                         {
                             passOver[walking.FirstId] = now + SackPassOverMs;
                             plan = null;
