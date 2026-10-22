@@ -25,16 +25,20 @@ public abstract partial class AutoCommon
     private const float SackStallMeters = 0.5f;
     private const int SackStallMs = 1_500;
     private const int SackPassOverMs = 4_000;
-    // Standing on a sack picks it up at once; one still there after this is asked by interacting instead.
+    // A sack is picked up by standing on it a moment. The duty list's point count tells when it went to the party, which
+    // can be before the sack's object goes, so the walk moves on as soon as the count rises; one stood on this long with
+    // no rise is passed over for a while.
     private const float SackOnTopMeters = 0.6f;
-    private const int SackOnTopMs = 800;
+    private const int SackHoldMs = 4_000;
+    // A rise in the count is this sack's while the character stands this close to it.
+    private const float SackCreditMeters = 1.5f;
     private const float EscapeArriveMeters = 0.5f;
     // The sacks come a few seconds into the round; none by this time means the profile's ids are not the sacks'.
     private const int NoSackDescribeMs = 10_000;
 
-    // The bonus round scatters sacks over the room for ninety seconds, each picked up by walking onto it, and every ten
-    // seconds chargers rush across it. The walk goes straight from sack to sack with the next one already queued, so it
-    // never stops on a sack, steps out of a lane before its charge lands, and writes the round down for later.
+    // The bonus round scatters sacks over the room for ninety seconds, each picked up by standing on it, and every ten
+    // seconds chargers rush across it. The walk goes straight from sack to sack, stays on each until the duty list's
+    // point count rises, steps out of a lane before its charge lands, and writes the round down for later.
     private protected async Task CollectBonusSacks(DungeonContext context)
     {
         const string scope = "dungeon-sacks";
@@ -70,6 +74,10 @@ public abstract partial class AutoCommon
         var onTopSinceMs = 0L;
         var sprintTriedAtMs = 0L;
         var startedAtMs = Environment.TickCount64;
+        // The sacks the count already rose for; their objects may linger a moment and are not walked to again.
+        var credited = new HashSet<ulong>();
+        var scoreRead = DutyListRound.TryReadSackScore(out var score);
+        capture.Note(scoreRead ? $"score {score} at the start" : "the duty list shows no sack count; pickups are read from the sacks going");
         // Whether the sack the plan makes for showed when it was chosen.
         var planShown = true;
         var roomDescribed = false;
@@ -101,13 +109,44 @@ public abstract partial class AutoCommon
 
                 capture.Record(now, field, speed);
 
-                if (plan is { } held && SackField.Taken(held.FirstId, held.First, planShown))
+                // The count is the party's: a rise while standing on the planned sack is that sack's, any other is a
+                // partner's. Without the count, a planned sack that goes counts as picked up.
+                if (DutyListRound.TryReadSackScore(out var nowScore))
+                {
+                    if (!scoreRead || nowScore != score)
+                    {
+                        var rise = scoreRead ? nowScore - score : 0;
+                        var onPlan = plan is { } scored && Vector2.Distance(at, scored.First) <= SackCreditMeters;
+                        var standing = onTopSinceMs == 0 ? "not on it" : $"{now - onTopSinceMs} ms on it";
+                        capture.Note($"score {nowScore} (+{rise}){(plan is { } p ? $", {Vector2.Distance(at, p.First):F2}m from {p.FirstId:X}, {standing}" : string.Empty)}");
+                        if (onPlan && rise > 0 && plan is { } mine)
+                        {
+                            credited.Add(mine.FirstId);
+                            picked++;
+                            points += rise;
+                            plan = null;
+                            onTopSinceMs = 0;
+                        }
+
+                        score = nowScore;
+                        scoreRead = true;
+                    }
+                }
+                else if (!scoreRead && plan is { } held && SackField.Taken(held.FirstId, held.First, planShown))
                 {
                     var worth = SackWorth(held.FirstId, field, choices);
                     picked++;
                     points += worth;
                     capture.Note($"picked {held.FirstId:X} for {worth}, {points} points so far");
                     plan = null;
+                }
+
+                // A planned sack gone before the count rose, a wave's end or a partner's pickup, is let go.
+                if (plan is { } vanished && scoreRead && SackField.Taken(vanished.FirstId, vanished.First, planShown))
+                {
+                    capture.Note($"{vanished.FirstId:X} went before the count rose for it");
+                    plan = null;
+                    onTopSinceMs = 0;
                 }
 
                 if (now - sprintTriedAtMs >= SprintRetryMs)
@@ -119,7 +158,7 @@ public abstract partial class AutoCommon
                 choices.Clear();
                 foreach (var sack in field.Sacks)
                 {
-                    if (!passOver.TryGetValue(sack.Id, out var until) || now >= until)
+                    if (!credited.Contains(sack.Id) && (!passOver.TryGetValue(sack.Id, out var until) || now >= until))
                     {
                         choices.Add(sack);
                     }
@@ -173,7 +212,14 @@ public abstract partial class AutoCommon
                 else if (plan is { } walking)
                 {
                     var distance = Vector2.Distance(at, walking.First);
-                    if (!navmesh.IsRunning())
+                    var onTop = distance <= SackOnTopMeters;
+                    if (onTop && onTopSinceMs == 0)
+                    {
+                        onTopSinceMs = now;
+                        navmesh.Stop();
+                        capture.Note($"on {walking.FirstId:X}, {distance:F2}m");
+                    }
+                    else if (!onTop && !navmesh.IsRunning())
                     {
                         MoveStraight(navmesh, walking.HasSecond ? [walking.First, walking.Second] : [walking.First]);
                     }
@@ -190,18 +236,11 @@ public abstract partial class AutoCommon
                         plan = null;
                     }
 
-                    onTopSinceMs = distance <= SackOnTopMeters ? onTopSinceMs == 0 ? now : onTopSinceMs : 0;
-                    if (onTopSinceMs != 0 && now - onTopSinceMs >= SackOnTopMs && Svc.Objects.SearchById(walking.FirstId) is { } still)
+                    if (onTopSinceMs != 0 && now - onTopSinceMs >= SackHoldMs)
                     {
-                        capture.Note($"standing on {walking.FirstId:X} did not pick it up; interacting");
-                        navmesh.Stop();
-                        await InteractWithObject(still, () => SackField.Taken(walking.FirstId, walking.First, planShown), scope);
-                        if (!SackField.Taken(walking.FirstId, walking.First, planShown))
-                        {
-                            passOver[walking.FirstId] = now + SackPassOverMs;
-                            plan = null;
-                        }
-
+                        capture.Note($"stood on {walking.FirstId:X} {SackHoldMs} ms with no rise in the count; passing it over");
+                        passOver[walking.FirstId] = now + SackPassOverMs;
+                        plan = null;
                         onTopSinceMs = 0;
                     }
                 }

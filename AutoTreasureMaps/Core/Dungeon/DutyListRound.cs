@@ -15,15 +15,39 @@ internal static unsafe partial class DutyListRound
     private const string ChineseNumerals = "一二三四五六七八九";
     private const string ChineseFinal = "最终";
 
+    private delegate bool LineReader(string line, out int value);
+
+    private static readonly LineReader sackScore = ReadSackScore;
+
     public static bool TryRead(TreasureDungeonHandler handler, out int round)
+        => TryReadList(handler.TryReadListedRound, out round);
+
+    // The bonus round's sack points so far, "N/100" in the list (gold counted three), the same for the whole party.
+    public static bool TryReadSackScore(out int score) => TryReadList(sackScore, out score);
+
+    private static bool TryReadList(LineReader reader, out int value)
     {
-        round = 0;
+        value = 0;
         if (!GenericHelpers.TryGetAddonByName<AtkUnitBase>(AddonName, out var addon) || !addon->IsVisible)
         {
             return false;
         }
 
-        return Search(&addon->UldManager, handler, SearchDepth, ref round);
+        return Search(&addon->UldManager, reader, SearchDepth, ref value);
+    }
+
+    private static bool ReadSackScore(string line, out int score)
+    {
+        foreach (Match match in Count().Matches(line))
+        {
+            if (match.Groups[2].ValueSpan.SequenceEqual("100") && int.TryParse(match.Groups[1].ValueSpan, out score))
+            {
+                return true;
+            }
+        }
+
+        score = 0;
+        return false;
     }
 
     // "N/M" with M the dungeon's own number of rounds, as the vault's "第2/5次挑战"; 0 when no such count is in the line.
@@ -65,7 +89,7 @@ internal static unsafe partial class DutyListRound
         return number >= 1 && number <= rounds ? number : 0;
     }
 
-    private static bool Search(AtkUldManager* manager, TreasureDungeonHandler handler, int depth, ref int round)
+    private static bool Search(AtkUldManager* manager, LineReader reader, int depth, ref int round)
     {
         for (var index = 0; index < manager->NodeListCount; index++)
         {
@@ -78,7 +102,7 @@ internal static unsafe partial class DutyListRound
             var textNode = node->GetAsAtkTextNode();
             if (textNode is not null)
             {
-                if (handler.TryReadListedRound(textNode->NodeText.ToString(), out round))
+                if (reader(textNode->NodeText.ToString(), out round))
                 {
                     return true;
                 }
@@ -88,7 +112,7 @@ internal static unsafe partial class DutyListRound
 
             var componentNode = node->GetAsAtkComponentNode();
             if (depth > 0 && componentNode is not null && componentNode->Component is not null
-                && Search(&componentNode->Component->UldManager, handler, depth - 1, ref round))
+                && Search(&componentNode->Component->UldManager, reader, depth - 1, ref round))
             {
                 return true;
             }
