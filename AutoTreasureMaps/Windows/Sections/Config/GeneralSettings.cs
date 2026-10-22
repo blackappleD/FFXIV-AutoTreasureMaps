@@ -116,6 +116,12 @@ internal static class GeneralSettings
             SettingsControls.ToggleWidth,
             () => SettingsControls.DrawToggle(configuration, () => configuration.TankbusterMitigation, value => configuration.TankbusterMitigation = value, "##atm_general_tankbuster"),
             SettingsRow.ToggleHeight);
+
+        SettingsRow.Draw(Loc.T(L.Settings.AutoFollowLeader),
+            Loc.T(L.Settings.AutoFollowLeaderHelp),
+            SettingsControls.ToggleWidth,
+            () => SettingsControls.DrawToggle(configuration, () => configuration.AutoFollowLeader, value => configuration.AutoFollowLeader = value, "##atm_general_autofollow"),
+            SettingsRow.ToggleHeight);
     }
 
     private static void DrawAfterRunGroup(Configuration configuration)

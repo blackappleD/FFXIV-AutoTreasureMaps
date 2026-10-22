@@ -61,6 +61,7 @@ public sealed class Plugin : IDalamudPlugin
     private readonly PartyInviteWatcher partyInviteWatcher;
     private readonly TankbusterWatcher tankbusterWatcher;
     private readonly PartySpotLink partySpotLink;
+    private readonly AutoFollowWatcher autoFollowWatcher;
     private readonly CleanupContextMenu cleanupContextMenu;
     private readonly AppWindow appWindow;
     private readonly CommandInfo primaryCommand;
@@ -94,6 +95,7 @@ public sealed class Plugin : IDalamudPlugin
         partyInviteWatcher = new PartyInviteWatcher();
         tankbusterWatcher = new TankbusterWatcher();
         partySpotLink = new PartySpotLink();
+        autoFollowWatcher = new AutoFollowWatcher();
         cleanupContextMenu = new CleanupContextMenu();
 
         InitializeLocalization();
@@ -149,6 +151,7 @@ public sealed class Plugin : IDalamudPlugin
         partyInviteWatcher.Dispose();
         tankbusterWatcher.Dispose();
         partySpotLink.Dispose();
+        autoFollowWatcher.Dispose();
         cleanupContextMenu.Dispose();
         Messages.Dispose();
 

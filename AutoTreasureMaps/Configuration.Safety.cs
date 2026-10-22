@@ -14,6 +14,9 @@ public sealed partial class Configuration
     // Off by default: the run uses a cooldown on its own only when asked to.
     public bool TankbusterMitigation { get; set; } = false;
 
+    // Off by default: a party member that is not running starts following its leader by itself.
+    public bool AutoFollowLeader { get; set; } = false;
+
     public bool AutoConsume { get; set; } = false;
     // 0 re-eats only once the buff has fully worn off.
     public int AutoConsumeMinMinutes { get; set; } = 3;
