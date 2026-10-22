@@ -4,6 +4,7 @@ using AutoTreasureMaps.Core.Game;
 using AutoTreasureMaps.Core.Game.Ops;
 using AutoTreasureMaps.Core.Game.Player;
 using AutoTreasureMaps.Core.Game.Watchers;
+using AutoTreasureMaps.Core.Ipc;
 using AutoTreasureMaps.Core.Localization;
 using AutoTreasureMaps.Core.Travel;
 using AutoTreasureMaps.Core.Treasure;
@@ -28,8 +29,6 @@ internal sealed class AutoFollowRun(TreasureSession session, TreasureProgress pr
     private const int IdleLimitMs = 20 * TimeUnits.MillisecondsPerMinute;
     // A posted spot is matched to a dig spot of the zone within this reach; the link rounds the point a little.
     private const float SpotMatchMeters = 15f;
-    // The member stands this far off the spot, clear of the leader's dig.
-    private const float StandOffMeters = 4f;
     private const float ArriveWithinMeters = 6f;
     private const string DeclineThrottleKey = "atm-follow-decline";
     private const int DeclineThrottleMs = 1_000;
@@ -53,6 +52,15 @@ internal sealed class AutoFollowRun(TreasureSession session, TreasureProgress pr
     // from the leader walks over.
     private const float BesideLeaderMeters = 8f;
     private const float LeaderInReachMeters = 60f;
+    // Two characters standing on one point read as bots, so the member keeps a spot of its own beside the leader: a
+    // fresh direction and distance for every map, inside the reach the leader waits for, and moves off once it stands
+    // closer than the gap.
+    private const float BesideMinMeters = 3.5f;
+    private const float BesideMaxMeters = 6.5f;
+    private const float CrowdingMeters = 2.5f;
+    private const int SpotTries = 8;
+    private const int SpacingCheckMs = 2_000;
+    private const float SpotArriveMeters = 0.8f;
     // The leader's coffer is looted once the fight is this long over with nothing left to roll on.
     private const int MapSettledMs = 8_000;
     private const int CleanupWaitMs = 60_000;
@@ -62,6 +70,10 @@ internal sealed class AutoFollowRun(TreasureSession session, TreasureProgress pr
     private long handledSpotAtMs;
     private long lastActiveAtMs;
     private FollowedMap? followed;
+    // The side of the leader this member keeps to for the map under way, and how far.
+    private float besideAngle = Random.Shared.NextSingle() * MathF.Tau;
+    private float besideMeters = BesideMaxMeters;
+    private long spacingCheckedAtMs;
 
     private protected override bool KeepsPace => true;
 
@@ -180,10 +192,56 @@ internal sealed class AutoFollowRun(TreasureSession session, TreasureProgress pr
                 continue;
             }
 
+            await KeepGap("follow-gap");
             progress.SetPhase(TreasurePhase.Preparing);
             Status = "Waiting for the leader's next spot";
             await NextFrame(TickFrames);
         }
+    }
+
+    // A spot on the floor beside the leader, on this map's side of it; the side is turned a little at a time until one
+    // has floor under it.
+    private Vector3? SpotBesideLeader(Vector3 leader)
+    {
+        var navmesh = NavmeshIPC.Instance;
+        for (var attempt = 0; attempt < SpotTries; attempt++)
+        {
+            var angle = besideAngle + attempt * MathF.Tau / SpotTries;
+            var candidate = leader + new Vector3(MathF.Cos(angle) * besideMeters, 0f, MathF.Sin(angle) * besideMeters);
+            if (navmesh.NearestStandablePoint(candidate, 1.5f, 3f) is { } floor && Vector3.Distance(floor, leader) >= BesideMinMeters)
+            {
+                return floor;
+            }
+        }
+
+        return null;
+    }
+
+    // Moves to this member's own spot beside the leader once it stands too close to the leader, or farther than the
+    // leader waits for; checked every couple of seconds, never mid-fight or mounted.
+    private async Task KeepGap(string scope)
+    {
+        var now = Environment.TickCount64;
+        if (now - spacingCheckedAtMs < SpacingCheckMs || Svc.Condition[Dalamud.Game.ClientState.Conditions.ConditionFlag.Mounted]
+            || PartyFightOn() || LeaderInZone() is not { } leader)
+        {
+            return;
+        }
+
+        spacingCheckedAtMs = now;
+        var distance = Vector3.Distance(leader, PlayerPosition());
+        if (distance >= CrowdingMeters && distance <= BesideLeaderMeters || distance >= LeaderInReachMeters)
+        {
+            return;
+        }
+
+        if (SpotBesideLeader(leader) is not { } spot)
+        {
+            return;
+        }
+
+        Diag($"{scope}: {distance:F1}m from the leader; moving to its own spot {Vector3.Distance(spot, leader):F1}m beside it.");
+        await TravelTo(Svc.ClientState.TerritoryType, spot, SpotArriveMeters);
     }
 
     // The leader's map, as this member took part in it: what the bags gained from the trip there to the loot settling is
@@ -238,6 +296,8 @@ internal sealed class AutoFollowRun(TreasureSession session, TreasureProgress pr
             return;
         }
 
+        besideAngle = Random.Shared.NextSingle() * MathF.Tau;
+        besideMeters = BesideMinMeters + Random.Shared.NextSingle() * (BesideMaxMeters - BesideMinMeters);
         if (Plugin.Instance.Catalog.TryGetByRank(spot.Rank, out var tier))
         {
             followed = new FollowedMap(tier);
@@ -257,12 +317,9 @@ internal sealed class AutoFollowRun(TreasureSession session, TreasureProgress pr
             return;
         }
 
-        await LandAndDismount(spot.Position, StandOffMeters, "follow-land");
-        if (LeaderInZone() is { } leader && Vector3.Distance(leader, PlayerPosition()) is > BesideLeaderMeters and < LeaderInReachMeters)
-        {
-            Diag($"Follow: landed {Vector3.Distance(leader, PlayerPosition()):F0}m from the leader; walking over.");
-            await TravelTo(spot.TerritoryId, leader, StandOffMeters);
-        }
+        await LandAndDismount(spot.Position, besideMeters, "follow-land");
+        spacingCheckedAtMs = 0;
+        await KeepGap("follow-land");
 
         var tookMs = Environment.TickCount64 - posted.ReceivedAtMs;
         Diag($"Follow: at the leader's spot {tookMs / 1000.0:F1}s after it was posted.");
@@ -346,7 +403,8 @@ internal sealed class AutoFollowRun(TreasureSession session, TreasureProgress pr
                 }
                 else if (distance > RejoinBeyondMeters && distance < CarriedMeters)
                 {
-                    await context.WalkTo(leader, KeepByMeters, () => LeaderInZone() is { } now && Vector3.Distance(now, PlayerPosition()) <= KeepByMeters, DungeonWalkMs, scope);
+                    var beside = SpotBesideLeader(leader) ?? leader;
+                    await context.WalkTo(beside, SpotArriveMeters, () => LeaderInZone() is { } now && Vector3.Distance(now, PlayerPosition()) <= KeepByMeters && Vector3.Distance(now, PlayerPosition()) >= CrowdingMeters, DungeonWalkMs, scope);
                 }
             }
 
