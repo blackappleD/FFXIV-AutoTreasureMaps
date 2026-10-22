@@ -1,3 +1,4 @@
+using AutoTreasureMaps.Core.Game;
 using AutoTreasureMaps.Core.Game.Ops;
 using AutoTreasureMaps.Core.Localization;
 using AutoTreasureMaps.Core.Treasure;
@@ -139,6 +140,15 @@ public abstract partial class AutoCommon
             }
 
             var prompt = NpcInteraction.SelectYesnoText();
+            // A party member's teleport offer or an invite can open just as the coffer is touched and hide its question;
+            // it is declined and the coffer tried again.
+            if (ForeignPrompts.Matches(prompt))
+            {
+                Warn($"{scope}: '{prompt}' came from another player as the coffer was touched; declining it and trying the coffer again.");
+                NpcInteraction.AnswerNo();
+                return CofferStep.NotFound;
+            }
+
             if (!DigOps.IsCofferPrompt(prompt))
             {
                 Warn($"{scope}: the confirmation '{prompt}' is not the coffer's; declining it.");
