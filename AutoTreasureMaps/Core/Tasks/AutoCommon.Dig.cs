@@ -32,6 +32,8 @@ public abstract partial class AutoCommon
     // Fresh is true when this dig turned the coffer up, false when an earlier one already had.
     private readonly record struct DigResult(DigAnswer Answer, MapRefusal Refusal = MapRefusal.None, bool Fresh = false);
 
+    private static ReadOnlySpan<uint> DigFinds => [TreasureLogMessages.Discovered, TreasureLogMessages.AlreadyDiscovered];
+
     private static ReadOnlySpan<uint> DigReplies =>
     [
         TreasureLogMessages.Discovered,
@@ -135,6 +137,13 @@ public abstract partial class AutoCommon
         if (!Messages.TryGetLatest(DigReplies, since, out var reply))
         {
             return new DigResult(DigAnswer.NoAnswer);
+        }
+
+        // A dig at a coffer already out, one the player dug by hand say, is answered with AlreadyDiscovered and, in the same
+        // moment, a refusal such as the party being bound by duty, which that coffer is the cause of; the coffer counts.
+        if (Messages.TryGetLatest(DigFinds, since, out var found))
+        {
+            reply = found;
         }
 
         var portal = reply.TryGetParameter(0, out var kind) && kind == PortalKind;

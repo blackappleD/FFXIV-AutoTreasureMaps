@@ -13,6 +13,8 @@ public abstract partial class AutoCommon
     private const int CofferOpenAttempts = 3;
     private const int CofferOpenConfirmMs = 6_000;
     private const int CofferRetryDelayMs = 1_500;
+    // How long the coffer's own question may take to show once another player's offer in front of it is declined.
+    private const int CofferPromptAfterOfferMs = 3_000;
     private const int UnlockAttempts = 4;
     private const int UnlockAnswerTimeoutMs = 5_000;
     // A coffer also fades when the hunt runs out, and the game's word for that can trail the fade by a moment.
@@ -132,6 +134,18 @@ public abstract partial class AutoCommon
             return CofferStep.Unreachable;
         }
 
+        // A party member's teleport offer or an invite can open just as the coffer is touched, in front of the coffer's
+        // own question, which still waits behind it and holds the character in the coffer's event. So the offer is
+        // declined and the coffer's question taken once it shows; left open, it held the character until the map ran out
+        // and every dig after it failed.
+        if (!CofferOpenedSince(since) && NpcInteraction.SelectYesnoOpen() && ForeignPrompts.Matches(NpcInteraction.SelectYesnoText()))
+        {
+            Warn($"{scope}: '{NpcInteraction.SelectYesnoText()}' came from another player as the coffer was touched; declining it.");
+            NpcInteraction.AnswerNo();
+            await WaitUntilTimed(() => CofferOpenedSince(since) || NpcInteraction.SelectYesnoOpen() && !ForeignPrompts.Matches(NpcInteraction.SelectYesnoText()),
+                CofferPromptAfterOfferMs, "coffer question after the offer");
+        }
+
         if (!CofferOpenedSince(since))
         {
             if (!NpcInteraction.SelectYesnoOpen())
@@ -140,11 +154,9 @@ public abstract partial class AutoCommon
             }
 
             var prompt = NpcInteraction.SelectYesnoText();
-            // A party member's teleport offer or an invite can open just as the coffer is touched and hide its question;
-            // it is declined and the coffer tried again.
             if (ForeignPrompts.Matches(prompt))
             {
-                Warn($"{scope}: '{prompt}' came from another player as the coffer was touched; declining it and trying the coffer again.");
+                Warn($"{scope}: '{prompt}' came from another player too; declining it and trying the coffer again.");
                 NpcInteraction.AnswerNo();
                 return CofferStep.NotFound;
             }
