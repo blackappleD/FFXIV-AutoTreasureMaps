@@ -154,8 +154,9 @@ public abstract partial class AutoCommon
             : null;
 
     // Fights beside the leader until neither of them is in combat: the leader's target is taken when the character has
-    // none, and the combat plugin has its movement back meanwhile.
-    private protected async Task FightAlong(string scope)
+    // none, and the combat plugin has its movement back meanwhile. In a treasure dungeon the enemies the settings or the
+    // profile want killed first, a boss's adds among them, are targeted first, as the leader's run does, whatever the job.
+    private protected async Task FightAlong(string scope, DungeonContext? dungeon = null)
     {
         EnsureCombatPreset();
         Status = Loc.T(L.Status.FightingBesideLeader);
@@ -181,7 +182,8 @@ public abstract partial class AutoCommon
                     break;
                 }
 
-                if (Svc.Targets.Target is not { IsDead: false } && LeaderNearby()?.TargetObject is IBattleNpc { IsDead: false } enemy && enemy.IsTargetable)
+                var focused = dungeon is not null && FocusPriorityEnemy(dungeon, scope, dungeon.NearestEnemy(out _));
+                if (!focused && Svc.Targets.Target is not { IsDead: false } && LeaderNearby()?.TargetObject is IBattleNpc { IsDead: false } enemy && enemy.IsTargetable)
                 {
                     Svc.Targets.Target = enemy;
                 }
@@ -193,6 +195,7 @@ public abstract partial class AutoCommon
         }
         finally
         {
+            ReleasePriorityTargeting(scope);
             BossModIPC.Instance.ClearActive();
             HoldCombatMovement(scope);
         }

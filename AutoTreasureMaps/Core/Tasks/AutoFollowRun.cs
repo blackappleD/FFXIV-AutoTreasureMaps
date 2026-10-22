@@ -328,7 +328,7 @@ internal sealed class AutoFollowRun(TreasureSession session, TreasureProgress pr
             if (PartyFightOn())
             {
                 progress.SetPhase(TreasurePhase.Fighting);
-                await FightAlong($"{scope}-fight");
+                await FightAlong($"{scope}-fight", context);
                 if (profile.Kind == DungeonKind.Slot)
                 {
                     chamber++;
