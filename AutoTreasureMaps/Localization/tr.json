@@ -197,6 +197,8 @@
   "history.log.map": "Harita",
   "history.log.portal": "Portal",
   "history.log.floor": "Kat",
+  "history.log.special": "Özel tur",
+  "history.log.sackRound": "Çuval turu {0}/100",
   "history.log.deaths": "Ölüm",
   "history.log.duration": "Süre",
   "history.log.loot": "Nadir ganimet",

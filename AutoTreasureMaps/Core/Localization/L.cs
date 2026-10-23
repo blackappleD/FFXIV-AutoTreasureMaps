@@ -212,6 +212,8 @@ internal static partial class L
         public static readonly LocString LogMap = new("history.log.map", "Map");
         public static readonly LocString LogPortal = new("history.log.portal", "Portal");
         public static readonly LocString LogFloor = new("history.log.floor", "Floor");
+        public static readonly LocString LogSpecial = new("history.log.special", "Special round");
+        public static readonly LocString LogSackRound = new("history.log.sackRound", "Sack round {0}/100");
         public static readonly LocString LogDeaths = new("history.log.deaths", "Deaths");
         public static readonly LocString LogDuration = new("history.log.duration", "Time");
         public static readonly LocString LogLoot = new("history.log.loot", "Rare loot");

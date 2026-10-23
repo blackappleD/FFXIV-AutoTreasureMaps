@@ -197,6 +197,8 @@
   "history.log.map": "Karte",
   "history.log.portal": "Portal",
   "history.log.floor": "Ebene",
+  "history.log.special": "Sonderrunde",
+  "history.log.sackRound": "Sackrunde {0}/100",
   "history.log.deaths": "Tode",
   "history.log.duration": "Dauer",
   "history.log.loot": "Seltene Beute",

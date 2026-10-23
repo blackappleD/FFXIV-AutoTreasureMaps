@@ -91,6 +91,8 @@ public abstract partial class AutoCommon
         // Whether the sack the plan makes for showed when it was chosen.
         var planShown = true;
         var roomDescribed = false;
+        // Known by when it began, so a walk taken up again after a pause keeps one line for the round.
+        var roundBeganAtMs = Messages.TryGetLatest(DungeonLogMessages.BonusRoundStarted, dungeon.RoundStartedAtMs, out var began) ? began.AtMs : Environment.TickCount64;
         var deadline = Environment.TickCount64 + BonusRoundCapMs;
         try
         {
@@ -297,6 +299,8 @@ public abstract partial class AutoCommon
         }
 
         capture.Note($"over: {picked} sacks, {points} points");
+        // The map log keeps the party's count, which the round is won by; without the duty list, this character's own.
+        dungeon.NoteSpecialRound(roundBeganAtMs, new SpecialRound(SpecialRoundKind.SackRound, scoreRead ? score : points));
         Diag($"{scope}: the bonus round is over; {picked} sack(s) picked up for {points} point(s).");
     }
 

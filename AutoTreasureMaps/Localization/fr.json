@@ -197,6 +197,8 @@
   "history.log.map": "Carte",
   "history.log.portal": "Portail",
   "history.log.floor": "Étage",
+  "history.log.special": "Manche spéciale",
+  "history.log.sackRound": "Manche des sacs {0}/100",
   "history.log.deaths": "Morts",
   "history.log.duration": "Durée",
   "history.log.loot": "Butin rare",

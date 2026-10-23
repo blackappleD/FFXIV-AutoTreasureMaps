@@ -393,7 +393,7 @@ internal sealed class AutoFollowRun(TreasureSession session, TreasureProgress pr
         // are counted near enough.
         var round = listed > 0 ? listed : profile.Kind == DungeonKind.Slot ? Math.Min(chamber - 1, (int)profile.Rounds) : chamber;
         var (gil, items) = BagSnapshot.Gains(dungeon.BagsBefore, BagSnapshot.Capture());
-        var result = new DungeonResult(profile, HowItEnded(dungeon), round, gil, items, TimeSpan.FromMilliseconds(Environment.TickCount64 - dungeon.StartedAtMs));
+        var result = new DungeonResult(profile, HowItEnded(dungeon), round, gil, items, TimeSpan.FromMilliseconds(Environment.TickCount64 - dungeon.StartedAtMs), dungeon.SpecialRounds);
         session.RecordDungeon(result);
         LootCleanup.Note(dungeon.BagsBefore);
         Diag($"{scope}: out of {profile.Key} ({result.Outcome}, round {round}{(listed > 0 ? " from the duty list" : ", counted")}), {gil} gil, {result.ItemCount} items in {items.Length} stacks.");

@@ -197,6 +197,8 @@
   "history.log.map": "地図",
   "history.log.portal": "魔紋",
   "history.log.floor": "階層",
+  "history.log.special": "特殊ラウンド",
+  "history.log.sackRound": "袋拾い {0}/100",
   "history.log.deaths": "戦闘不能",
   "history.log.duration": "所要時間",
   "history.log.loot": "レアアイテム",

@@ -197,6 +197,8 @@
   "history.log.map": "Mapa",
   "history.log.portal": "Portal",
   "history.log.floor": "Piso",
+  "history.log.special": "Ronda especial",
+  "history.log.sackRound": "Ronda de sacos {0}/100",
   "history.log.deaths": "Muertes",
   "history.log.duration": "Duración",
   "history.log.loot": "Botín raro",

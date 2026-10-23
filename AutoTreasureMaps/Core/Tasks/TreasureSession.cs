@@ -231,7 +231,7 @@ public sealed class TreasureSession
         var mapLog = Plugin.Instance.MapLog;
         var entry = portalLogEntry ?? mapLog.Add(mapItemId, portal: true, deaths: 0, result.Duration, ImmutableArray<ItemGain>.Empty);
         portalLogEntry = null;
-        mapLog.NoteDungeon(entry, result.Round, result.Profile.Rounds, result.Outcome == DungeonOutcome.Died, result.Items);
+        mapLog.NoteDungeon(entry, result.Round, result.Profile.Rounds, result.Outcome == DungeonOutcome.Died, result.Items, result.SpecialRounds);
     }
 
     internal void RecordPurchase(int gil)

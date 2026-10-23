@@ -197,6 +197,8 @@
   "history.log.map": "宝图名称",
   "history.log.portal": "出现魔纹",
   "history.log.floor": "宝物库层数",
+  "history.log.special": "特殊关卡",
+  "history.log.sackRound": "奇梦抚心 {0}/100",
   "history.log.deaths": "死亡次数",
   "history.log.duration": "耗时",
   "history.log.loot": "稀有物品",

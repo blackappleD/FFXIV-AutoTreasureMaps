@@ -20,7 +20,7 @@ internal enum DungeonOutcome : byte
     Faulted,
 }
 
-internal readonly record struct DungeonResult(DungeonProfile Profile, DungeonOutcome Outcome, int Round, int Gil, ImmutableArray<ItemGain> Items, TimeSpan Duration)
+internal readonly record struct DungeonResult(DungeonProfile Profile, DungeonOutcome Outcome, int Round, int Gil, ImmutableArray<ItemGain> Items, TimeSpan Duration, ImmutableArray<SpecialRound> SpecialRounds)
 {
     public int ItemCount => LootKinds.ItemCount(Items);
 

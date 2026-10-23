@@ -1,4 +1,5 @@
 using AutoTreasureMaps.Core.Game.Watchers;
+using System.Collections.Immutable;
 
 namespace AutoTreasureMaps.Core.Dungeon;
 
@@ -11,6 +12,9 @@ internal sealed class DungeonInProgress(DungeonProfile profile)
 
     // Coffers that already gave their loot. One stays targetable for a few seconds while it fades, and is not asked again.
     private readonly HashSet<ulong> lootedCoffers = [];
+
+    // The special rounds met, by when each began; one walked again keeps its last count.
+    private readonly SortedDictionary<long, SpecialRound> specialRounds = new();
 
     public DungeonProfile Profile { get; } = profile;
 
@@ -71,6 +75,10 @@ internal sealed class DungeonInProgress(DungeonProfile profile)
     public bool CofferLooted(ulong cofferId) => lootedCoffers.Contains(cofferId);
 
     public void NoteCofferLooted(ulong cofferId) => lootedCoffers.Add(cofferId);
+
+    public ImmutableArray<SpecialRound> SpecialRounds => [.. specialRounds.Values];
+
+    public void NoteSpecialRound(long startedAtMs, SpecialRound round) => specialRounds[startedAtMs] = round;
 
     public void NoteRoundReached() => RoundReached = Math.Max(RoundReached, Round);
 

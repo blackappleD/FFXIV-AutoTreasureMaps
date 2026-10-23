@@ -1,3 +1,4 @@
+using AutoTreasureMaps.Core.Dungeon;
 using AutoTreasureMaps.Core.Treasure;
 using Newtonsoft.Json;
 using System.Collections.Immutable;
@@ -30,8 +31,20 @@ internal sealed class MapLogEntry
     // before it was kept.
     public int Seconds { get; set; }
 
+    // The special rounds its dungeon turned up, in the order met; null when it met none.
+    public List<MapLogSpecialRound>? SpecialRounds { get; set; }
+
     // The rare loot of the map and its dungeon, by item id.
     public Dictionary<uint, int>? Loot { get; set; }
+}
+
+// A special round on a map log line: which, and the party's score in it (for the sack round, the sacks counted).
+[Serializable]
+internal sealed class MapLogSpecialRound
+{
+    public SpecialRoundKind Kind { get; set; }
+
+    public int Score { get; set; }
 }
 
 internal sealed class MapLog
@@ -83,7 +96,7 @@ internal sealed class MapLog
     }
 
     // The time runs on from the line's map to the dungeon's end, through the walk to the portal and the load in.
-    public void NoteDungeon(MapLogEntry entry, int floor, int rounds, bool died, ImmutableArray<ItemGain> gains)
+    public void NoteDungeon(MapLogEntry entry, int floor, int rounds, bool died, ImmutableArray<ItemGain> gains, ImmutableArray<SpecialRound> specialRounds)
     {
         entry.Seconds += (int)(DateTime.UtcNow - entry.AtUtc).TotalSeconds;
         entry.Portal = true;
@@ -92,6 +105,15 @@ internal sealed class MapLog
         if (died)
         {
             entry.Deaths++;
+        }
+
+        if (!specialRounds.IsDefaultOrEmpty)
+        {
+            entry.SpecialRounds ??= [];
+            foreach (var round in specialRounds)
+            {
+                entry.SpecialRounds.Add(new MapLogSpecialRound { Kind = round.Kind, Score = round.Score });
+            }
         }
 
         AddLoot(entry, gains);

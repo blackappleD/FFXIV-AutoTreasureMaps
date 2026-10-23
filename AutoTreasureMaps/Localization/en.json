@@ -197,6 +197,8 @@
   "history.log.map": "Map",
   "history.log.portal": "Portal",
   "history.log.floor": "Floor",
+  "history.log.special": "Special round",
+  "history.log.sackRound": "Sack round {0}/100",
   "history.log.deaths": "Deaths",
   "history.log.duration": "Time",
   "history.log.loot": "Rare loot",

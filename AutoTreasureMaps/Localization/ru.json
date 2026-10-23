@@ -197,6 +197,8 @@
   "history.log.map": "Карта",
   "history.log.portal": "Портал",
   "history.log.floor": "Этаж",
+  "history.log.special": "Особый раунд",
+  "history.log.sackRound": "Раунд мешков {0}/100",
   "history.log.deaths": "Смерти",
   "history.log.duration": "Время",
   "history.log.loot": "Редкая добыча",

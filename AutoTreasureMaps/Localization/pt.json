@@ -197,6 +197,8 @@
   "history.log.map": "Mapa",
   "history.log.portal": "Portal",
   "history.log.floor": "Andar",
+  "history.log.special": "Rodada especial",
+  "history.log.sackRound": "Rodada dos sacos {0}/100",
   "history.log.deaths": "Mortes",
   "history.log.duration": "Duração",
   "history.log.loot": "Saque raro",
