@@ -17,39 +17,46 @@ public abstract partial class AutoCommon
     // the run shopping after every map, so the next trip waits.
     private const int ShoppingRetryMs = 1_800_000;
 
-    private long shoppingRetryAtMs;
+    // By tomestone item id: when that tomestone may next start its list.
+    private readonly Dictionary<uint, long> shoppingRetryAtMs = [];
 
     private bool UpkeepShoppingDue(Configuration configuration)
         => configuration.TomestoneShopping
-        && Environment.TickCount64 >= shoppingRetryAtMs
-        && TomestoneShopping.TryFindTrigger(configuration, out _, out _)
+        && DueShoppingLists(configuration).Count > 0
         && TomestoneShopping.Available;
 
+    private List<(TomestoneCurrency Currency, TomestoneShoppingList List, int Held)> DueShoppingLists(Configuration configuration)
+    {
+        var due = TomestoneShopping.DueLists(configuration);
+        var now = Environment.TickCount64;
+        due.RemoveAll(entry => shoppingRetryAtMs.TryGetValue(entry.Currency.ItemId, out var retryAt) && now < retryAt);
+        return due;
+    }
+
+    // Each tomestone stands alone: only the lists whose own tomestone has reached its threshold are bought.
     private async Task RunScheduledShopping(Configuration configuration)
     {
-        if (!TomestoneShopping.TryFindTrigger(configuration, out var trigger, out var held))
-        {
-            return;
-        }
-
-        var threshold = TomestoneShopping.ListFor(configuration, trigger.ItemId).Threshold;
-        Diag($"Shopping: {trigger.Name} at {held} (threshold {threshold}); buying the tomestone lists through GatherBuddy Reborn");
-        Svc.Chat.Print($"{AtmConstants.LogPrefix} {Loc.T(L.Shopping.ChatStart, trigger.Name, held)}");
-
-        foreach (var (currency, list) in TomestoneShopping.ActiveLists(configuration))
+        foreach (var (currency, list, held) in DueShoppingLists(configuration))
         {
             if (CancelToken.IsCancellationRequested)
             {
                 return;
             }
 
+            Diag($"Shopping: {currency.Name} at {held} (threshold {list.Threshold}); buying its list through GatherBuddy Reborn");
+            Svc.Chat.Print($"{AtmConstants.LogPrefix} {Loc.T(L.Shopping.ChatStart, currency.Name, held, list.Threshold)}");
             await BuyTomestoneList(currency, list);
-        }
+            if (CancelToken.IsCancellationRequested)
+            {
+                return;
+            }
 
-        if (!CancelToken.IsCancellationRequested && TomestoneShopping.TryFindTrigger(configuration, out var still, out var left))
-        {
-            shoppingRetryAtMs = Environment.TickCount64 + ShoppingRetryMs;
-            Warn($"Shopping: {still.Name} is still at {left} after the trip; the next one waits {ShoppingRetryMs / TimeUnits.MillisecondsPerMinute} minutes");
+            var left = TomestoneShopping.HeldCount(currency.ItemId);
+            if (list.Threshold > 0 && left >= list.Threshold)
+            {
+                shoppingRetryAtMs[currency.ItemId] = Environment.TickCount64 + ShoppingRetryMs;
+                Warn($"Shopping: {currency.Name} is still at {left} after its list; its next trip waits {ShoppingRetryMs / TimeUnits.MillisecondsPerMinute} minutes");
+            }
         }
     }
 

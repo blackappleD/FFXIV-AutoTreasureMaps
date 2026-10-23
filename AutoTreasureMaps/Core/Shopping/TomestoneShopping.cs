@@ -40,45 +40,28 @@ internal static class TomestoneShopping
         return created;
     }
 
-    // The lists of the current tomestones that have an item to buy; a list kept from an older patch's tomestone is left out.
-    public static List<(TomestoneCurrency Currency, TomestoneShoppingList List)> ActiveLists(Configuration configuration)
+    // The lists whose own tomestone is at or over its threshold, with the count held; a list with no items, a threshold of
+    // 0, or kept from an older patch's tomestone is never due.
+    public static List<(TomestoneCurrency Currency, TomestoneShoppingList List, int Held)> DueLists(Configuration configuration)
     {
-        var active = new List<(TomestoneCurrency, TomestoneShoppingList)>();
+        var due = new List<(TomestoneCurrency, TomestoneShoppingList, int)>();
         var lists = configuration.TomestoneShoppingLists;
         for (var index = 0; index < lists.Count; index++)
         {
             var list = lists[index];
-            if (list.Items.Count > 0 && TomestoneCatalog.TryGetCurrency(list.CurrencyItemId, out var currency))
-            {
-                active.Add((currency, list));
-            }
-        }
-
-        return active;
-    }
-
-    // Any one tomestone at or over its threshold starts the trip.
-    public static bool TryFindTrigger(Configuration configuration, out TomestoneCurrency currency, out int held)
-    {
-        foreach (var (candidate, list) in ActiveLists(configuration))
-        {
-            if (list.Threshold <= 0)
+            if (list.Items.Count == 0 || list.Threshold <= 0 || !TomestoneCatalog.TryGetCurrency(list.CurrencyItemId, out var currency))
             {
                 continue;
             }
 
-            var count = HeldCount(candidate.ItemId);
-            if (count >= list.Threshold)
+            var held = HeldCount(currency.ItemId);
+            if (held >= list.Threshold)
             {
-                currency = candidate;
-                held = count;
-                return true;
+                due.Add((currency, list, held));
             }
         }
 
-        currency = default;
-        held = 0;
-        return false;
+        return due;
     }
 
     public static unsafe int HeldCount(uint itemId)

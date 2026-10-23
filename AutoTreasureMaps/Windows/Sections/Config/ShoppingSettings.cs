@@ -76,7 +76,7 @@ internal static class ShoppingSettings
         }
 
         SettingsRow.Note(Loc.T(L.Shopping.EnableHelp));
-        SettingsRow.Note(Loc.T(L.Shopping.AnyThreshold), Styling.AccentMint);
+        SettingsRow.Note(Loc.T(L.Shopping.Independent), Styling.AccentMint);
         if (gatherBuddyReady)
         {
             SettingsRow.Note(Loc.T(L.Shopping.GatherBuddyReady, ListNames()));

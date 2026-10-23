@@ -4,7 +4,7 @@ namespace AutoTreasureMaps;
 
 public sealed partial class Configuration
 {
-    // Between maps, once any tomestone reaches its threshold, every tomestone's list is bought through GatherBuddy Reborn.
+    // Between maps, each tomestone that has reached its own threshold has its list bought through GatherBuddy Reborn.
     public bool TomestoneShopping { get; set; } = false;
 
     // One list per tomestone, by its item id.
@@ -17,7 +17,7 @@ public sealed class TomestoneShoppingList
 {
     public uint CurrencyItemId { get; set; }
 
-    // 0 never starts a shopping trip, though the list is still bought when another tomestone starts one.
+    // 0 never buys this list.
     public int Threshold { get; set; }
 
     public List<TomestoneShoppingItem> Items { get; set; } = [];

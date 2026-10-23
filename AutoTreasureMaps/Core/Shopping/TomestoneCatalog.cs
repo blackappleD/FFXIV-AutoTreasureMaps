@@ -1,3 +1,4 @@
+using AutoTreasureMaps.Core.Localization;
 using ECommons.DalamudServices;
 using Lumina.Excel.Sheets;
 using System.Threading.Tasks;
@@ -90,7 +91,7 @@ internal static class TomestoneCatalog
                 continue;
             }
 
-            found.Add((row.Tomestones.RowId, new TomestoneCurrency(item.RowId, item.Name.ExtractText(), item.Icon)));
+            found.Add((row.Tomestones.RowId, new TomestoneCurrency(item.RowId, GameGlyphs.Cover(item.Name.ExtractText()), item.Icon)));
         }
 
         found.Sort((left, right) => left.Slot.CompareTo(right.Slot));
