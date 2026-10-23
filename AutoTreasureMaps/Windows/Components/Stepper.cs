@@ -31,11 +31,14 @@ internal static class Stepper
         using (ImRaii.PushStyle(ImGuiStyleVar.FrameRounding, 0f))
         {
             var edited = value;
-            if (ImGui.DragInt("##value", ref edited, MathF.Max(0.25f, step * 0.1f), min, max, format))
+            var label = ValueLabel.Begin("##value", format);
+            if (ImGui.DragInt("##value", ref edited, MathF.Max(0.25f, step * 0.1f), min, max, label.Format))
             {
                 value = Math.Clamp(edited, min, max);
                 changed = true;
             }
+
+            label.End();
         }
 
         if (Increment(frame, value < max))
@@ -64,11 +67,14 @@ internal static class Stepper
         using (ImRaii.PushStyle(ImGuiStyleVar.FrameRounding, 0f))
         {
             var edited = value;
-            if (ImGui.DragFloat("##value", ref edited, step * FloatDragStepsPerPixel, min, max, format))
+            var label = ValueLabel.Begin("##value", format, "%g");
+            if (ImGui.DragFloat("##value", ref edited, step * FloatDragStepsPerPixel, min, max, label.Format))
             {
                 value = Snap(Math.Clamp(edited, min, max), step);
                 changed = true;
             }
+
+            label.End();
         }
 
         if (Increment(frame, value < max))

@@ -39,11 +39,14 @@ internal static class SettingsControls
         ImGui.SetNextItemWidth(width * ImGuiHelpers.GlobalScale);
         using (PushFrameColors())
         {
-            if (ImGui.SliderInt(id, ref value, minimum, maximum, format))
+            var label = ValueLabel.Begin(id, format);
+            if (ImGui.SliderInt(id, ref value, minimum, maximum, label.Format))
             {
                 setter(Math.Clamp(value, minimum, maximum));
                 cfg.SaveDebounced();
             }
+
+            label.End();
         }
     }
 
@@ -110,7 +113,10 @@ internal static class SettingsControls
     {
         var value = getter();
         ImGui.SetNextItemWidth(RangeDragWidth * ImGuiHelpers.GlobalScale);
-        if (!ImGui.DragInt(id, ref value, RangeDragSpeed, minValue, maxValue, format))
+        var label = ValueLabel.Begin(id, format);
+        var changed = ImGui.DragInt(id, ref value, RangeDragSpeed, minValue, maxValue, label.Format);
+        label.End();
+        if (!changed)
         {
             return;
         }
