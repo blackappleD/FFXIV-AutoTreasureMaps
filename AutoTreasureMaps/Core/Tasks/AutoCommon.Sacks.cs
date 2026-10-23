@@ -298,10 +298,45 @@ public abstract partial class AutoCommon
             navmesh.Stop();
         }
 
+        // The walk ends on the game's word that the round is over, which can come in the same tick as the last pickup, so
+        // the count is read once more, and taken from that word too where it names the sacks gathered.
+        var final = FinalSackScore(roundBeganAtMs, scoreRead ? score : 0);
+        if (final != score)
+        {
+            capture.Note($"final count {final}");
+        }
+
         capture.Note($"over: {picked} sacks, {points} points");
-        // The map log keeps the party's count, which the round is won by; without the duty list, this character's own.
-        dungeon.NoteSpecialRound(roundBeganAtMs, new SpecialRound(SpecialRoundKind.SackRound, scoreRead ? score : points));
+        // The map log keeps the party's count, which the round is won by; without any count, this character's own.
+        dungeon.NoteSpecialRound(roundBeganAtMs, new SpecialRound(SpecialRoundKind.SackRound, final > 0 ? final : points));
         Diag($"{scope}: the bonus round is over; {picked} sack(s) picked up for {points} point(s).");
+    }
+
+    // The round asks for a hundred; a parameter above this is not a sack count.
+    private const int MaxSackScore = 200;
+
+    // The highest of the count last read, the duty list now, and the integer parameters of the round's closing message
+    // ("got 95 glowing sacks, a silver coffer appeared").
+    private static int FinalSackScore(long roundBeganAtMs, int lastRead)
+    {
+        var final = lastRead;
+        if (DutyListRound.TryReadSackScore(out var now))
+        {
+            final = Math.Max(final, now);
+        }
+
+        if (Messages.TryGetLatest(DungeonLogMessages.BonusRoundCoffer, roundBeganAtMs, out var closing))
+        {
+            for (var index = 0; index < TreasureMessage.MaxParameters; index++)
+            {
+                if (closing.TryGetParameter(index, out var value) && value <= MaxSackScore)
+                {
+                    final = Math.Max(final, value);
+                }
+            }
+        }
+
+        return final;
     }
 
     private static readonly List<Vector2> partnerSpots = [];

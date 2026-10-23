@@ -220,6 +220,11 @@ internal static partial class L
         public static readonly LocString LogYes = new("history.log.yes", "Yes");
         public static readonly LocString LogLootItem = new("history.log.lootItem", "{0}×{1}");
         public static readonly LocString LogLootSeparator = new("history.log.lootSeparator", ", ");
+        public static readonly LocString LogAllMaps = new("history.log.allMaps", "All maps ({0})");
+        public static readonly LocString LogMapFilter = new("history.log.mapFilter", "{0} ({1})");
+        public static readonly LocString LogPage = new("history.log.page", "Page {0} of {1} · {2} maps");
+        public static readonly LocString LogPreviousPage = new("history.log.previousPage", "Previous page");
+        public static readonly LocString LogNextPage = new("history.log.nextPage", "Next page");
     }
 
     internal static class Plugins

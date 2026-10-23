@@ -3,6 +3,7 @@ using AutoTreasureMaps.Core.Stats;
 using AutoTreasureMaps.Core.Treasure;
 using AutoTreasureMaps.Windows.Components;
 using Dalamud.Bindings.ImGui;
+using Dalamud.Interface;
 using Dalamud.Interface.Utility;
 using System.Globalization;
 using System.Numerics;
@@ -10,7 +11,8 @@ using System.Numerics;
 namespace AutoTreasureMaps.Windows.Sections;
 
 // The map log as a table, newest first: number, map, portal, dungeon floor, the dungeon's special rounds, knockouts,
-// time taken and the rare loot laid out flat. The text is built once per change of the log or the language; rows off screen are only measured.
+// time taken and the rare loot laid out flat. Fifty lines a page, of every map or of the one picked above the table.
+// The text is built once per change of the log, the language or the map picked; rows off screen are only measured.
 internal sealed class MapLogTable
 {
     private const float PadX = 12f;
@@ -22,10 +24,22 @@ internal sealed class MapLogTable
     private const float SpecialWidth = 110f;
     private const float MapShare = 0.3f;
     private const string NoValue = "-";
+    private const int PageSize = 50;
+    private const float FilterWidth = 260f;
+    private const float PagerButton = 26f;
 
     private readonly List<Row> rows = [];
     private int builtRevision = -1;
     private LanguageInfo? builtLanguage;
+    private uint builtFilter = uint.MaxValue;
+
+    // The map the table shows, by item id, or 0 for every map; and the page, counted from 0.
+    private uint filter;
+    private int page;
+
+    // The filter's choices, every map first and then each map the log holds, most logged first.
+    private readonly List<uint> filterMaps = [];
+    private string[] filterLabels = [];
 
     private readonly float[] columnEdges = new float[9];
 
@@ -42,10 +56,15 @@ internal sealed class MapLogTable
             return;
         }
 
-        if (log.Revision != builtRevision || !ReferenceEquals(builtLanguage, Loc.Current))
+        if (log.Revision != builtRevision || !ReferenceEquals(builtLanguage, Loc.Current) || filter != builtFilter)
         {
             Build(log);
         }
+
+        var pages = Math.Max(1, (rows.Count + PageSize - 1) / PageSize);
+        page = Math.Clamp(page, 0, pages - 1);
+        DrawControls(pages);
+        Styling.VSpace(6f);
 
         var scale = ImGuiHelpers.GlobalScale;
         var width = ImGui.GetContentRegionAvail().X;
@@ -53,10 +72,67 @@ internal sealed class MapLogTable
         var columns = Columns(columnEdges, ImGui.GetCursorScreenPos().X, width);
         DrawHeader(columns, width, rowHeight);
         var yes = Loc.T(L.History.LogYes);
-        for (var index = 0; index < rows.Count; index++)
+        var first = page * PageSize;
+        var last = Math.Min(rows.Count, first + PageSize);
+        for (var index = first; index < last; index++)
         {
-            DrawRow(rows[index], index, columns, width, rowHeight, yes);
+            DrawRow(rows[index], index - first, columns, width, rowHeight, yes);
         }
+
+        if (pages > 1)
+        {
+            Styling.VSpace(6f);
+            DrawPager("bottom", pages, ImGui.GetCursorScreenPos().X + width);
+        }
+    }
+
+    // The map filter on the left and the pager on the right, on one line.
+    private void DrawControls(int pages)
+    {
+        var top = ImGui.GetCursorScreenPos();
+        var right = top.X + ImGui.GetContentRegionAvail().X;
+        var picked = Math.Max(0, filterMaps.IndexOf(filter));
+        if (Dropdown.Draw("##atm_maplog_filter", filterLabels, ref picked, FilterWidth) && picked >= 0 && picked < filterMaps.Count)
+        {
+            filter = filterMaps[picked];
+            page = 0;
+        }
+
+        var below = ImGui.GetCursorScreenPos();
+        ImGui.SetCursorScreenPos(top);
+        DrawPager("top", pages, right);
+        ImGui.SetCursorScreenPos(below);
+    }
+
+    // The page arrows and "page 2 of 5" against the right edge, with how many lines the filter leaves.
+    private void DrawPager(string id, int pages, float right)
+    {
+        var scale = ImGuiHelpers.GlobalScale;
+        var button = PagerButton * scale;
+        var height = MathF.Max(button, ImGui.GetFrameHeight());
+        var origin = ImGui.GetCursorScreenPos();
+        var text = Loc.T(L.History.LogPage, page + 1, pages, rows.Count);
+        var textSize = TextDraw.Measure(text);
+        var gap = 6f * scale;
+        var x = right - button;
+        var y = origin.Y + (height - button) * 0.5f;
+        ImGui.SetCursorScreenPos(new Vector2(x, y));
+        if (IconButton.Draw(FontAwesomeIcon.ChevronRight, $"##atm_maplog_next_{id}", button, tooltip: Loc.T(L.History.LogNextPage), enabled: page < pages - 1))
+        {
+            page++;
+        }
+
+        x -= gap + textSize.X;
+        TextDraw.At(text, new Vector2(x, origin.Y + (height - textSize.Y) * 0.5f), Styling.TextSecondary);
+        x -= gap + button;
+        ImGui.SetCursorScreenPos(new Vector2(x, y));
+        if (IconButton.Draw(FontAwesomeIcon.ChevronLeft, $"##atm_maplog_prev_{id}", button, tooltip: Loc.T(L.History.LogPreviousPage), enabled: page > 0))
+        {
+            page--;
+        }
+
+        ImGui.SetCursorScreenPos(origin);
+        ImGui.Dummy(new Vector2(right - origin.X, height));
     }
 
     // The left edge of each column: number, map, portal, floor, special rounds, knockouts, time, loot; the last value is
@@ -154,15 +230,52 @@ internal sealed class MapLogTable
 
     private void Build(MapLog log)
     {
+        var entries = log.Entries;
+        if (log.Revision != builtRevision || !ReferenceEquals(builtLanguage, Loc.Current))
+        {
+            BuildFilter(entries);
+        }
+
+        // A map no longer in the log, after a clear, falls back to every map.
+        if (!filterMaps.Contains(filter))
+        {
+            filter = 0;
+        }
+
         builtRevision = log.Revision;
         builtLanguage = Loc.Current;
+        builtFilter = filter;
         rows.Clear();
-        var entries = log.Entries;
         for (var index = entries.Count - 1; index >= 0; index--)
         {
             var entry = entries[index];
+            if (filter != 0 && entry.MapItemId != filter)
+            {
+                continue;
+            }
+
             rows.Add(new Row(entry.Number.ToString(CultureInfo.InvariantCulture), NotableLoot.Name(entry.MapItemId), entry.Portal, FloorText(entry), entry.Rounds > 0 && entry.Floor >= entry.Rounds, SpecialText(entry), entry.Deaths, entry.Deaths.ToString(Loc.Culture), DurationText(entry), LootText(entry), entry.AtUtc));
         }
+    }
+
+    private void BuildFilter(List<MapLogEntry> entries)
+    {
+        var counts = new Dictionary<uint, int>();
+        foreach (var entry in entries)
+        {
+            counts[entry.MapItemId] = counts.GetValueOrDefault(entry.MapItemId) + 1;
+        }
+
+        filterMaps.Clear();
+        filterMaps.Add(0);
+        var labels = new List<string>(counts.Count + 1) { Loc.T(L.History.LogAllMaps, entries.Count) };
+        foreach (var (mapItemId, count) in counts.OrderByDescending(static pair => pair.Value))
+        {
+            filterMaps.Add(mapItemId);
+            labels.Add(Loc.T(L.History.LogMapFilter, NotableLoot.Name(mapItemId), count));
+        }
+
+        filterLabels = [.. labels];
     }
 
     // "4/5" against the dungeon's rounds, so a line that reached the last one stands apart from one sent out before it.
