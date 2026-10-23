@@ -9,6 +9,9 @@ internal sealed class DungeonInProgress(DungeonProfile profile)
     // Times a coffer was interacted with, by game object id, so one that never answers is given up on.
     private readonly Dictionary<ulong, int> cofferInteractions = [];
 
+    // Coffers that already gave their loot. One stays targetable for a few seconds while it fades, and is not asked again.
+    private readonly HashSet<ulong> lootedCoffers = [];
+
     public DungeonProfile Profile { get; } = profile;
 
     public long StartedAtMs { get; } = Environment.TickCount64;
@@ -64,6 +67,10 @@ internal sealed class DungeonInProgress(DungeonProfile profile)
         cofferInteractions[cofferId] = CofferInteractions(cofferId) + 1;
         CofferInteractionsThisRound++;
     }
+
+    public bool CofferLooted(ulong cofferId) => lootedCoffers.Contains(cofferId);
+
+    public void NoteCofferLooted(ulong cofferId) => lootedCoffers.Add(cofferId);
 
     public void NoteRoundReached() => RoundReached = Math.Max(RoundReached, Round);
 

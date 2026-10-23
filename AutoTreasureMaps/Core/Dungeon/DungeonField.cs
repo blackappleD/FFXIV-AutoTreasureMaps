@@ -46,7 +46,8 @@ internal static unsafe class DungeonField
         for (var index = 0; index < objects.Length; index++)
         {
             var candidate = objects[index];
-            if (candidate is null || !candidate.IsTargetable || !IsCoffer(dungeon.Profile, candidate) || dungeon.CofferInteractions(candidate.GameObjectId) >= maxInteractions)
+            if (candidate is null || !candidate.IsTargetable || !IsCoffer(dungeon.Profile, candidate) || dungeon.CofferLooted(candidate.GameObjectId)
+                || dungeon.CofferInteractions(candidate.GameObjectId) >= maxInteractions)
             {
                 continue;
             }

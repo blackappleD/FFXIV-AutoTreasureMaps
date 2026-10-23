@@ -431,7 +431,9 @@ public abstract partial class AutoCommon
         await WaitUntilTimed(() => !BonusRoundOn(dungeon) || !context.InDungeon, BonusRoundCapMs, "bonus round over");
     }
 
-    // Asks the coffer and waits for whatever it answers with: guards, the lure, loot, or simply its fading.
+    // Asks the coffer and waits for whatever it answers with: guards, the lure, loot, or simply its fading. Loot is the
+    // answer as soon as it shows, in the bags or on the roll list; the coffer then takes seconds to fade, which is not
+    // waited out.
     private async Task DungeonOpenCoffer(DungeonContext context, IGameObject coffer)
     {
         const string scope = "dungeon-coffer";
@@ -448,7 +450,12 @@ public abstract partial class AutoCommon
         }
 
         var since = TreasureMessageWatcher.Now;
-        bool Answered() => context.FieldBusy() || NpcInteraction.SelectYesnoOpen() || Svc.Objects.SearchById(cofferId) is not { IsTargetable: true };
+        var chestId = coffer.EntityId;
+        var bagsBefore = BagSnapshot.Fingerprint();
+        // A bag change only speaks for this coffer when no other chest's item can be awarded in the meantime.
+        var bagsSpeakForCoffer = !LootRolls.AnyUnawarded();
+        bool Looted() => LootRolls.Pending(chest => chest == chestId) > 0 || (bagsSpeakForCoffer && BagSnapshot.Fingerprint() != bagsBefore);
+        bool Answered() => context.FieldBusy() || NpcInteraction.SelectYesnoOpen() || Looted() || Svc.Objects.SearchById(cofferId) is not { IsTargetable: true };
         await context.Interact(() => Svc.Objects.SearchById(cofferId), $"coffer {cofferId:X}", Answered, scope);
         // A coffer's question is only answered when it reads as the treasure coffer's own; anything else is the player's.
         if (NpcInteraction.SelectYesnoOpen())
@@ -464,9 +471,15 @@ public abstract partial class AutoCommon
             }
         }
 
-        await WaitUntilTimed(() => context.FieldBusy() || Svc.Objects.SearchById(cofferId) is not { IsTargetable: true }, CofferAnswerMs, "coffer answer");
+        await WaitUntilTimed(() => context.FieldBusy() || Looted() || Svc.Objects.SearchById(cofferId) is not { IsTargetable: true }, CofferAnswerMs, "coffer answer");
+        var looted = Looted();
+        if (looted)
+        {
+            context.Dungeon.NoteCofferLooted(cofferId);
+        }
+
         var lure = Messages.TryGetLatest(DungeonLogMessages.LureSprung, since, out _) ? ", the lure is set" : string.Empty;
-        Diag($"{scope}: after the interaction the coffer is {(Svc.Objects.SearchById(cofferId) is { IsTargetable: true } ? "still targetable" : "gone or untargetable")}{lure}; {DescribeField(context)}.");
+        Diag($"{scope}: after the interaction the coffer is {(Svc.Objects.SearchById(cofferId) is { IsTargetable: true } ? "still targetable" : "gone or untargetable")}{(looted ? ", its loot is in" : string.Empty)}{lure}; {DescribeField(context)}.");
     }
 
     // Fights until nothing hostile is left near and the character has been out of combat for a moment. The preset retargets

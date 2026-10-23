@@ -100,6 +100,28 @@ internal static unsafe class LootRolls
         return sent;
     }
 
+    // Whether any item on the list is still to be awarded, to the player or anyone else; until it is, an item may land in
+    // the bags at any moment.
+    public static bool AnyUnawarded()
+    {
+        var loot = LootList();
+        if (loot is null)
+        {
+            return false;
+        }
+
+        var items = loot->Items;
+        for (var index = 0; index < items.Length; index++)
+        {
+            if (items[index].ItemId != 0 && items[index].RollResult == RollResult.UnAwarded)
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     public static string Describe()
     {
         var loot = LootList();
