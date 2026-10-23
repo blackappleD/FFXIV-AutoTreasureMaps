@@ -295,8 +295,11 @@ internal sealed class AutoFollowRun(TreasureSession session, TreasureProgress pr
         var dungeon = new DungeonInProgress(profile) { BagsBefore = BagSnapshot.Capture() };
         var context = new DungeonContext(this, dungeon);
         var chamber = 1;
-        // The round the duty list showed, the count the record goes by; the own count only stands in when it never showed.
+        // The round the duty list showed; the own count only stands in when it never showed.
         var listed = 0;
+        // The last listed round the party had something to do in: a fight, the bonus round or a coffer's loot. A draw that
+        // only showed the way out moves the list on but reached nothing, so the record goes by this, as the leader's does.
+        var reached = 0;
         // Where the leader last stood near this member, which is by the gate it took once it is carried on.
         var leaderNear = Vector3.Zero;
         // The leader may still be on its way in as the member arrives, so its absence only counts once it was here.
@@ -324,6 +327,12 @@ internal sealed class AutoFollowRun(TreasureSession session, TreasureProgress pr
             {
                 listed = shown;
                 Diag($"{scope}: the duty list shows round {listed} of {profile.Rounds}.");
+            }
+
+            if (listed > reached && (PartyFightOn() || BonusRoundOn(dungeon) || LootRolls.Pending(static _ => true) > 0))
+            {
+                reached = listed;
+                Diag($"{scope}: round {reached} of {profile.Rounds} reached.");
             }
 
             RollPartyLoot();
@@ -391,7 +400,7 @@ internal sealed class AutoFollowRun(TreasureSession session, TreasureProgress pr
 
         // Without the duty list, a slot dungeon's count went up with every fight, the bonus round's included, so the draws
         // are counted near enough.
-        var round = listed > 0 ? listed : profile.Kind == DungeonKind.Slot ? Math.Min(chamber - 1, (int)profile.Rounds) : chamber;
+        var round = listed > 0 ? reached : profile.Kind == DungeonKind.Slot ? Math.Min(chamber - 1, (int)profile.Rounds) : chamber;
         var (gil, items) = BagSnapshot.Gains(dungeon.BagsBefore, BagSnapshot.Capture());
         var result = new DungeonResult(profile, HowItEnded(dungeon), round, gil, items, TimeSpan.FromMilliseconds(Environment.TickCount64 - dungeon.StartedAtMs), dungeon.SpecialRounds);
         session.RecordDungeon(result);
