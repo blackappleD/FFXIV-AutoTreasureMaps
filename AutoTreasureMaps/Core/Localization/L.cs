@@ -286,6 +286,17 @@ internal static partial class L
         public static readonly LocString New = new("changelog.new", "New");
         public static readonly LocPlural Changes = new("changelog.changes", "{0} change", "{0} changes");
 
+        public static readonly LocString[] Release1300 =
+        [
+            new("changelog.r1300.1", "The History totals now show Cost (the gil spent on maps) and Revenue (the gil looted, plus the rare loot's worth when loot prices are on, with the net below it), and they count the run under way map by map. Contributed by blackappleD"),
+            new("changelog.r1300.2", "Each map's loot list in the History stats now starts folded: click the map's card to open it. Contributed by blackappleD"),
+            new("changelog.r1300.3", "Mitigate tankbusters now answers a treasure dungeon boss's tankbuster in time with your short mitigation plus one bigger cooldown, strongest first. While it is on, it handles your personal mitigations itself, so a pack of mobs gets at most one bigger cooldown every 20 seconds instead of all of them. Contributed by blackappleD"),
+            new("changelog.r1300.4", "Fixed the Gambler's Lure: a tied guess no longer reads as the end of the lure, so the run waits for the new cards instead of walking off to the locked gate. Challenge by the loot now takes the treasure as it is when the coffer holds rare loot you keep, and only that choice guesses for you. Contributed by blackappleD"),
+            new("changelog.r1300.5", "With Kill the mandragora party in order off, mandragoras pulled in by an area attack are now left for last while other enemies are up, and a coffer or gate left targeted no longer stalls a fight. Contributed by blackappleD"),
+            new("changelog.r1300.6", "Auto-discard now also discards looted copies of an item that does not stack when your bags already held one, and an item link in chat can be added to the cleanup whitelist from its right-click menu. Contributed by blackappleD"),
+            new("changelog.r1300.7", "The chat now says the run is buying on another world only when it really travels there; when no other world qualifies, the run waits out the busy market board instead. Contributed by blackappleD"),
+        ];
+
         public static readonly LocString[] Release1200 =
         [
             new("changelog.r1200.1", "Added Chat commands to the settings: list your own commands, one per line (such as /li home or /ays m), and they run when a run finishes on its own, before the after-run action, never after Stop or a failure"),
