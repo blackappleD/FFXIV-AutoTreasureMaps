@@ -453,9 +453,8 @@ internal sealed class AutoFollowRun(TreasureSession session, TreasureProgress pr
     private static Vector3? LeaderInZone()
         => PartyPresence.Leader() is { } leader && leader.Territory.RowId == Svc.ClientState.TerritoryType ? leader.Position : null;
 
-    // The leader's teleport offers the party a ride, which this character does not take: it travels on its own, and an
-    // open question would stand in the way of everything else. The leader's call into a treasure vault is accepted,
-    // after a moment, while a portal stands near; its text is logged.
+    // The leader's call into a treasure vault is accepted, after a moment, while a portal stands near; its text is
+    // logged. The leader's teleport offer is declined by the controller, as on every run.
     private static void AnswerPrompts(IFramework framework)
     {
         if (!NpcInteraction.SelectYesnoOpen() || LootCleanup.Running)
@@ -471,17 +470,6 @@ internal sealed class AutoFollowRun(TreasureSession session, TreasureProgress pr
             {
                 RunLog.Info($"Follow: accepting {inviter}'s invite.");
                 DialogDriver.Confirm();
-            }
-
-            return;
-        }
-
-        if (ForeignPrompts.IsTeleportOffer(prompt))
-        {
-            if (EzThrottler.Throttle(DeclineThrottleKey, DeclineThrottleMs))
-            {
-                RunLog.Info("Follow: declining the leader's teleport offer; travelling on our own.");
-                NpcInteraction.AnswerNo();
             }
 
             return;

@@ -194,6 +194,8 @@ internal static unsafe class NpcInteraction
     public static string SelectYesnoText()
         => AddonReady(SelectYesnoAddon, out var addon) ? new AddonMaster.SelectYesno(addon).Text : string.Empty;
 
+    // The no is the last button: a question with three, such as a party member's teleport offer (Yes, Wait, No), has
+    // Wait second, which only parks the offer behind a notification icon and leaves it to pop up again.
     public static bool AnswerNo()
     {
         if (!AddonReady(SelectYesnoAddon, out var addon) || !EzThrottler.Throttle(SelectYesnoThrottleKey, AddonInteractThrottleMs))
@@ -201,7 +203,16 @@ internal static unsafe class NpcInteraction
             return false;
         }
 
-        new AddonMaster.SelectYesno(addon).No();
+        var master = new AddonMaster.SelectYesno(addon);
+        if (master.ButtonsVisible >= 3)
+        {
+            master.Third();
+        }
+        else
+        {
+            master.No();
+        }
+
         return true;
     }
 

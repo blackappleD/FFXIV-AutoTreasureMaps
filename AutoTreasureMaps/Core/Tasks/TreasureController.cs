@@ -1,17 +1,22 @@
 using AutoTreasureMaps.Core.Cleanup;
 using AutoTreasureMaps.Core.Dungeon;
 using AutoTreasureMaps.Core.External;
+using AutoTreasureMaps.Core.Game;
+using AutoTreasureMaps.Core.Game.Ops;
 using AutoTreasureMaps.Core.Gather;
 using AutoTreasureMaps.Core.Ipc;
 using AutoTreasureMaps.Core.Localization;
 using AutoTreasureMaps.Core.Treasure;
 using clib.Services;
+using ECommons.Throttlers;
 
 namespace AutoTreasureMaps.Core.Tasks;
 
 internal sealed partial class TreasureController
 {
     private const int SessionSampleIntervalMs = 1_000;
+    private const string DeclineOfferThrottleKey = "atm-decline-teleport-offer";
+    private const int DeclineOfferThrottleMs = 1_000;
 
     private readonly TreasureProgress progress = new();
 
@@ -189,6 +194,11 @@ internal sealed partial class TreasureController
 
     public void Tick()
     {
+        if (session is not null && !Paused)
+        {
+            DeclineTeleportOffer();
+        }
+
         if (session is null || session.Recorded || Paused)
         {
             return;
@@ -202,6 +212,22 @@ internal sealed partial class TreasureController
 
         nextSessionSampleAtMs = now + SessionSampleIntervalMs;
         session.Sample();
+    }
+
+    // A party member's teleport offer is refused while a run goes, leader or member alike: the run travels on its own,
+    // and an offer left open covers the questions the run has to answer.
+    private static void DeclineTeleportOffer()
+    {
+        if (!NpcInteraction.SelectYesnoOpen() || !ForeignPrompts.IsTeleportOffer(NpcInteraction.SelectYesnoText()))
+        {
+            return;
+        }
+
+        if (EzThrottler.Throttle(DeclineOfferThrottleKey, DeclineOfferThrottleMs))
+        {
+            Diag($"Declining the teleport offer '{NpcInteraction.SelectYesnoText()}'.");
+            NpcInteraction.AnswerNo();
+        }
     }
 
     private static bool RequiredPluginsReady()
