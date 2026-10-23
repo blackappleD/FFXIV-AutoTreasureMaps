@@ -4,7 +4,8 @@ namespace AutoTreasureMaps.Core.Dungeon;
 
 // A sack on the floor, on the ground plane (x, z), with the points it is worth.
 // Shown is whether the game draws it or lets it be targeted, kept so a sack that stops showing counts as picked up.
-internal readonly record struct SackSpot(ulong Id, Vector2 At, int Points, bool Shown = true);
+// LastsFor is how many seconds more it can still be picked up.
+internal readonly record struct SackSpot(ulong Id, Vector2 At, int Points, bool Shown = true, float LastsFor = float.PositiveInfinity);
 
 // A charge that is due: a strip from where the charger stands along the way it faces, landing in ImpactIn seconds.
 internal readonly record struct ChargeLane(Vector2 From, Vector2 Direction, float ImpactIn)
@@ -22,14 +23,6 @@ internal readonly record struct ChargeLane(Vector2 From, Vector2 Direction, floa
         var along = Vector2.Dot(offset, Direction);
         var across = MathF.Abs(offset.X * Direction.Y - offset.Y * Direction.X);
         return along >= -Margin && along <= Length && across <= HalfWidth + Margin;
-    }
-
-    // How far the character must walk across the lane to stand clear of it.
-    public float MetersToLeave(Vector2 point)
-    {
-        var offset = point - From;
-        var across = MathF.Abs(offset.X * Direction.Y - offset.Y * Direction.X);
-        return MathF.Max(0f, HalfWidth + Margin - across);
     }
 }
 
@@ -61,6 +54,10 @@ internal static class SackPlanner
     // A spot in a lane is left once its charge lands within the time to walk out of it and this much more.
     private const float ClearAheadSeconds = 1.2f;
     private const float EscapeGridMeters = 1f;
+    private const int ClearSearchWays = 16;
+    private const float ClearSearchStepMeters = 0.25f;
+    // Farther than any spot of the 40 m room is from its nearest clear spot.
+    private const float ClearSearchMeters = 30f;
 
     public static SackPlan? Choose(Vector2 from, float speed, IReadOnlyList<SackSpot> sacks, IReadOnlyList<ChargeLane> lanes)
     {
@@ -69,7 +66,7 @@ internal static class SackPlanner
         {
             var one = sacks[first];
             var toFirst = Vector2.Distance(from, one.At) / speed + TurnSeconds;
-            if (Caught(from, one.At, 0f, toFirst, toFirst + StandSeconds, lanes))
+            if (toFirst > one.LastsFor || Caught(from, one.At, 0f, toFirst, toFirst + StandSeconds, lanes))
             {
                 continue;
             }
@@ -90,7 +87,7 @@ internal static class SackPlanner
                 var two = sacks[second];
                 var toSecond = Vector2.Distance(one.At, two.At) / speed + TurnSeconds;
                 var atSecond = leaveFirst + toSecond;
-                if (Caught(one.At, two.At, leaveFirst, atSecond, atSecond + StandSeconds + AfterLastSeconds, lanes))
+                if (atSecond > two.LastsFor || Caught(one.At, two.At, leaveFirst, atSecond, atSecond + StandSeconds + AfterLastSeconds, lanes))
                 {
                     continue;
                 }
@@ -109,6 +106,11 @@ internal static class SackPlanner
     {
         var toFirst = Vector2.Distance(from, first.At) / speed + (standLeft < StandSeconds ? 0f : TurnSeconds);
         var leaveFirst = toFirst + standLeft;
+        if (toFirst > first.LastsFor)
+        {
+            return null;
+        }
+
         if (second is not { } two)
         {
             return Caught(from, first.At, 0f, toFirst, leaveFirst + AfterLastSeconds, lanes) ? null : first.Points / Math.Max(leaveFirst, 0.05f);
@@ -129,10 +131,13 @@ internal static class SackPlanner
         return (first.Points + SecondSackWeight * two.Points) / Math.Max(leaveFirst + SecondSackWeight * (toSecond + StandSeconds), 0.05f);
     }
 
-    // The lane the character stands in whose charge lands before it could walk out with time to spare, or null.
+    // The lane the character stands in whose charge lands before it could walk out with time to spare, or null. Walking
+    // out means out of every due lane: two side by side make one strip twice as wide, and the edge of one is the middle
+    // of the other.
     public static ChargeLane? Danger(Vector2 at, float speed, IReadOnlyList<ChargeLane> lanes)
     {
         ChargeLane? soonest = null;
+        var toClear = float.NaN;
         for (var index = 0; index < lanes.Count; index++)
         {
             var lane = lanes[index];
@@ -141,7 +146,12 @@ internal static class SackPlanner
                 continue;
             }
 
-            if (lane.ImpactIn - ImpactEarlySeconds <= lane.MetersToLeave(at) / speed + ClearAheadSeconds
+            if (float.IsNaN(toClear))
+            {
+                toClear = MetersToClear(at, lanes);
+            }
+
+            if (lane.ImpactIn - ImpactEarlySeconds <= toClear / speed + ClearAheadSeconds
                 && (soonest is not { } kept || lane.ImpactIn < kept.ImpactIn))
             {
                 soonest = lane;
@@ -149,6 +159,32 @@ internal static class SackPlanner
         }
 
         return soonest;
+    }
+
+    // How far the character must walk, straight in the best of sixteen ways, to stand clear of every due lane.
+    public static float MetersToClear(Vector2 at, IReadOnlyList<ChargeLane> lanes)
+    {
+        if (Clear(at, lanes))
+        {
+            return 0f;
+        }
+
+        var nearest = ClearSearchMeters;
+        for (var way = 0; way < ClearSearchWays; way++)
+        {
+            var angle = way * MathF.Tau / ClearSearchWays;
+            var step = new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * ClearSearchStepMeters;
+            for (var meters = ClearSearchStepMeters; meters < nearest; meters += ClearSearchStepMeters)
+            {
+                if (Clear(at + step * (meters / ClearSearchStepMeters), lanes))
+                {
+                    nearest = meters;
+                    break;
+                }
+            }
+        }
+
+        return nearest;
     }
 
     // Whether a spot is clear of every charge that is due.
@@ -166,14 +202,18 @@ internal static class SackPlanner
     }
 
     // The nearest spot of the room, on a one-metre grid, that no due charge covers and that the character reaches
-    // without being caught on the way. When every spot is covered, the one whose charge lands last. Null only with no
-    // room known.
+    // without being caught on the way. When none is, the nearest clear spot all the same, since that leaves the lanes
+    // soonest; when every spot is covered, the one whose charge lands last, the nearest of those landing together. Null
+    // only with no room known.
     public static Vector2? Escape(Vector2 from, float speed, IReadOnlyList<ChargeLane> lanes, Vector2 roomMin, Vector2 roomMax)
     {
         Vector2? best = null;
         var bestDistance = float.MaxValue;
+        Vector2? nearestClear = null;
+        var nearestClearDistance = float.MaxValue;
         Vector2? leastBad = null;
         var leastBadImpact = float.MinValue;
+        var leastBadDistance = float.MaxValue;
         for (var x = roomMin.X; x <= roomMax.X; x += EscapeGridMeters)
         {
             for (var y = roomMin.Y; y <= roomMax.Y; y += EscapeGridMeters)
@@ -188,6 +228,12 @@ internal static class SackPlanner
                         best = spot;
                     }
 
+                    if (distance < nearestClearDistance)
+                    {
+                        nearestClearDistance = distance;
+                        nearestClear = spot;
+                    }
+
                     continue;
                 }
 
@@ -200,15 +246,17 @@ internal static class SackPlanner
                     }
                 }
 
-                if (firstImpact > leastBadImpact)
+                if (firstImpact > leastBadImpact + SampleSeconds
+                    || firstImpact >= leastBadImpact - SampleSeconds && distance < leastBadDistance)
                 {
-                    leastBadImpact = firstImpact;
+                    leastBadImpact = MathF.Max(leastBadImpact, firstImpact);
+                    leastBadDistance = distance;
                     leastBad = spot;
                 }
             }
         }
 
-        return best ?? leastBad;
+        return best ?? nearestClear ?? leastBad;
     }
 
     // Whether walking a to b between the two times, and standing at b until holdUntil, puts the character in a lane

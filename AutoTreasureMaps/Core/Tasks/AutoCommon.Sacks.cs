@@ -129,6 +129,13 @@ public abstract partial class AutoCommon
                         // is taken as picked up, and the sack is checked by its object instead.
                         var rise = scoreRead ? nowScore - score : 0;
                         var candidate = lastStood != 0 && stoodOn.TryGetValue(lastStood, out var stoodAt) && now - stoodAt <= SackPointLateMs ? lastStood : 0UL;
+                        // The rise read in the same tick the character reached its sack, before the walk below notes it.
+                        if (candidate == 0 && plan is { } reaching && !credited.Contains(reaching.FirstId) && Vector2.Distance(at, reaching.First) <= SackStoppedOnMeters)
+                        {
+                            candidate = reaching.FirstId;
+                            stoodOn[candidate] = now;
+                        }
+
                         var worth = candidate == 0 ? 0 : SackWorth(candidate, field, choices);
                         var partnerWorth = PartnerOnSack(field, at);
                         var mine = rise > 0 && candidate != 0 && (partnerWorth == 0 || rise == worth + partnerWorth || rise != partnerWorth && rise == worth);
@@ -215,7 +222,7 @@ public abstract partial class AutoCommon
                         && SackPlanner.Escape(at, speed, field.Lanes, RoomMin(field, at), RoomMax(field, at)) is { } spot)
                     {
                         escape = spot;
-                        capture.Note($"in a lane landing in {due.ImpactIn:F1}s, {due.MetersToLeave(at):F1}m from its edge; escape to {SackRoundCapture.Format(spot)}");
+                        capture.Note($"in a lane landing in {due.ImpactIn:F1}s, {SackPlanner.MetersToClear(at, field.Lanes):F1}m from clear ground; escape to {SackRoundCapture.Format(spot)}");
                         MoveStraight(navmesh, [spot]);
                     }
                 }
@@ -255,9 +262,10 @@ public abstract partial class AutoCommon
                     var onTop = distance <= SackOnTopMeters || distance <= SackStoppedOnMeters && !navmesh.IsRunning();
                     if (onTop)
                     {
-                        // Picked up on contact, so the next plan is made on the next tick and the walk does not stop.
+                        // Picked up on contact, so the next plan is made on the next tick and the walk does not stop. A sack
+                        // the count already rose for in this tick is not waited on for a second point.
                         stoodOn[walking.FirstId] = now;
-                        lastStood = walking.FirstId;
+                        lastStood = credited.Contains(walking.FirstId) ? 0 : walking.FirstId;
                         capture.Note($"on {walking.FirstId:X}, {distance:F2}m; going on");
                         plan = null;
                     }

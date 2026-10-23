@@ -20,9 +20,13 @@ internal sealed unsafe class SackField(DungeonProfile profile)
     // A charger this far from where it appeared has charged already.
     private const float ChargedMeters = 3f;
     private const float StaleImpactSeconds = -1f;
+    // Read from the logs: a sack left alone vanishes about 17.6 s after it appeared, but none was picked up later than
+    // 13.6 s after, and one reached 14.8 s after gave no point.
+    private const float SackPickableSeconds = 14f;
 
     private readonly Dictionary<ulong, Charger> chargers = [];
     private readonly Dictionary<ulong, SackSpot> sacksSeen = [];
+    private readonly Dictionary<ulong, long> sackAppearedAtMs = [];
     private readonly HashSet<ulong> stillHere = [];
     private readonly HashSet<ulong> described = [];
     private readonly List<ulong> gone = [];
@@ -53,7 +57,7 @@ internal sealed unsafe class SackField(DungeonProfile profile)
         Sacks.Clear();
         Lanes.Clear();
         Changes.Clear();
-        ReadSacks();
+        ReadSacks(nowMs);
         ReadChargers(nowMs);
     }
 
@@ -89,7 +93,7 @@ internal sealed unsafe class SackField(DungeonProfile profile)
         }
     }
 
-    private void ReadSacks()
+    private void ReadSacks(long nowMs)
     {
         stillHere.Clear();
         var player = DungeonField.PlayerPosition;
@@ -115,7 +119,14 @@ internal sealed unsafe class SackField(DungeonProfile profile)
                 Changes.Add($"sack object {candidate.GameObjectId:X}: {candidate.ObjectKind} base {candidate.BaseId}, targetable {candidate.IsTargetable}, render {(native is null ? "?" : native->RenderFlags.ToString())}, at {Format(Flat(candidate.Position))}");
             }
 
-            var sack = new SackSpot(candidate.GameObjectId, Flat(candidate.Position), points, Shown(candidate));
+            if (!sackAppearedAtMs.TryGetValue(candidate.GameObjectId, out var appearedAtMs))
+            {
+                appearedAtMs = nowMs;
+                sackAppearedAtMs[candidate.GameObjectId] = nowMs;
+            }
+
+            var lastsFor = SackPickableSeconds - (nowMs - appearedAtMs) / 1000f;
+            var sack = new SackSpot(candidate.GameObjectId, Flat(candidate.Position), points, Shown(candidate), lastsFor);
             Sacks.Add(sack);
             stillHere.Add(sack.Id);
             SacksMin = Vector2.Min(SacksMin, sack.At);
@@ -147,6 +158,7 @@ internal sealed unsafe class SackField(DungeonProfile profile)
         {
             Changes.Add($"sack {gone[index]:X} gone");
             sacksSeen.Remove(gone[index]);
+            sackAppearedAtMs.Remove(gone[index]);
         }
     }
 
