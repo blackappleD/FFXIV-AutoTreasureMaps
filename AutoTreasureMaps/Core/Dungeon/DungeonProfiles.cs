@@ -37,6 +37,8 @@ internal static class DungeonProfiles
         ExitBaseIds: [2000139],
         // Alpaca of fortune, uolon of fortune; Turali onion, eggplant, garlic, tomato, Tuligora queen.
         BonusNameIds: [13240, 13241],
+        // The alpaca runs off; the uolon stays.
+        FleeingNameIds: [13240],
         MandragoraNameIds: [13242, 13243, 13244, 13245, 13246],
         FirstNameIds: [],
         GoldSackBaseIds: [],
@@ -60,6 +62,8 @@ internal static class DungeonProfiles
         ExitBaseIds: [],
         // Goldy cat, vaultkeeper; vault onion, eggplant, garlic, tomato, queen.
         BonusNameIds: [14014, 14015],
+        // The goldy cat runs off; the vaultkeeper stays.
+        FleeingNameIds: [14014],
         MandragoraNameIds: [14016, 14017, 14018, 14019, 14020],
         // The adds that come with a boss hit hard and are killed before it: Fastitocalon's vault laser cannons, Bitter
         // Eye's vault eyeclopses, Gwyddneu's vault leptocyons, Paeonia's seedlings, the Gilded Sentry's laser turrets.

@@ -19,7 +19,8 @@ internal readonly record struct GateCircle(uint GateBaseId, Vector3 At);
 // dungeon's layout, so the run walks straight to it instead of looking for it. Exit names the exit point the last
 // chamber is left through; the duty list is the fallback where a dungeon has none. MapItemId is the timeworn map whose
 // portal usually leads here, which the stats credit a dungeon to when the run did not see the portal itself.
-// BonusNameIds are the BNpcName rows of the rare enemies that drop extra loot and leave if not killed in time;
+// BonusNameIds are the BNpcName rows of the rare enemies that drop extra loot, and FleeingNameIds the ones among them
+// that run off if not killed in time, so they are killed before the ones that stay;
 // MandragoraNameIds are the mandragora party's, in the order their markers ask them to be killed. FirstNameIds are the
 // adds the combat plugin's module ranks above the boss they come with, killed before the rest of the room.
 // GoldSackBaseIds and SilverSackBaseIds are the event objects a bonus round scatters for the character to walk onto, a
@@ -39,6 +40,7 @@ internal sealed record DungeonProfile(
     GateCircle[] GateCircles,
     uint[] ExitBaseIds,
     uint[] BonusNameIds,
+    uint[] FleeingNameIds,
     uint[] MandragoraNameIds,
     uint[] FirstNameIds,
     uint[] GoldSackBaseIds,
@@ -69,6 +71,8 @@ internal sealed record DungeonProfile(
     public bool IsExit(uint baseId) => Array.IndexOf(ExitBaseIds, baseId) >= 0;
 
     public bool IsBonus(uint nameId) => Array.IndexOf(BonusNameIds, nameId) >= 0;
+
+    public bool IsFleeing(uint nameId) => Array.IndexOf(FleeingNameIds, nameId) >= 0;
 
     public bool IsFirst(uint nameId) => Array.IndexOf(FirstNameIds, nameId) >= 0;
 
