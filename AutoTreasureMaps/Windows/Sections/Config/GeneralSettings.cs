@@ -1,3 +1,4 @@
+using AutoTreasureMaps.Core.Game.Ops;
 using AutoTreasureMaps.Core.Localization;
 using AutoTreasureMaps.Windows.Components;
 
@@ -9,6 +10,10 @@ internal static class GeneralSettings
     private const int MinuteLimitMax = 600;
     private const int FailureLimitMin = 1;
     private const int FailureLimitMax = 10;
+    private const float RaiseJobPanelWidth = 320f;
+
+    private static string[]? raiseJobNames;
+    private static string[]? raiseJobDetails;
 
     private static readonly AfterRunAction[] afterRunOrder =
         [AfterRunAction.StayLoggedIn, AfterRunAction.ReturnToInn, AfterRunAction.Logout, AfterRunAction.CloseGame];
@@ -27,6 +32,7 @@ internal static class GeneralSettings
         DrawLanguageGroup(configuration);
         DrawWindowGroup(configuration);
         DrawBehaviorGroup(configuration);
+        DrawPartyGroup(configuration);
         DrawRunGroup(configuration);
         DrawAfterRunGroup(configuration);
         PostRunSettings.Draw(configuration);
@@ -122,6 +128,64 @@ internal static class GeneralSettings
             SettingsControls.ToggleWidth,
             () => SettingsControls.DrawToggle(configuration, () => configuration.AutoFollowLeader, value => configuration.AutoFollowLeader = value, "##atm_general_autofollow"),
             SettingsRow.ToggleHeight);
+    }
+
+    private static void DrawPartyGroup(Configuration configuration)
+    {
+        using var group = SettingsGroup.Begin(Loc.T(L.Settings.Party));
+
+        SettingsRow.Draw(Loc.T(L.Settings.AutoAcceptRaise),
+            Loc.T(L.Settings.AutoAcceptRaiseHelp),
+            SettingsControls.ToggleWidth,
+            () => SettingsControls.DrawToggle(configuration, () => configuration.AutoAcceptRaise, value => configuration.AutoAcceptRaise = value, "##atm_general_acceptraise"),
+            SettingsRow.ToggleHeight);
+
+        SettingsRow.Draw(Loc.T(L.Settings.RaiseAfterFight),
+            Loc.T(L.Settings.RaiseAfterFightHelp),
+            SettingsControls.ToggleWidth,
+            () => SettingsControls.DrawToggle(configuration, () => configuration.RaiseAfterFight, value => configuration.RaiseAfterFight = value, "##atm_general_raiseafter"),
+            SettingsRow.ToggleHeight);
+
+        using var body = Motion.PushSection("##atm_general_raisejob_section", configuration.RaiseAfterFight);
+        if (body is null)
+        {
+            return;
+        }
+
+        var selected = Math.Max(0, Array.IndexOf(RaiseOps.ClassJobIds, configuration.RaiseClassJobId));
+        SettingsRow.Draw(Loc.T(L.Settings.RaiseJob),
+            Loc.T(L.Settings.RaiseJobHelp),
+            SettingsControls.RowComboWidth,
+            () => DrawRaiseJobCombo(configuration, selected));
+        if (!GearsetSwitcher.HasGearsetFor(RaiseOps.ClassJobIds[selected], GearsetSwitcher.NoGearset))
+        {
+            SettingsRow.Note(Loc.T(L.Settings.RaiseJobNoGearset), Styling.AccentAmberSoft);
+        }
+    }
+
+    // The jobs and spells are named as the game client names them, so they read as they do in game.
+    private static void DrawRaiseJobCombo(Configuration configuration, int selected)
+    {
+        if (raiseJobNames is null || raiseJobDetails is null)
+        {
+            raiseJobNames = new string[RaiseOps.ClassJobIds.Length];
+            raiseJobDetails = new string[RaiseOps.ClassJobIds.Length];
+            var swiftcast = RaiseOps.ActionName(RaiseOps.SwiftcastActionId);
+            for (var index = 0; index < RaiseOps.ClassJobIds.Length; index++)
+            {
+                var classJobId = RaiseOps.ClassJobIds[index];
+                raiseJobNames[index] = RaiseOps.JobName(classJobId);
+                raiseJobDetails[index] = $"{swiftcast} + {RaiseOps.ActionName(RaiseOps.RaiseActionFor(classJobId))}";
+            }
+        }
+
+        var picked = selected;
+        if (Dropdown.DrawDetailed("##atm_general_raisejob", raiseJobNames, raiseJobDetails, ref picked, SettingsControls.RowComboWidth, RaiseJobPanelWidth)
+            && picked != selected)
+        {
+            configuration.RaiseClassJobId = RaiseOps.ClassJobIds[picked];
+            configuration.SaveDebounced();
+        }
     }
 
     private static void DrawAfterRunGroup(Configuration configuration)

@@ -223,6 +223,7 @@ public abstract partial class AutoCommon
                     return Conclude(map, map.Tier, MapOutcome.Cancelled);
             }
 
+            await RaiseFallenMembers("map-raise");
             var unlock = await UnlockCoffer(map, GuardsClearedAt(map));
             switch (unlock)
             {

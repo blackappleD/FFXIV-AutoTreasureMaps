@@ -9,15 +9,17 @@ namespace AutoTreasureMaps.Core.Ipc;
 // the character has no target: the current target keeps focus, and whatever is still attacking takes over once it is dead.
 // Every rotation picks its own targets and area attacks (Targeting Auto): every mob that spawns at a coffer is hostile,
 // so spreading the attacks over a wave only ends it sooner. FATE targeting stays off.
-// Tracks left out resolve to the combat plugin's own defaults; the role modules are only switched on, so they heal,
-// mitigate and stun with those defaults. Nothing that acts on other players or on mobs outside the fight is enabled.
+// Tracks left out resolve to the combat plugin's own defaults; the role modules are switched on, so they heal, mitigate
+// and stun with those defaults. The healer and caster modules also raise a fallen party member, but only with Swiftcast
+// (Dualcast too on Red Mage), since a hard cast raise mid-fight costs too much; their default is not to raise at all.
+// Nothing else that acts on other players or on mobs outside the fight is enabled.
 // Pathfind movement lets the combat plugin close to range and dodge once the fight is on.
 internal static class TreasureCombatPreset
 {
     public const string Name = "TreasureHelper";
 
     // Bumped whenever the preset changes, so the copy in the combat plugin is rewritten once.
-    public const int Revision = 4;
+    public const int Revision = 5;
 
     public const string AutoTargetModule = "BossMod.Autorotation.MiscAI.AutoTarget";
     private const string NormalMovementModule = "BossMod.Autorotation.MiscAI.NormalMovement";
@@ -33,6 +35,8 @@ internal static class TreasureCombatPreset
     ];
 
     private static readonly string[] roleModules = ["Caster", "HealerAI", "MeleeAI", "RangedAI", "TankAI"];
+
+    private static readonly PresetTrack[] raiseTracks = [new("Raise", "Swiftcast"), new("RaiseTargets", "Party")];
 
     private static readonly PresetTrack[] autoTargetTracks =
     [
@@ -108,7 +112,8 @@ internal static class TreasureCombatPreset
 
             for (var roleIndex = 0; roleIndex < roleModules.Length; roleIndex++)
             {
-                WriteModule(writer, RotationModulePrefix + roleModules[roleIndex], []);
+                var module = roleModules[roleIndex];
+                WriteModule(writer, RotationModulePrefix + module, module is "Caster" or "HealerAI" ? raiseTracks : []);
             }
 
             writer.WriteEndObject();

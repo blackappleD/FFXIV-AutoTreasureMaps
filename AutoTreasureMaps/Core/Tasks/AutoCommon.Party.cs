@@ -60,6 +60,8 @@ public abstract partial class AutoCommon
             return true;
         }
 
+        // A member that fell on the way, or in a fight that broke out there, is raised before the wait.
+        await RaiseFallenMembers("party-raise");
         var arrivedAt = Environment.TickCount64;
         Status = Loc.T(L.Status.WaitingParty);
         var gathered = PartyPresence.FarthestMemberFrom(PlayerPosition()) <= FollowersNearMeters
@@ -90,6 +92,7 @@ public abstract partial class AutoCommon
     // so no one is left behind a gate or out of a fight; the wait is capped.
     private async Task WaitForMembersInRoom(string scope)
     {
+        await RaiseFallenMembers($"{scope}-raise");
         if (!LeadsPartyMode() || PartyPresence.FarthestMemberFrom(PlayerPosition()) <= MembersInRoomMeters)
         {
             return;

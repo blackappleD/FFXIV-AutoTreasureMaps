@@ -1,3 +1,4 @@
+using AutoTreasureMaps.Core.Game.Ops;
 using AutoTreasureMaps.Core.Ipc;
 using AutoTreasureMaps.Core.Localization;
 using Dalamud.Game.ClientState.Conditions;
@@ -13,6 +14,8 @@ public abstract partial class AutoCommon
     private const int ReviveReturn = (int)clib.Enums.AgentReviveOp.Return;
     private const int ReviveAccept = (int)clib.Enums.AgentReviveOp.AcceptRevive;
     private const int RaiseWaitMs = 30_000;
+    // The leader may raise only once its fight is over, so the wait runs on while the party fights, up to this.
+    private const int RaiseWaitCapMs = 360_000;
     private const int RaisePollMs = 1_000;
     private const int ReviveTransitionMs = 60_000;
     // The revive window ignores input for a moment after the knockout, so Return is re-sent until the trip home starts.
@@ -109,7 +112,9 @@ public abstract partial class AutoCommon
     private async Task<bool> WaitForRaise()
     {
         Status = Loc.T(L.Status.KnockedOutRaise);
-        Diag($"Revive: knocked out in a party; waiting up to {RaiseWaitMs / TimeUnits.MillisecondsPerSecond}s for a raise");
+        var acceptRaise = Plugin.Instance.Configuration.AutoAcceptRaise;
+        Diag($"Revive: knocked out in a party; waiting {RaiseWaitMs / TimeUnits.MillisecondsPerSecond}s past the party's fight for a raise{(acceptRaise ? "" : " the player accepts")}");
+        var capAt = Environment.TickCount64 + RaiseWaitCapMs;
         var deadline = Environment.TickCount64 + RaiseWaitMs;
         while (Environment.TickCount64 < deadline)
         {
@@ -123,8 +128,17 @@ public abstract partial class AutoCommon
                 return true;
             }
 
+            if (PartyFightOn() || Svc.Objects.LocalPlayer is { } player && RaiseOps.RaisePending(player))
+            {
+                deadline = Math.Min(capAt, Math.Max(deadline, Environment.TickCount64 + RaiseWaitMs));
+            }
+
             // Accepting does nothing unless a raise is on offer, so repeating it is harmless.
-            SendReviveCommand(ReviveAccept);
+            if (acceptRaise)
+            {
+                SendReviveCommand(ReviveAccept);
+            }
+
             await DelayMs(RaisePollMs);
         }
 

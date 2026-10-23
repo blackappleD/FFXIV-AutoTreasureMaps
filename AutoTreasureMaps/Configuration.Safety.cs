@@ -17,6 +17,15 @@ public sealed partial class Configuration
     // Off by default: a party member that is not running starts following its leader by itself.
     public bool AutoFollowLeader { get; set; } = false;
 
+    // On by default: while a run is on, a raise cast on the knocked-out character is taken at once.
+    public bool AutoAcceptRaise { get; set; } = true;
+
+    // Off by default: the leader then changes gearsets on its own to raise, which a player should opt into.
+    public bool RaiseAfterFight { get; set; } = false;
+
+    // The job the leader changes to for it, one of RaiseOps.ClassJobIds; 24 is White Mage.
+    public uint RaiseClassJobId { get; set; } = 24;
+
     public bool AutoConsume { get; set; } = false;
     // 0 re-eats only once the buff has fully worn off.
     public int AutoConsumeMinMinutes { get; set; } = 3;

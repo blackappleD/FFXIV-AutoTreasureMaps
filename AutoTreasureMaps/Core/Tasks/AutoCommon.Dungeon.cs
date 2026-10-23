@@ -218,6 +218,7 @@ public abstract partial class AutoCommon
                     break;
                 case DungeonStep.Fight:
                     await handler.Fight(context);
+                    await RaiseFallenMembers("dungeon-raise");
                     break;
                 case DungeonStep.Loot:
                     await handler.SettleLoot(context);

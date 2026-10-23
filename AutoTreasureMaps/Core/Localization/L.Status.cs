@@ -63,6 +63,7 @@ internal static partial class L
         public static readonly LocString Repairing = new("status.repairing", "Repairing gear");
         public static readonly LocString KnockedOutHome = new("status.knockedOutHome", "Knocked out, returning to the home point");
         public static readonly LocString KnockedOutRaise = new("status.knockedOutRaise", "Knocked out, waiting for a raise");
+        public static readonly LocString RaisingMembers = new("status.raisingMembers", "Raising a fallen party member");
         public static readonly LocString WaitingCast = new("status.waitingCast", "Waiting for the cast to end before teleporting");
         public static readonly LocString ReturningHomeStuck = new("status.returningHomeStuck", "Returning home to clear a stuck teleport");
         public static readonly LocString ReturningSolidGround = new("status.returningSolidGround", "Returning to solid ground before teleporting");
