@@ -49,8 +49,8 @@ internal static class SackPlanner
     private const float SecondSackWeight = 0.6f;
     // Turning onto the next sack and the movement plugin picking the new waypoint up.
     private const float TurnSeconds = 0.15f;
-    // How long the character stands on a sack to pick it up.
-    public const float StandSeconds = 0.3f;
+    // The pickup comes on contact (the point 0.03 to 0.15 s after it); this long on the sack is counted for it.
+    public const float StandSeconds = 0.1f;
     // After the last sack of a plan the next way is not known yet; this long there is counted as still standing.
     private const float AfterLastSeconds = 1.2f;
     // The charge is checked against where the character stands this long either side of its landing. Read from the

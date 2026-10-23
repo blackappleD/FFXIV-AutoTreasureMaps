@@ -26,18 +26,17 @@ public abstract partial class AutoCommon
     private const float SackStallMeters = 0.5f;
     private const int SackStallMs = 1_500;
     private const int SackPassOverMs = 4_000;
-    // A sack cannot be interacted with; it is picked up by standing right on it for a moment. The walk goes onto the
-    // sack's centre, stops there for a fixed 0.3 s and goes on to the next. A sack's object lingers for a few seconds
-    // after its pickup, so a sack just stood on is not walked to again while the point for it may still come; once the
-    // duty list's count rose for it, never again.
+    // A sack cannot be interacted with; it is picked up as soon as the character steps on it. The walk goes onto the
+    // sack's centre and on to the next without stopping. A sack's object lingers for a few seconds after its pickup, so
+    // a sack just reached is not walked to again while the point for it may still come; once the duty list's count rose
+    // for it, never again.
     private const float SackOnTopMeters = 0.25f;
     // The pathfinder may end a walk a little short of the centre; that close and stopped counts as on it.
     private const float SackStoppedOnMeters = 0.5f;
-    private const int SackStandMs = 300;
-    // A sack's object lingers 2.5 to 3.2 s after its pickup, so one stood on is left alone this long; still there after
+    // A sack's object lingers 2.5 to 3.2 s after its pickup, so one reached is left alone this long; still there after
     // it, it was not picked up and is walked to again.
     private const int SackCreditWindowMs = 3_500;
-    // The point comes 0.03 to 0.15 s after the character steps on its sack; a rise this soon after the stand is its.
+    // The point comes 0.03 to 0.15 s after the character steps on its sack; a rise this soon after is its.
     private const int SackPointLateMs = 500;
     // A partner this close to a sack may be picking it up as well.
     private const float PartnerOnSackMeters = 0.8f;
@@ -45,9 +44,9 @@ public abstract partial class AutoCommon
     // The sacks come a few seconds into the round; none by this time means the profile's ids are not the sacks'.
     private const int NoSackDescribeMs = 10_000;
 
-    // The bonus round scatters sacks over the room for ninety seconds, each picked up by standing on it, and every ten
-    // seconds chargers rush across it. The walk goes straight from sack to sack, stays on each until the duty list's
-    // point count rises, steps out of a lane before its charge lands, and writes the round down for later.
+    // The bonus round scatters sacks over the room for ninety seconds, each picked up by stepping on it, and every ten
+    // seconds chargers rush across it. The walk goes straight from sack to sack, counts its points from the duty list,
+    // steps out of a lane before its charge lands, and writes the round down for later.
     private protected async Task CollectBonusSacks(DungeonContext context)
     {
         const string scope = "dungeon-sacks";
@@ -80,7 +79,6 @@ public abstract partial class AutoCommon
         var lastAtMs = Environment.TickCount64;
         var nearestSoFar = float.MaxValue;
         var closerAtMs = lastAtMs;
-        var onTopSinceMs = 0L;
         // The sacks stood on, and when, until their point came or the window for it passed.
         var stoodOn = new Dictionary<ulong, long>();
         ulong lastStood = 0;
@@ -121,24 +119,21 @@ public abstract partial class AutoCommon
 
                 capture.Record(now, field, speed);
 
-                // The count is the party's: a rise while standing on the planned sack is that sack's, any other is a
-                // partner's. Without the count, a planned sack that goes counts as picked up.
+                // Without the duty list's count, a planned sack that goes counts as picked up.
                 if (DutyListRound.TryReadSackScore(out var nowScore))
                 {
                     if (!scoreRead || nowScore != score)
                     {
-                        // The count is the party's. A rise while the character stands on its sack, or just after, is that
-                        // sack's, unless a partner stands on a sack too and the rise does not tell the two apart; then
-                        // neither is taken as picked up, and the sack is checked by its object instead.
+                        // The count is the party's. A rise just after the character reached its sack is that sack's,
+                        // unless a partner stands on a sack too and the rise does not tell the two apart; then neither
+                        // is taken as picked up, and the sack is checked by its object instead.
                         var rise = scoreRead ? nowScore - score : 0;
-                        var standingOn = onTopSinceMs != 0 && plan is { } current ? current.FirstId : 0UL;
-                        var candidate = standingOn != 0 ? standingOn
-                            : lastStood != 0 && stoodOn.TryGetValue(lastStood, out var stoodAt) && now - stoodAt <= SackPointLateMs ? lastStood : 0UL;
+                        var candidate = lastStood != 0 && stoodOn.TryGetValue(lastStood, out var stoodAt) && now - stoodAt <= SackPointLateMs ? lastStood : 0UL;
                         var worth = candidate == 0 ? 0 : SackWorth(candidate, field, choices);
                         var partnerWorth = PartnerOnSack(field, at);
                         var mine = rise > 0 && candidate != 0 && (partnerWorth == 0 || rise == worth + partnerWorth || rise != partnerWorth && rise == worth);
                         var reason = rise <= 0 ? string.Empty
-                            : mine ? $", for {candidate:X}{(standingOn != 0 ? $" {now - onTopSinceMs} ms after stepping on it" : " just after the stand")}"
+                            : mine ? $", for {candidate:X} reached {now - stoodOn[candidate]} ms ago"
                             : candidate != 0 ? $", unclear: a partner stands on a sack worth {partnerWorth}"
                             : ", a partner's";
                         capture.Note($"score {nowScore} (+{rise}){reason}");
@@ -149,12 +144,6 @@ public abstract partial class AutoCommon
                             lastStood = 0;
                             picked++;
                             points += worth;
-                            if (standingOn != 0)
-                            {
-                                // The point is in, so the walk goes on at once.
-                                plan = null;
-                                onTopSinceMs = 0;
-                            }
                         }
 
                         score = nowScore;
@@ -175,7 +164,6 @@ public abstract partial class AutoCommon
                 {
                     capture.Note($"{vanished.FirstId:X} went before the count rose for it");
                     plan = null;
-                    onTopSinceMs = 0;
                 }
 
                 if (now - sprintTriedAtMs >= SprintRetryMs)
@@ -192,7 +180,7 @@ public abstract partial class AutoCommon
                     var justStood = stoodOn.TryGetValue(sack.Id, out var stood) && now - stood <= SackCreditWindowMs;
                     if (!justStood && stood != 0 && !credited.Contains(sack.Id))
                     {
-                        capture.Note($"{sack.Id:X} still there {now - stood} ms after the stand; it was not picked up");
+                        capture.Note($"{sack.Id:X} still there {now - stood} ms after reaching it; it was not picked up");
                         stoodOn.Remove(sack.Id);
                     }
 
@@ -207,16 +195,13 @@ public abstract partial class AutoCommon
                 KeepOwnSacks(at, choices);
 
                 // Every plan the planner gives keeps the character out of each lane while its charge lands, on the way,
-                // on the sack and stepping off it. A plan under way that a new charge would catch is dropped at once,
-                // a stand on its sack included; with no safe plan, a character standing in a lane that is due walks to
-                // the nearest clear spot, and otherwise waits where it is.
-                var walkingThere = onTopSinceMs == 0;
-                var standLeft = walkingThere ? SackPlanner.StandSeconds : Math.Max(0f, SackPlanner.StandSeconds - (now - onTopSinceMs) / 1000f);
-                if (plan is { } kept && PlanScore(kept, at, speed, field, choices, standLeft) is null)
+                // on the sack and moving on from it. A plan under way that a new charge would catch is dropped at once;
+                // with no safe plan, a character standing in a lane that is due walks to the nearest clear spot, and
+                // otherwise waits where it is.
+                if (plan is { } kept && PlanScore(kept, at, speed, field, choices) is null)
                 {
-                    capture.Note($"a charge would catch the plan for {kept.FirstId:X}; dropping it{(walkingThere ? string.Empty : " and stepping off")}");
+                    capture.Note($"a charge would catch the plan for {kept.FirstId:X}; dropping it");
                     plan = null;
-                    onTopSinceMs = 0;
                     navmesh.Stop();
                 }
 
@@ -242,13 +227,12 @@ public abstract partial class AutoCommon
                         navmesh.Stop();
                     }
 
-                    if (best is { } chosen && (plan is not { } current || onTopSinceMs == 0 && Replaces(chosen, current, at, speed, field, choices)))
+                    if (best is { } chosen && (plan is not { } current || Replaces(chosen, current, at, speed, field, choices)))
                     {
                         escape = null;
                         plan = chosen;
                         planShown = Find(choices, chosen.FirstId)?.Shown ?? true;
                         nearestSoFar = float.MaxValue;
-                        onTopSinceMs = 0;
                         capture.Note($"plan {chosen.FirstId:X} at {SackRoundCapture.Format(chosen.First)}{(chosen.HasSecond ? $" then {chosen.SecondId:X}" : string.Empty)}, score {chosen.Score:F2}, {field.Lanes.Count} lanes");
                         MoveStraight(navmesh, [chosen.First]);
                     }
@@ -269,32 +253,25 @@ public abstract partial class AutoCommon
                 {
                     var distance = Vector2.Distance(at, walking.First);
                     var onTop = distance <= SackOnTopMeters || distance <= SackStoppedOnMeters && !navmesh.IsRunning();
-                    if (onTop && onTopSinceMs == 0)
+                    if (onTop)
                     {
-                        onTopSinceMs = now;
-                        navmesh.Stop();
-                        capture.Note($"on {walking.FirstId:X}, {distance:F2}m; standing {SackStandMs} ms");
+                        // Picked up on contact, so the next plan is made on the next tick and the walk does not stop.
+                        stoodOn[walking.FirstId] = now;
+                        lastStood = walking.FirstId;
+                        capture.Note($"on {walking.FirstId:X}, {distance:F2}m; going on");
+                        plan = null;
                     }
-                    else if (onTopSinceMs == 0 && !navmesh.IsRunning())
+                    else if (!navmesh.IsRunning())
                     {
                         MoveStraight(navmesh, [walking.First]);
                     }
 
-                    if (onTopSinceMs != 0 && now - onTopSinceMs >= SackStandMs)
-                    {
-                        stoodOn[walking.FirstId] = now;
-                        lastStood = walking.FirstId;
-                        capture.Note($"stood on {walking.FirstId:X} {now - onTopSinceMs} ms, {Vector2.Distance(at, walking.First):F2}m; going on");
-                        plan = null;
-                        onTopSinceMs = 0;
-                    }
-
-                    if (plan is not null && onTopSinceMs == 0 && distance < nearestSoFar - SackStallMeters)
+                    if (plan is not null && distance < nearestSoFar - SackStallMeters)
                     {
                         nearestSoFar = distance;
                         closerAtMs = now;
                     }
-                    else if (plan is not null && onTopSinceMs == 0 && now - closerAtMs >= SackStallMs && distance > SackStoppedOnMeters)
+                    else if (plan is not null && now - closerAtMs >= SackStallMs && distance > SackStoppedOnMeters)
                     {
                         capture.Note($"stalled {distance:F1}m from {walking.FirstId:X}; passing it over");
                         passOver[walking.FirstId] = now + SackPassOverMs;
@@ -396,11 +373,11 @@ public abstract partial class AutoCommon
             return false;
         }
 
-        return PlanScore(current, at, speed, field, choices, SackPlanner.StandSeconds) is not { } score || chosen.Score > score * SackRetargetGain;
+        return PlanScore(current, at, speed, field, choices) is not { } score || chosen.Score > score * SackRetargetGain;
     }
 
     // The score of a plan as it stands now; null when its sack is gone or a charge would catch it.
-    private static float? PlanScore(SackPlan plan, Vector2 at, float speed, SackField field, List<SackSpot> choices, float standLeft)
+    private static float? PlanScore(SackPlan plan, Vector2 at, float speed, SackField field, List<SackSpot> choices)
     {
         var first = Find(choices, plan.FirstId) ?? Find(field.Sacks, plan.FirstId);
         if (first is null)
@@ -409,7 +386,7 @@ public abstract partial class AutoCommon
         }
 
         var second = plan.HasSecond ? Find(choices, plan.SecondId) : null;
-        return SackPlanner.Rescore(at, speed, first.Value, second, standLeft, field.Lanes);
+        return SackPlanner.Rescore(at, speed, first.Value, second, SackPlanner.StandSeconds, field.Lanes);
     }
 
     private static SackSpot? Find(List<SackSpot> sacks, ulong id)
