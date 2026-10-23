@@ -2,11 +2,13 @@ using Dalamud.Game.ClientState.Conditions;
 using Dalamud.Game.ClientState.Objects.Types;
 using ECommons;
 using ECommons.Automation;
+using ECommons.Automation.UIInput;
 using ECommons.DalamudServices;
 using ECommons.GameFunctions;
 using ECommons.Throttlers;
 using ECommons.UIHelpers.AddonMasterImplementations;
 using FFXIVClientStructs.FFXIV.Client.Game.Control;
+using FFXIVClientStructs.FFXIV.Client.UI;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using System.Numerics;
 using System.Text;
@@ -22,6 +24,7 @@ internal static unsafe class NpcInteraction
     private const string SelectStringAddon = "SelectString";
     private const string SelectYesnoAddon = "SelectYesno";
     private const string TalkAddon = "Talk";
+    private const uint ThirdButtonNodeId = 14;
     private const string SelectStringThrottleKey = "ATM.Npc.SelectString";
     private const string SelectYesnoThrottleKey = "ATM.Npc.SelectYesno";
     private const string TalkThrottleKey = "ATM.Npc.Talk";
@@ -194,25 +197,45 @@ internal static unsafe class NpcInteraction
     public static string SelectYesnoText()
         => AddonReady(SelectYesnoAddon, out var addon) ? new AddonMaster.SelectYesno(addon).Text : string.Empty;
 
-    // The no is the last button: a question with three, such as a party member's teleport offer (Yes, Wait, No), has
-    // Wait second, which only parks the offer behind a notification icon and leaves it to pop up again.
+    // The no is the rightmost button on screen. A question with three, such as a party member's teleport offer (Accept,
+    // Wait, Decline), shows Wait in the middle, and Wait only parks the offer behind a notification icon; the node ids
+    // do not follow the order on screen, so the buttons are told apart by where they stand. Each one is logged.
     public static bool AnswerNo()
     {
-        if (!AddonReady(SelectYesnoAddon, out var addon) || !EzThrottler.Throttle(SelectYesnoThrottleKey, AddonInteractThrottleMs))
+        if (!AddonReady(SelectYesnoAddon, out var unit) || !EzThrottler.Throttle(SelectYesnoThrottleKey, AddonInteractThrottleMs))
         {
             return false;
         }
 
-        var master = new AddonMaster.SelectYesno(addon);
-        if (master.ButtonsVisible >= 3)
+        var addon = (AddonSelectYesno*)unit;
+        Span<nint> buttons = [(nint)addon->YesButton, (nint)addon->NoButton, (nint)unit->GetComponentButtonById(ThirdButtonNodeId)];
+        AtkComponentButton* rightmost = null;
+        var seen = new StringBuilder();
+        foreach (var handle in buttons)
         {
-            master.Third();
-        }
-        else
-        {
-            master.No();
+            var button = (AtkComponentButton*)handle;
+            if (button is null || button->OwnerNode is null || !button->AtkResNode->IsVisible())
+            {
+                continue;
+            }
+
+            var label = button->ButtonTextNode is null ? string.Empty : button->ButtonTextNode->NodeText.ToString();
+            var screenX = button->OwnerNode->AtkResNode.ScreenX;
+            seen.Append($" '{label}'@{screenX:F0}{(button->IsEnabled ? string.Empty : " (disabled)")}");
+            if (button->IsEnabled && (rightmost is null || screenX > rightmost->OwnerNode->AtkResNode.ScreenX))
+            {
+                rightmost = button;
+            }
         }
 
+        if (rightmost is null)
+        {
+            RunLog.Info($"SelectYesno: no button to answer No with;{seen}");
+            return false;
+        }
+
+        RunLog.Info($"SelectYesno: answering No with the rightmost button;{seen}");
+        rightmost->ClickAddonButton(unit);
         return true;
     }
 
