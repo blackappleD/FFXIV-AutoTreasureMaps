@@ -182,6 +182,13 @@ public abstract partial class AutoCommon
                     break;
                 }
 
+                // A bonus round keeps the party in combat to its end, so its sacks are left to the caller at once.
+                if (dungeon is not null && dungeon.Profile.HasSacks && BonusRoundOn(dungeon.Dungeon))
+                {
+                    Diag($"{scope}: a bonus round began; leaving the fight for its sacks.");
+                    break;
+                }
+
                 var focused = dungeon is not null && FocusPriorityEnemy(dungeon, scope, dungeon.NearestEnemy(out _));
                 if (!focused && Svc.Targets.Target is not { IsDead: false } && LeaderNearby()?.TargetObject is IBattleNpc { IsDead: false } enemy && enemy.IsTargetable)
                 {

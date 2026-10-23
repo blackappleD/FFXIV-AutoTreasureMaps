@@ -34,7 +34,13 @@ public abstract partial class AutoCommon
     // The pathfinder may end a walk a little short of the centre; that close and stopped counts as on it.
     private const float SackStoppedOnMeters = 0.5f;
     private const int SackStandMs = 300;
-    private const int SackCreditWindowMs = 3_000;
+    // A sack's object lingers 2.5 to 3.2 s after its pickup, so one stood on is left alone this long; still there after
+    // it, it was not picked up and is walked to again.
+    private const int SackCreditWindowMs = 3_500;
+    // The point comes 0.03 to 0.15 s after the character steps on its sack; a rise this soon after the stand is its.
+    private const int SackPointLateMs = 500;
+    // A partner this close to a sack may be picking it up as well.
+    private const float PartnerOnSackMeters = 0.8f;
     private const float EscapeArriveMeters = 0.5f;
     // The sacks come a few seconds into the round; none by this time means the profile's ids are not the sacks'.
     private const int NoSackDescribeMs = 10_000;
@@ -121,16 +127,34 @@ public abstract partial class AutoCommon
                 {
                     if (!scoreRead || nowScore != score)
                     {
+                        // The count is the party's. A rise while the character stands on its sack, or just after, is that
+                        // sack's, unless a partner stands on a sack too and the rise does not tell the two apart; then
+                        // neither is taken as picked up, and the sack is checked by its object instead.
                         var rise = scoreRead ? nowScore - score : 0;
-                        var mine = rise > 0 && lastStood != 0 && stoodOn.TryGetValue(lastStood, out var stoodAt) && now - stoodAt <= SackCreditWindowMs;
-                        capture.Note($"score {nowScore} (+{rise}){(mine ? $", for {lastStood:X} stood on {now - stoodOn[lastStood]} ms ago" : rise > 0 ? ", a partner's" : string.Empty)}");
+                        var standingOn = onTopSinceMs != 0 && plan is { } current ? current.FirstId : 0UL;
+                        var candidate = standingOn != 0 ? standingOn
+                            : lastStood != 0 && stoodOn.TryGetValue(lastStood, out var stoodAt) && now - stoodAt <= SackPointLateMs ? lastStood : 0UL;
+                        var worth = candidate == 0 ? 0 : SackWorth(candidate, field, choices);
+                        var partnerWorth = PartnerOnSack(field, at);
+                        var mine = rise > 0 && candidate != 0 && (partnerWorth == 0 || rise == worth + partnerWorth || rise != partnerWorth && rise == worth);
+                        var reason = rise <= 0 ? string.Empty
+                            : mine ? $", for {candidate:X}{(standingOn != 0 ? $" {now - onTopSinceMs} ms after stepping on it" : " just after the stand")}"
+                            : candidate != 0 ? $", unclear: a partner stands on a sack worth {partnerWorth}"
+                            : ", a partner's";
+                        capture.Note($"score {nowScore} (+{rise}){reason}");
                         if (mine)
                         {
-                            credited.Add(lastStood);
-                            stoodOn.Remove(lastStood);
+                            credited.Add(candidate);
+                            stoodOn[candidate] = now;
                             lastStood = 0;
                             picked++;
-                            points += rise;
+                            points += worth;
+                            if (standingOn != 0)
+                            {
+                                // The point is in, so the walk goes on at once.
+                                plan = null;
+                                onTopSinceMs = 0;
+                            }
                         }
 
                         score = nowScore;
@@ -163,7 +187,15 @@ public abstract partial class AutoCommon
                 choices.Clear();
                 foreach (var sack in field.Sacks)
                 {
+                    // A credited sack is never walked to again; one stood on without a clear point is, once its object
+                    // outlasts the time a picked-up sack lingers.
                     var justStood = stoodOn.TryGetValue(sack.Id, out var stood) && now - stood <= SackCreditWindowMs;
+                    if (!justStood && stood != 0 && !credited.Contains(sack.Id))
+                    {
+                        capture.Note($"{sack.Id:X} still there {now - stood} ms after the stand; it was not picked up");
+                        stoodOn.Remove(sack.Id);
+                    }
+
                     if (!credited.Contains(sack.Id) && !justStood && (!passOver.TryGetValue(sack.Id, out var until) || now >= until))
                     {
                         choices.Add(sack);
@@ -284,6 +316,31 @@ public abstract partial class AutoCommon
     }
 
     private static readonly List<Vector2> partnerSpots = [];
+
+    // The points of the sack a partner stands on, or 0.
+    private static int PartnerOnSack(SackField field, Vector2 at)
+    {
+        var party = Svc.Party;
+        var territoryId = Svc.ClientState.TerritoryType;
+        for (var index = 0; index < party.Length; index++)
+        {
+            if (party[index] is not { } member || Game.Player.PartyPresence.IsLocal(member) || member.Territory.RowId != territoryId)
+            {
+                continue;
+            }
+
+            var spot = SackField.Flat(member.Position);
+            foreach (var sack in field.Sacks)
+            {
+                if (Vector2.Distance(spot, sack.At) <= PartnerOnSackMeters && Vector2.Distance(at, sack.At) > PartnerOnSackMeters)
+                {
+                    return sack.Points;
+                }
+            }
+        }
+
+        return 0;
+    }
     private static readonly List<SackSpot> ownSacks = [];
 
     private static void KeepOwnSacks(Vector2 at, List<SackSpot> choices)
