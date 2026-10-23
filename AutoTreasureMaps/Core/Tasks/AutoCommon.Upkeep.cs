@@ -34,7 +34,8 @@ public abstract partial class AutoCommon
         var repairDue = UpkeepRepairDue(configuration);
         var breakDue = UpkeepBreakDue(configuration);
         var cleanupDue = UpkeepCleanupDue(configuration);
-        if (!repairDue && !breakDue && !cleanupDue && !UpkeepConsumablesDue(configuration))
+        var shoppingDue = UpkeepShoppingDue(configuration);
+        if (!repairDue && !breakDue && !cleanupDue && !shoppingDue && !UpkeepConsumablesDue(configuration))
         {
             return false;
         }
@@ -52,6 +53,11 @@ public abstract partial class AutoCommon
         if (repairDue && !CancelToken.IsCancellationRequested)
         {
             await RunScheduledRepair();
+        }
+
+        if (shoppingDue && !CancelToken.IsCancellationRequested)
+        {
+            await RunScheduledShopping(configuration);
         }
 
         if (breakDue && !CancelToken.IsCancellationRequested)

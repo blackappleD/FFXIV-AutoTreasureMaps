@@ -76,6 +76,7 @@ internal static partial class L
         public static readonly LocString RidingToSpot = new("status.ridingToSpot", "Riding to the spot in {0}");
         public static readonly LocString WalkingToSpot = new("status.walkingToSpot", "Walking to the spot in {0}");
         public static readonly LocString DiscardingLoot = new("status.discardingLoot", "Discarding loot");
+        public static readonly LocString Shopping = new("status.shopping", "Shopping with {0}");
         public static readonly LocString Consuming = new("status.consuming", "Consuming {0}");
         public static readonly LocString TravellingTo = new("status.travellingTo", "Travelling to {0}");
         public static readonly LocString WaitingLeaderSpot = new("status.waitingLeaderSpot", "Waiting for the leader's next spot");

@@ -11,7 +11,7 @@ namespace AutoTreasureMaps.Windows.Pages;
 
 internal sealed class SettingsPage
 {
-    private enum Tab { General, Maps, Dungeons, Repair, Consumables, Cleanup, Humanizer, PartyInvites, GmAlert }
+    private enum Tab { General, Maps, Dungeons, Repair, Consumables, Cleanup, Shopping, Humanizer, PartyInvites, GmAlert }
 
     private readonly record struct Entry(Tab Tab, LocString Label, FontAwesomeIcon Icon, LocString Subtitle);
 
@@ -24,6 +24,7 @@ internal sealed class SettingsPage
         new(Tab.Repair, L.Safety.CatRepair, FontAwesomeIcon.Wrench, L.Safety.CatRepairSub),
         new(Tab.Consumables, L.Safety.CatConsumables, FontAwesomeIcon.Utensils, L.Safety.CatConsumablesSub),
         new(Tab.Cleanup, L.Cleanup.Cat, FontAwesomeIcon.TrashAlt, L.Cleanup.CatSub),
+        new(Tab.Shopping, L.Shopping.Cat, FontAwesomeIcon.ShoppingCart, L.Shopping.CatSub),
         new(Tab.Humanizer, L.Safety.CatHumanizer, FontAwesomeIcon.Walking, L.Safety.CatHumanizerSub),
         new(Tab.PartyInvites, L.Safety.CatPartyInvites, FontAwesomeIcon.UserSlash, L.Safety.CatPartyInvitesSub),
         new(Tab.GmAlert, L.Safety.CatGmAlert, FontAwesomeIcon.UserSecret, L.Safety.CatGmAlertSub),
@@ -127,6 +128,9 @@ internal sealed class SettingsPage
                 break;
             case Tab.Cleanup:
                 CleanupSettings.Draw(configuration);
+                break;
+            case Tab.Shopping:
+                ShoppingSettings.Draw(configuration);
                 break;
             case Tab.Humanizer:
                 HumanizerSettings.Draw(configuration);
