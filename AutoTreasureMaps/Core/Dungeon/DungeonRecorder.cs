@@ -56,7 +56,7 @@ internal sealed unsafe class DungeonRecorder : IDisposable
 
         var directory = Path.Combine(Plugin.PluginInterface.GetPluginConfigDirectory(), RecordingsFolder);
         Directory.CreateDirectory(directory);
-        FilePath = Path.Combine(directory, $"{DateTime.Now.ToString("yyyyMMdd-HHmmss", CultureInfo.InvariantCulture)}.txt");
+        FilePath = Path.Combine(directory, CaptureFiles.Name(DateTime.Now.ToString("yyyyMMdd-HHmmss", CultureInfo.InvariantCulture)));
         writer = new StreamWriter(FilePath, append: false, Encoding.UTF8) { AutoFlush = true };
         startedAtMs = Environment.TickCount64;
         seen.Clear();

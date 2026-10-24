@@ -542,7 +542,7 @@ internal sealed unsafe class LureCapture : IDisposable
         };
 
     private static string FilePath()
-        => Path.Combine(Folder, $"{DateTime.Now.ToString("yyyyMMdd", CultureInfo.InvariantCulture)}.txt");
+        => Path.Combine(Folder, CaptureFiles.Name(DateTime.Now.ToString("yyyyMMdd", CultureInfo.InvariantCulture)));
 
     private static void Write(string text)
     {

@@ -26,7 +26,7 @@ internal sealed class SackRoundCapture : IDisposable
         {
             var folder = Path.Combine(Plugin.PluginInterface.GetPluginConfigDirectory(), CapturesFolder);
             Directory.CreateDirectory(folder);
-            FilePath = Path.Combine(folder, $"{DateTime.Now.ToString("yyyyMMdd-HHmmss", CultureInfo.InvariantCulture)}.txt");
+            FilePath = Path.Combine(folder, CaptureFiles.Name(DateTime.Now.ToString("yyyyMMdd-HHmmss", CultureInfo.InvariantCulture)));
             writer = new StreamWriter(FilePath, append: false, Encoding.UTF8) { AutoFlush = true };
         }
         catch (Exception exception)
