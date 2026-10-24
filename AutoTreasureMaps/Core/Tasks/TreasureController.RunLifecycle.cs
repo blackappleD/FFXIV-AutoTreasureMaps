@@ -40,20 +40,21 @@ internal sealed partial class TreasureController
         }
 
         // The last maps' loot never reaches an upkeep, so a run that met its stop condition discards it before the
-        // after-run action, which may log out or close the game. The list goes with the run either way.
+        // after-run action, which may log out or close the game. What is still listed waits for the next cleanup.
         if (NeedsFinalCleanup(owningSession))
         {
             Diag($"Run ended by its stop condition; discarding {LootCleanup.Pending.Count} kinds of noted loot before anything else.");
             progress.SetPhase(TreasurePhase.Finishing);
             RunTask(new AutoFinalCleanup(), () =>
             {
-                LootCleanup.Clear();
+                LootCleanup.DropPreview();
                 FinishEnding(owningSession);
             });
             return;
         }
 
-        LootCleanup.Clear();
+        LootCleanup.Stop();
+        LootCleanup.DropPreview();
         FinishEnding(owningSession);
     }
 

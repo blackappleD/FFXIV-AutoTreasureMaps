@@ -172,8 +172,10 @@ internal sealed partial class TreasureController
         currentTask = null;
         PauseReason = PauseReason.None;
         Svc.Automation.Stop();
-        // The noted loot belongs to this run, so it goes with it.
-        LootCleanup.Clear();
+        // A pass under way stops with the run, but what is still listed waits for the next cleanup: forgotten here, it
+        // would stay in the bags and shield every later copy of it from the cleanup.
+        LootCleanup.Stop();
+        LootCleanup.DropPreview();
         if (ending is not null || taskWasRunning)
         {
             ReleaseHelpers();

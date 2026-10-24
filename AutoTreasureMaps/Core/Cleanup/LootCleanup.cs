@@ -17,9 +17,12 @@ internal readonly record struct PendingLoot(uint ItemId, int Quantity, bool High
 // something. Only loot that landed in the bags is listed, so gil, crystals and currency never are. The game discards
 // whole slots, so an item is listed only when the bags held none of it before the coffer opened (or it is listed
 // already): every copy in the bags is then loot. An item that does not stack is the exception, as each copy has a slot
-// of its own: as many of its slots as the coffer gave are discarded, whatever the bags held before. A map or dungeon that was paused after its coffer opened is not
-// listed at all, since what the player did meanwhile would read as loot. The list belongs to one character and one
-// run: it is cleared when the run stops or ends and on logout, and a pass refuses to run for another character. A
+// of its own: as many of its slots as the coffer gave are discarded, whatever the bags held before. With the held
+// copies setting on, an item the bags held before is listed all the same and every slot of it goes, held copies
+// included. A map or dungeon that was paused after its coffer opened is not listed at all, since what the player did
+// meanwhile would read as loot. The list belongs to one character: it outlives a stopped run, so what that run had not
+// discarded yet goes at the next pass, is cleared on logout or when auto-discard is turned off, and a pass refuses to
+// run for another character. A
 // pass discards one slot at a time, a human-like moment apart, takes each discarded slot off the noted quantity, and
 // empties the list once no listed item is left in the bags. An item looted in a larger quantity than the cleanup
 // limit is kept instead. Normal and high quality are told apart throughout, as they never share a slot: loot of
@@ -185,7 +188,7 @@ internal static unsafe class LootCleanup
         }
 
         var held = bagsBefore.GetValueOrDefault(BagSnapshot.Key(gain.ItemId, gain.HighQuality));
-        if (IndexOf(gain.ItemId, gain.HighQuality) < 0 && held > 0 && !Unstacked(gain.ItemId))
+        if (IndexOf(gain.ItemId, gain.HighQuality) < 0 && held > 0 && !Unstacked(gain.ItemId) && !DiscardsHeld)
         {
             if (log)
             {
@@ -202,6 +205,9 @@ internal static unsafe class LootCleanup
     // copies can differ in materia, dye or spiritbond.
     private static bool Unstacked(uint itemId)
         => Svc.Data.GetExcelSheet<Item>().GetRowOrDefault(itemId) is { StackSize: <= 1 } item && item.EquipSlotCategory.RowId == 0;
+
+    // Copies the bags held before the coffer go with the loot, so one copy left over never shields every later one.
+    private static bool DiscardsHeld => Plugin.Instance.Configuration.AutoDiscardHeld;
 
     // A limit of 0 keeps nothing back for its quantity.
     private static bool OverLimit(int quantity, int limit) => limit > 0 && quantity > limit;
@@ -428,10 +434,12 @@ internal static unsafe class LootCleanup
     }
 
     // The slot discarded last has emptied, so its copies no longer count as looted: later copies came another way.
+    // Discarding held copies too, every slot of a listed item goes whatever the count, so nothing is taken off it.
     private static void ConsumeLastSlot()
     {
-        if (lastItemId == 0 || lastQuantity <= 0)
+        if (lastItemId == 0 || lastQuantity <= 0 || DiscardsHeld)
         {
+            lastQuantity = 0;
             return;
         }
 
@@ -509,13 +517,13 @@ internal static unsafe class LootCleanup
 
     // More of the item in the bags than was looted, in the same quality, means some came another way since; the item is
     // dropped from the list rather than discarded, as a slot cannot be split. An item that does not stack is discarded a
-    // slot at a time until the looted copies are gone, so the others stay.
+    // slot at a time until the looted copies are gone, so the others stay. Discarding held copies too, all of it goes.
     private static bool AllLoot(uint itemId, bool highQuality)
     {
         var at = IndexOf(itemId, highQuality);
         var looted = at < 0 ? 0 : pending[at].Quantity;
         var held = CountInBags(itemId, highQuality);
-        if (held <= looted || (at >= 0 && Unstacked(itemId)))
+        if (held <= looted || (at >= 0 && (Unstacked(itemId) || DiscardsHeld)))
         {
             return true;
         }

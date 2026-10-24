@@ -10,6 +10,9 @@ public sealed partial class Configuration
     // Items of notable rarity, unique items, equipment and items that unlock something are kept as well.
     public bool AutoDiscardKeepNotable { get; set; } = true;
 
+    // Loot of an item the bags already held is discarded together with the copies held, rather than kept.
+    public bool AutoDiscardHeld { get; set; } = false;
+
     // Item ids the loot cleanup never discards, on top of the maps and each map's rare loot it always keeps.
     public List<uint> AutoDiscardKeep { get; set; } = [];
 
