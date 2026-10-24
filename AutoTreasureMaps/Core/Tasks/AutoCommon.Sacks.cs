@@ -40,6 +40,17 @@ public abstract partial class AutoCommon
     private const int SackPointLateMs = 500;
     // A partner this close to a sack may be picking it up as well.
     private const float PartnerOnSackMeters = 0.8f;
+    // A partner this close to a sack has stepped on it; the sack is left to it while its object lingers.
+    private const float PartnerTookMeters = 0.6f;
+    // Within this of each other, a partner and the character are equally near a sack, and it goes by the split below.
+    private const float SackTieMeters = 1.5f;
+    // A partner and the character this close split the room at the line north to south halfway between them: the one
+    // with the lower content id takes the west side. Both work this out alike without talking, and a partner's position
+    // read a moment late moves the line by only half the lag. Nearest-takes-it would leave both, each seeing the other a
+    // step behind, making for the same sack; the 91-point round of 2026-10-24 ran 50 s like that.
+    private const float SackSplitMeters = 6f;
+    // A plan this close to its sack is kept even once the sack counts as a partner's; the character gets there first.
+    private const float SackKeepNearMeters = 2f;
     private const float EscapeArriveMeters = 0.5f;
     // The sacks come a few seconds into the round; none by this time means the profile's ids are not the sacks'.
     private const int NoSackDescribeMs = 10_000;
@@ -81,6 +92,9 @@ public abstract partial class AutoCommon
         var closerAtMs = lastAtMs;
         // The sacks stood on, and when, until their point came or the window for it passed.
         var stoodOn = new Dictionary<ulong, long>();
+        // The sacks a partner stepped on, and when; left to it while a picked-up sack's object lingers.
+        var partnerTook = new Dictionary<ulong, long>();
+        var self = Svc.PlayerState.ContentId;
         ulong lastStood = 0;
         var sprintTriedAtMs = 0L;
         var startedAtMs = Environment.TickCount64;
@@ -119,7 +133,9 @@ public abstract partial class AutoCommon
                     Warn($"{scope}: no sack object of the profile's ids showed in {NoSackDescribeMs / 1000}s; the room's objects are written to the recording.");
                 }
 
-                capture.Record(now, field, speed);
+                ReadPartners();
+                capture.Record(now, field, speed, partners);
+                NotePartnersOnSacks(field, at, now, partnerTook, capture);
 
                 // Without the duty list's count, a planned sack that goes counts as picked up.
                 if (DutyListRound.TryReadSackScore(out var nowScore))
@@ -193,15 +209,26 @@ public abstract partial class AutoCommon
                         stoodOn.Remove(sack.Id);
                     }
 
-                    if (!credited.Contains(sack.Id) && !justStood && (!passOver.TryGetValue(sack.Id, out var until) || now >= until))
+                    if (!credited.Contains(sack.Id) && !justStood && !TookByPartner(partnerTook, sack.Id, now) && (!passOver.TryGetValue(sack.Id, out var until) || now >= until))
                     {
                         choices.Add(sack);
                     }
                 }
 
-                // In a party, each member takes the sacks nearer to it than to the others, so they do not run for the
-                // same one; with none of its own left it takes any.
-                KeepOwnSacks(at, choices);
+                // In a party, each member takes its own sacks (PartnersSack), so they do not run for the same one; with
+                // none of its own left it takes those the others are least near.
+                var ownLeft = KeepOwnSacks(at, self, choices);
+
+                // A plan for a sack a partner stepped on is let go, and one that turned the partner's while the character
+                // has its own to go to, unless the character is about to step on it.
+                if (plan is { } claimed
+                    && (TookByPartner(partnerTook, claimed.FirstId, now)
+                        || ownLeft && Vector2.Distance(at, claimed.First) > SackKeepNearMeters && Find(field.Sacks, claimed.FirstId) is { } aimed && PartnersSack(aimed, at, self)))
+                {
+                    capture.Note($"{claimed.FirstId:X} is a partner's; dropping it");
+                    plan = null;
+                    navmesh.Stop();
+                }
 
                 // Every plan the planner gives keeps the character out of each lane while its charge lands, on the way,
                 // on the sack and moving on from it. A plan under way that a new charge would catch is dropped at once;
@@ -339,11 +366,12 @@ public abstract partial class AutoCommon
         return final;
     }
 
-    private static readonly List<Vector2> partnerSpots = [];
+    // The other members in the room: where the object table shows them, and where the party list does, which can lag.
+    private static readonly List<SackPartner> partners = [];
 
-    // The points of the sack a partner stands on, or 0.
-    private static int PartnerOnSack(SackField field, Vector2 at)
+    private static void ReadPartners()
     {
+        partners.Clear();
         var party = Svc.Party;
         var territoryId = Svc.ClientState.TerritoryType;
         for (var index = 0; index < party.Length; index++)
@@ -353,10 +381,20 @@ public abstract partial class AutoCommon
                 continue;
             }
 
-            var spot = SackField.Flat(member.Position);
+            var listed = SackField.Flat(member.Position);
+            var at = member.GameObject is { } body ? SackField.Flat(body.Position) : listed;
+            partners.Add(new SackPartner((ulong)member.ContentId, member.Name.TextValue, at, listed));
+        }
+    }
+
+    // The points of the sack a partner stands on, or 0.
+    private static int PartnerOnSack(SackField field, Vector2 at)
+    {
+        foreach (var partner in partners)
+        {
             foreach (var sack in field.Sacks)
             {
-                if (Vector2.Distance(spot, sack.At) <= PartnerOnSackMeters && Vector2.Distance(at, sack.At) > PartnerOnSackMeters)
+                if (Vector2.Distance(partner.At, sack.At) <= PartnerOnSackMeters && Vector2.Distance(at, sack.At) > PartnerOnSackMeters)
                 {
                     return sack.Points;
                 }
@@ -365,51 +403,106 @@ public abstract partial class AutoCommon
 
         return 0;
     }
-    private static readonly List<SackSpot> ownSacks = [];
 
-    private static void KeepOwnSacks(Vector2 at, List<SackSpot> choices)
+    // A sack a partner steps on is its; its object lingers a few seconds, and walking to it meanwhile follows the partner.
+    private static void NotePartnersOnSacks(SackField field, Vector2 at, long now, Dictionary<ulong, long> partnerTook, SackRoundCapture capture)
     {
-        partnerSpots.Clear();
-        var party = Svc.Party;
-        var territoryId = Svc.ClientState.TerritoryType;
-        for (var index = 0; index < party.Length; index++)
+        foreach (var partner in partners)
         {
-            if (party[index] is { } member && !Game.Player.PartyPresence.IsLocal(member) && member.Territory.RowId == territoryId)
+            foreach (var sack in field.Sacks)
             {
-                partnerSpots.Add(SackField.Flat(member.Position));
+                if (Vector2.Distance(partner.At, sack.At) > PartnerTookMeters || Vector2.Distance(at, sack.At) <= PartnerTookMeters)
+                {
+                    continue;
+                }
+
+                if (!partnerTook.TryGetValue(sack.Id, out var took) || now - took > SackCreditWindowMs)
+                {
+                    capture.Note($"{partner.Name} stepped on {sack.Id:X}; leaving it");
+                }
+
+                partnerTook[sack.Id] = now;
+            }
+        }
+    }
+
+    // Whether the sack is a partner's: on its side of the split while the two are close, otherwise clearly nearer to it or
+    // about as near and on its side.
+    private static bool PartnersSack(SackSpot sack, Vector2 at, ulong self)
+    {
+        var mine = Vector2.Distance(at, sack.At);
+        foreach (var partner in partners)
+        {
+            var theirs = Vector2.Distance(partner.At, sack.At);
+            var theirSide = sack.At.X < (at.X + partner.At.X) / 2 != self < partner.ContentId;
+            var toPartner = Vector2.Distance(at, partner.At) < SackSplitMeters
+                ? theirSide
+                : theirs < mine - SackTieMeters || theirs <= mine + SackTieMeters && theirSide;
+            if (toPartner)
+            {
+                return true;
             }
         }
 
-        if (partnerSpots.Count == 0)
+        return false;
+    }
+
+    private static readonly List<SackSpot> ownSacks = [];
+
+    // Narrows the choices to the character's own sacks; false when it has none and is left the others' least near.
+    private static bool KeepOwnSacks(Vector2 at, ulong self, List<SackSpot> choices)
+    {
+        if (partners.Count == 0 || choices.Count == 0)
         {
-            return;
+            return true;
         }
 
         ownSacks.Clear();
         foreach (var sack in choices)
         {
-            var mine = Vector2.DistanceSquared(at, sack.At);
-            var nearest = true;
-            foreach (var partner in partnerSpots)
-            {
-                if (Vector2.DistanceSquared(partner, sack.At) < mine)
-                {
-                    nearest = false;
-                    break;
-                }
-            }
-
-            if (nearest)
+            if (!PartnersSack(sack, at, self))
             {
                 ownSacks.Add(sack);
             }
         }
 
-        if (ownSacks.Count > 0)
+        var own = ownSacks.Count > 0;
+        if (!own)
         {
-            choices.Clear();
-            choices.AddRange(ownSacks);
+            // None of its own: the sacks the others are least near, by how much farther they are than the character.
+            var most = float.MinValue;
+            foreach (var sack in choices)
+            {
+                most = Math.Max(most, Lead(sack, at));
+            }
+
+            foreach (var sack in choices)
+            {
+                if (Lead(sack, at) >= most - SackTieMeters)
+                {
+                    ownSacks.Add(sack);
+                }
+            }
         }
+
+        choices.Clear();
+        choices.AddRange(ownSacks);
+        return own;
+    }
+
+    private static bool TookByPartner(Dictionary<ulong, long> partnerTook, ulong id, long now)
+        => partnerTook.TryGetValue(id, out var took) && now - took <= SackCreditWindowMs;
+
+    // How much farther the nearest partner is from the sack than the character.
+    private static float Lead(SackSpot sack, Vector2 at)
+    {
+        var nearest = float.MaxValue;
+        foreach (var partner in partners)
+        {
+            nearest = Math.Min(nearest, Vector2.Distance(partner.At, sack.At));
+        }
+
+        return nearest - Vector2.Distance(at, sack.At);
     }
 
     // The plan under way is kept unless its first sack is gone or the new one is clearly better.

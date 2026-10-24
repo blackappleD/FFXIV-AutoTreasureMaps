@@ -41,7 +41,7 @@ internal sealed class SackRoundCapture : IDisposable
 
     public string? FilePath { get; }
 
-    public void Record(long nowMs, SackField field, float speed)
+    public void Record(long nowMs, SackField field, float speed, IReadOnlyList<SackPartner> partners)
     {
         for (var index = 0; index < field.Changes.Count; index++)
         {
@@ -56,6 +56,11 @@ internal sealed class SackRoundCapture : IDisposable
         nextPositionAtMs = nowMs + PositionIntervalMs;
         var at = SackField.Flat(player.Position);
         Write(string.Create(CultureInfo.InvariantCulture, $"at ({at.X:F2}, {at.Y:F2}) speed {speed:F1}, {field.Sacks.Count} sacks, {field.Lanes.Count} lanes"));
+        foreach (var partner in partners)
+        {
+            Write(string.Create(CultureInfo.InvariantCulture, $"partner {partner.Name} at ({partner.At.X:F2}, {partner.At.Y:F2}), listed ({partner.Listed.X:F2}, {partner.Listed.Y:F2})"));
+        }
+
         var now = string.Join(",", player.StatusList.Where(status => status.StatusId != 0).Select(status => status.StatusId));
         if (now != statuses)
         {

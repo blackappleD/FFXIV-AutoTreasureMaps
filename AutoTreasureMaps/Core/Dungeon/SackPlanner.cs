@@ -7,6 +7,9 @@ namespace AutoTreasureMaps.Core.Dungeon;
 // LastsFor is how many seconds more it can still be picked up.
 internal readonly record struct SackSpot(ulong Id, Vector2 At, int Points, bool Shown = true, float LastsFor = float.PositiveInfinity);
 
+// Another party member in the room: At from the object table, Listed from the party list, which can lag behind it.
+internal readonly record struct SackPartner(ulong ContentId, string Name, Vector2 At, Vector2 Listed);
+
 // A charge that is due: a strip from where the charger stands along the way it faces, landing in ImpactIn seconds.
 internal readonly record struct ChargeLane(Vector2 From, Vector2 Direction, float ImpactIn)
 {
