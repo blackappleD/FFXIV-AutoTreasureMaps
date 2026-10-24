@@ -1,6 +1,5 @@
 using AutoTreasureMaps.Core.Game.Ops;
 using AutoTreasureMaps.Core.Game.Player;
-using AutoTreasureMaps.Core.Game.Watchers;
 using AutoTreasureMaps.Core.Localization;
 using clib.TaskSystem;
 using Dalamud.Game.ClientState.Conditions;
@@ -31,8 +30,8 @@ public abstract partial class AutoCommon
 
     // Once a fight is over the leader raises every member that fell in it with Swiftcast and the job's raise: on the job
     // it plays if that one can raise, otherwise on the job the settings name, changing back to the gearset it wore
-    // afterwards. The class cannot change inside a duty, so there only a job that can raise already does it. Swiftcast
-    // still cooling down leaves a hard cast, which the fight being over makes safe. A fight that starts again ends it.
+    // afterwards; a treasure dungeon lets the class change too. Swiftcast still cooling down leaves a hard cast, which the
+    // fight being over makes safe. A fight that starts again ends it.
     private protected async Task RaiseFallenMembers(string scope)
     {
         var configuration = Plugin.Instance.Configuration;
@@ -52,11 +51,6 @@ public abstract partial class AutoCommon
         }
 
         var changeJob = raiseJob != wornJob;
-        if (changeJob && DutyWatcher.InContent())
-        {
-            Diag($"{scope}: a member is down, but the class cannot change inside a duty and {GearsetSwitcher.ClassJobLabel(wornJob)} cannot raise.");
-            return;
-        }
 
         Status = Loc.T(L.Status.RaisingMembers);
         if (Svc.Condition[ConditionFlag.Mounted])
